@@ -1,0 +1,9 @@
+﻿cargo;faturamento_linha;rentabilidade;conversao_linha;faturamento_individual;conversao_individual;retencao_clientes;meta_fornecedor_1;meta_fornecedor_2;Soma dos pesos
+Diretor;40;30;30;0;0;0;0;0;100
+Gerente Geral;30;30;40;0;0;0;0;0;100
+Gerente Linha;15;20;30;0;0;15;10;10;100
+Coordenador;40;20;40;0;0;0;0;0;100
+Consultor Interno;0;0;0;40;60;0;0;0;100
+Consultor Externo;0;0;0;60;40;0;0;0;100
+Supervisor;40;20;40;0;0;0;0;0;100
+Representante Comercial;0;0;0;60;40;0;0;0;100

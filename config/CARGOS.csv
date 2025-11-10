@@ -1,0 +1,9 @@
+﻿nome_cargo;tipo_cargo;TIPO_COMISSAO
+Consultor Interno;Operacional;Faturamento
+Consultor Externo;Operacional;Faturamento
+Coordenador;Gestão;Faturamento
+Diretor;Gestão;Faturamento
+Gerente Geral;Gestão;Faturamento
+Gerente Linha;Gestão;Recebimento
+Representante Comercial;Operacional;Faturamento
+Supervisor;Gestão;Faturamento

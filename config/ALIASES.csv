@@ -1,0 +1,462 @@
+﻿tipo_meta;linha;grupo;subgrupo;tipo_mercadoria;referencia_media_ponderada_pct;meta_rentabilidade_alvo_pct
+rentabilidade;Diversos;Detector Diversos;Certificado;Serviço;0.441061879;0.451061879
+rentabilidade;Diversos;Diversos Diversos;Acessório;Insumo;0.441061879;0.451061879
+rentabilidade;Diversos;Diversos Diversos;Acessório;Produto;0.441061879;0.451061879
+rentabilidade;Diversos;Diversos Diversos;Calibração;Serviço;0.441061879;0.451061879
+rentabilidade;Diversos;Diversos Diversos;Certificado;Serviço;0.441061879;0.451061879
+rentabilidade;Diversos;Diversos Diversos;Diversos;Insumo;0.55061833;0.56061833
+rentabilidade;Diversos;Diversos Diversos;Ferramental;Insumo;0.271;0.281
+rentabilidade;Diversos;Diversos Diversos;Ferramental;Produto;0.441061879;0.451061879
+rentabilidade;Diversos;Diversos Diversos;Filtro;Insumo;0.441061879;0.451061879
+rentabilidade;Diversos;Diversos Diversos;Hora Técnica;Serviço;0.441061879;0.451061879
+rentabilidade;Diversos;Diversos Diversos;Instalação;Serviço;0.441061879;0.451061879
+rentabilidade;Diversos;Diversos Diversos;Treinamento;Serviço;0.441061879;0.451061879
+rentabilidade;Diversos;Elevador de Liquidos Fixo;Painel;Produto;0.441061879;0.451061879
+rentabilidade;Diversos;Filtração Diversos;Sistema;Produto;0.441061879;0.451061879
+rentabilidade;Diversos;Monitoramento Fixo;Painel Solar;Produto;0.441061879;0.451061879
+rentabilidade;Diversos;Outros Diversos;Acessório;Produto;0.441061879;0.451061879
+rentabilidade;Diversos;Outros Diversos;Acessório;Reposição;0.441061879;0.451061879
+rentabilidade;Diversos;Outros Diversos;Diversos;Insumo;0.331505429;0.341505429
+rentabilidade;Diversos;Outros Diversos;Diversos;Produto;0.441061879;0.451061879
+rentabilidade;Diversos;Outros Diversos;Ferramental;Produto;0.441061879;0.451061879
+rentabilidade;Diversos;Outros Diversos;Outros;Produto;0.685042239;0.695042239
+rentabilidade;Diversos;Outros Diversos;Outros;Reposição;0.441061879;0.451061879
+rentabilidade;Diversos;Separador de Agua/ Oleo Fixo;Diversos;Reposição;0.441061879;0.451061879
+rentabilidade;Diversos;Sonda Portátil;Acessório;Reposição;0.441061879;0.451061879
+rentabilidade;Hidrologia;Alimentação Eletrico;Sistema;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Alimentação Solar;Sistema;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Amostrador Diversos;Acessório;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Amostrador Diversos;Acessório;Reposição;0.363247337;0.373247337
+rentabilidade;Hidrologia;Amostrador Diversos;Anel;Reposição;0.357313616;0.367313616
+rentabilidade;Hidrologia;Amostrador Diversos;Cabo;Reposição;0.357313616;0.367313616
+rentabilidade;Hidrologia;Amostrador Diversos;Filtro;Insumo;0.3647;0.3747
+rentabilidade;Hidrologia;Amostrador Diversos;Sensor;Reposição;0.357313616;0.367313616
+rentabilidade;Hidrologia;Amostrador Diversos;Software;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Amostrador Não Refrigerado Portátil;Acessório;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Amostrador Não Refrigerado Portátil;Amostrador;Produto;0.31257662;0.32257662
+rentabilidade;Hidrologia;Amostrador Refrigerado Fixo;Amostrador;Produto;0.272843115;0.282843115
+rentabilidade;Hidrologia;Amostrador Refrigerado Portátil;Amostrador;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Amostragem Diversos;Sistema;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Analisador Diversos;EmeClean;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Analisador Diversos;Reagente;Insumo;0.357313616;0.367313616
+rentabilidade;Hidrologia;Analisador Fixo;Transmissor;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Analisador Microbiologico;GeneCount;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Analisador Microbiologico;Reagente;Insumo;0.357313616;0.367313616
+rentabilidade;Hidrologia;Calibração Diversos;Solução;Insumo;0.338034408;0.348034408
+rentabilidade;Hidrologia;Colorimetro Portátil;Solução;Insumo;0.357313616;0.367313616
+rentabilidade;Hidrologia;Diversos Diversos;Acessório;Insumo;0.357313616;0.367313616
+rentabilidade;Hidrologia;Diversos Diversos;Calibração;Serviço;0.2946;0.3046
+rentabilidade;Hidrologia;Diversos Diversos;Hora Técnica;Serviço;0.357313616;0.367313616
+rentabilidade;Hidrologia;Extração Diversos;Sistema;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Fotometro Portátil;9500;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Fotometro Portátil;9800;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Fotometro Portátil;Reagente;Insumo;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Nivel Diversos;Acessório;Reposição;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Nivel Fixo;Transmissor;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão Argonaut SL;Argonaut;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão Fixo;4000 series Isco;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão Fixo;Acessório;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão Fixo;ADP;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão Fixo;DURATRACKER;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão Fixo;IQ PIPE;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão Fixo;IQ PLUS;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão Fixo;IQ Standard;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão Fixo;MAGFLUX;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão Fixo;Sensor;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão Fixo;Signature;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão Fixo;Sistema;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão FlowTracker;FlowTracker;Produto;0.4409;0.4509
+rentabilidade;Hidrologia;Medidor de Vazão Portátil;Acessório;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão Portátil;Acessório;Reposição;0.376107308;0.386107308
+rentabilidade;Hidrologia;Medidor de Vazão Portátil;Anel;Reposição;0.0277;0.0377
+rentabilidade;Hidrologia;Medidor de Vazão Portátil;Argonaut;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão Portátil;Cabo;Reposição;0.367699238;0.377699238
+rentabilidade;Hidrologia;Medidor de Vazão Portátil;DataLogger;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão Portátil;Embarcação;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão Portátil;Filtro;Insumo;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão Portátil;M9;Reposição;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão Portátil;MicroADV;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão Portátil;MV02;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão Portátil;MV03;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão Portátil;PCM;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão Portátil;Sensor;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão Portátil;Sensor;Reposição;0.3686;0.3786
+rentabilidade;Hidrologia;Medidor de Vazão Portátil;Sistema;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão RS5;Embarcação;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão RS5;RS5;Produto;0.3978;0.4078
+rentabilidade;Hidrologia;Medidor de Vazão RS6;RS6;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão RS7;RS7;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão RS-M10;M10;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão RS-M11;M11;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão RS-M9;Acessório;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão RS-M9;ADCP;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão RS-M9;Embarcação;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão RS-M9;M9;Produto;0.344669486;0.354669486
+rentabilidade;Hidrologia;Medidor de Vazão RS-M9;PCM;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão RS-M9;Treinamento;Serviço;0.357313616;0.367313616
+rentabilidade;Hidrologia;Medidor de Vazão RS-S5;ADCP;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Metereologia Fixo;Acessório;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Metereologia Fixo;Acessório;Reposição;0.357313616;0.367313616
+rentabilidade;Hidrologia;Metereologia Fixo;Cabo;Reposição;0.357313616;0.367313616
+rentabilidade;Hidrologia;Metereologia Fixo;DataLogger;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Metereologia Fixo;Estação;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Metereologia Fixo;Estrutura;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Metereologia Fixo;Moden;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Metereologia Fixo;Sensor;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Metereologia Fixo;Sistema;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Metereologia Fixo;Transdutor;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Metereologia Fixo;Transmissor;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Monitoramento Fixo;Acessório;Produto;0.875826559;0.885826559
+rentabilidade;Hidrologia;Monitoramento Fixo;Acessório;Reposição;0.357313616;0.367313616
+rentabilidade;Hidrologia;Monitoramento Fixo;Cabo;Reposição;0.6856;0.6956
+rentabilidade;Hidrologia;Monitoramento Fixo;Estação;Produto;0.493711405;0.503711405
+rentabilidade;Hidrologia;Monitoramento Fixo;Estação;Reposição;0.357313616;0.367313616
+rentabilidade;Hidrologia;Monitoramento Fixo;Estrutura;Produto;0.9591;0.9691
+rentabilidade;Hidrologia;Monitoramento Fixo;Hora Técnica;Serviço;0.357313616;0.367313616
+rentabilidade;Hidrologia;Monitoramento Fixo;Instalação;Serviço;0.357313616;0.367313616
+rentabilidade;Hidrologia;Monitoramento Fixo;Painel Solar;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Monitoramento Fixo;Sensor;Reposição;0.357313616;0.367313616
+rentabilidade;Hidrologia;Monitoramento Fixo;Sistema;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Monitoramento Fixo;Transdutor;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Monitoramento Fixo;Transmissor;Serviço;0.357313616;0.367313616
+rentabilidade;Hidrologia;Outros Diversos;Acessório;Produto;0.3273;0.3373
+rentabilidade;Hidrologia;Painel controlador Diversos;Acessório;Reposição;0.357313616;0.367313616
+rentabilidade;Hidrologia;Painel controlador Diversos;Cabo;Reposição;0.3536;0.3636
+rentabilidade;Hidrologia;Painel controlador Diversos;Sensor;Reposição;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Portátil;Acessório;Reposição;0.337592929;0.347592929
+rentabilidade;Hidrologia;Sonda Portátil;Anel;Reposição;0.43954705;0.44954705
+rentabilidade;Hidrologia;Sonda Portátil;Cabo;Reposição;0.423687616;0.433687616
+rentabilidade;Hidrologia;Sonda Portátil;Castaway;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Portátil;ProDss;Reposição;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Portátil;Sensor;Reposição;0.360547233;0.370547233
+rentabilidade;Hidrologia;Sonda Portátil ;Acessório;Reposição;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie 6;6600;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie 6;Maleta;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie 6;SERIE6;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie EcoSense;Display;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie EcoSense;DO200;Produto;0.2251;0.2351
+rentabilidade;Hidrologia;Sonda Serie EcoSense;EC300;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie EcoSense;EC30A;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie EcoSense;Maleta;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie EcoSense;ODO200;Produto;0.354079998;0.364079998
+rentabilidade;Hidrologia;Sonda Serie EcoSense;PH100;Produto;0.472;0.482
+rentabilidade;Hidrologia;Sonda Serie EXO;Acessório;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie EXO;EXO;Produto;0.278952363;0.288952363
+rentabilidade;Hidrologia;Sonda Serie EXO;EXO (Completa);Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie EXO;Maleta;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie EXO;Sensor;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie IQ SensorNet;Acessório;Reposição;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie IQ SensorNet;Sensor;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie Lab & Field;550;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie Lab & Field;556;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie Lab & Field;DBO;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie Lab & Field;Maleta;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie Lab & Field;YSI30;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie Lab & Field;YSI3100;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie Lab & Field;YSI3200;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie Lab & Field;YSI5000;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie Lab & Field;YSI5100;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie Lab & Field;YSI55;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie Lab & Field;YSI60;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie Lab & Field;YSI85;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie MultiLab;MULTILAB;Produto;0.349020087;0.359020087
+rentabilidade;Hidrologia;Sonda Serie ODO-RTU;Sonda RTU;Produto;0.307509696;0.317509696
+rentabilidade;Hidrologia;Sonda Serie Pro;Clean Cell Pro;Produto;0.7361;0.7461
+rentabilidade;Hidrologia;Sonda Serie Pro;Maleta;Produto;0.2814;0.2914
+rentabilidade;Hidrologia;Sonda Serie Pro;PRO10;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie Pro;PRO1020;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie Pro;PRO1030;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie Pro;PRO20;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie Pro;PRO2030;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie Pro;PRO30;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie Pro;Pro Plus;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie Pro;Pro Quattro;Produto;0.316807682;0.326807682
+rentabilidade;Hidrologia;Sonda Serie Pro;Software;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie ProDigital;PRODO;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie ProDigital;ProDss;Produto;0.18297812;0.19297812
+rentabilidade;Hidrologia;Sonda Serie ProDigital;PROSOLO;Produto;0.277797738;0.287797738
+rentabilidade;Hidrologia;Sonda Serie ProDigital;PROSWAP;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Sonda Serie TruLab;TruLab;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Telemetria Fixo;Acessório;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Telemetria Fixo;Cabo;Reposição;0.357313616;0.367313616
+rentabilidade;Hidrologia;Telemetria Fixo;DataLogger;Produto;0.507284759;0.517284759
+rentabilidade;Hidrologia;Telemetria Fixo;Estação;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Telemetria Fixo;Estrutura;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Telemetria Fixo;Moden;Produto;0.7962;0.8062
+rentabilidade;Hidrologia;Telemetria Fixo;Painel;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Telemetria Fixo;Sensor;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Telemetria Fixo;Sistema;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Telemetria Fixo;Transdutor;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;Transmissão Fixo;Sistema;Produto;0.357313616;0.367313616
+rentabilidade;Hidrologia;UMR Fixo;Instalação;Produto;0.357313616;0.367313616
+rentabilidade;Inativo;Inativo Inativo;Inativo;Inativo;0.6041;0.6141
+rentabilidade;Locação;Locação Diversos;Locação;Serviço;0.2;0.21
+rentabilidade;Remediação;Absorvedores;Absorvedores ;Insumo;0.344;0.354
+rentabilidade;Remediação;Absorvedores;Manta OWS;Reposição;0.344;0.354
+rentabilidade;Remediação;Amostragem Diversos;Acessório;Produto;0.344;0.354
+rentabilidade;Remediação;Amostragem Diversos;Amostrador;Produto;0.3655;0.3755
+rentabilidade;Remediação;Amostragem Diversos;Analisador;Produto;0.344;0.354
+rentabilidade;Remediação;Amostragem Diversos;Bomba;Produto;0.344;0.354
+rentabilidade;Remediação;Amostragem Diversos;Filtro;Insumo;0.045512158;0.055512158
+rentabilidade;Remediação;Amostragem Diversos;Sensor;Produto;0.344;0.354
+rentabilidade;Remediação;Amostragem Diversos;SHAKETEST;Produto;0.3622;0.3722
+rentabilidade;Remediação;Amostragem Diversos;Sistema;Produto;0.344;0.354
+rentabilidade;Remediação;Amostragem Diversos;TadLar Bag;Produto;0.198029953;0.208029953
+rentabilidade;Remediação;Analisador Diversos;Acessório;Produto;0.344;0.354
+rentabilidade;Remediação;Analisador Diversos;Acessório;Reposição;0.393127302;0.403127302
+rentabilidade;Remediação;Analisador Diversos;Anel;Reposição;0.344;0.354
+rentabilidade;Remediação;Analisador Diversos;Cabo;Reposição;0.414;0.424
+rentabilidade;Remediação;Analisador Diversos;Filtro;Insumo;0.382129049;0.392129049
+rentabilidade;Remediação;Analisador Diversos;Sensor;Reposição;0.385763378;0.395763378
+rentabilidade;Remediação;Analisador Fixo;Acessório;Produto;0.344;0.354
+rentabilidade;Remediação;Analisador Fixo;Biogas;Produto;0.344;0.354
+rentabilidade;Remediação;Analisador Fixo;GT;Produto;0.344;0.354
+rentabilidade;Remediação;Analisador Fixo;INNOVA;Produto;0.344;0.354
+rentabilidade;Remediação;Analisador Fixo;Midas;Produto;0.344;0.354
+rentabilidade;Remediação;Analisador Fixo;Painel de Controle;Produto;0.344;0.354
+rentabilidade;Remediação;Analisador Fixo;Sistema;Produto;0.344;0.354
+rentabilidade;Remediação;Analisador Fixo;TVOC;Produto;0.344;0.354
+rentabilidade;Remediação;Analisador Portátil;Acessório;Produto;0.344;0.354
+rentabilidade;Remediação;Analisador Portátil;Estação;Produto;0.344;0.354
+rentabilidade;Remediação;Analisador Portátil;G100;Produto;0.344;0.354
+rentabilidade;Remediação;Analisador Portátil;GASCARD;Produto;0.344;0.354
+rentabilidade;Remediação;Analisador Portátil;Gascheck;Produto;0.344;0.354
+rentabilidade;Remediação;Analisador Portátil;GEM;Produto;0.307212785;0.317212785
+rentabilidade;Remediação;Analisador Portátil;Guardian;Produto;0.344;0.354
+rentabilidade;Remediação;Analisador Portátil;Metalyser;Produto;0.344;0.354
+rentabilidade;Remediação;Analisador Portátil;METREX;Produto;0.73;0.74
+rentabilidade;Remediação;Analisador Portátil;MIRAN;Produto;0.344;0.354
+rentabilidade;Remediação;Analisador Portátil;PDR1500;Produto;0.344;0.354
+rentabilidade;Remediação;Analisador Portátil;Tiger;Produto;0.2894;0.2994
+rentabilidade;Remediação;Analisador Portátil;TVA;Produto;0.344;0.354
+rentabilidade;Remediação;Aterramento Diversos;Sistema;Produto;0.344;0.354
+rentabilidade;Remediação;BOMBA DE AMOSTRAGEM Fixo;Bomba;Produto;0.344;0.354
+rentabilidade;Remediação;BOMBA DE AMOSTRAGEM Fixo;SAMPLEASE;Produto;0.344;0.354
+rentabilidade;Remediação;BOMBA DE AMOSTRAGEM Fixo;Sample Pro;Produto;0.344;0.354
+rentabilidade;Remediação;Bombeamento Fixo;Sistema;Produto;0.344;0.354
+rentabilidade;Remediação;Caixa Separadora Fixo;Acessório;Produto;0.344;0.354
+rentabilidade;Remediação;Caixa Separadora Fixo;OWS;Produto;0.660609459;0.670609459
+rentabilidade;Remediação;Calibração Diversos;Cilindro;Insumo;0.344;0.354
+rentabilidade;Remediação;Calibração Diversos;Solução;Insumo;0.344;0.354
+rentabilidade;Remediação;Cromatógrafo Portátil;Acessório;Produto;0.43544495;0.44544495
+rentabilidade;Remediação;Cromatógrafo Portátil;Acessório;Reposição;0.1607;0.1707
+rentabilidade;Remediação;Cromatógrafo Portátil;FROG;Produto;0.344;0.354
+rentabilidade;Remediação;Cromatógrafo Portátil;Sensor;Produto;0.5246;0.5346
+rentabilidade;Remediação;Detector Portátil;EAGLE;Produto;0.344;0.354
+rentabilidade;Remediação;Diversos Diversos;Calibração;Serviço;0.344;0.354
+rentabilidade;Remediação;Diversos Diversos;Diversos;Insumo;0.344;0.354
+rentabilidade;Remediação;Diversos Diversos;Ferramental;Insumo;0.344;0.354
+rentabilidade;Remediação;Diversos Diversos;Hora Técnica;Serviço;0.344;0.354
+rentabilidade;Remediação;Elevador de Liquidos Fixo;Acessório;Insumo;0.344;0.354
+rentabilidade;Remediação;Elevador de Liquidos Fixo;Acessório;Produto;0.344;0.354
+rentabilidade;Remediação;Elevador de Liquidos Fixo;Acessório;Reposição;0.342273777;0.352273777
+rentabilidade;Remediação;Elevador de Liquidos Fixo;Anel;Reposição;0.403753805;0.413753805
+rentabilidade;Remediação;Elevador de Liquidos Fixo;Auto Pump;Produto;0.420614074;0.430614074
+rentabilidade;Remediação;Elevador de Liquidos Fixo;Bomba;Produto;0.344;0.354
+rentabilidade;Remediação;Elevador de Liquidos Fixo;CONTADOR DE CICLOS;Produto;0.317783681;0.327783681
+rentabilidade;Remediação;Elevador de Liquidos Fixo;Filtro;Insumo;0.344;0.354
+rentabilidade;Remediação;Elevador de Liquidos Fixo;GENIE;Produto;0.2576;0.2676
+rentabilidade;Remediação;Elevador de Liquidos Fixo;NDP - 25 BAN;Produto;0.344;0.354
+rentabilidade;Remediação;Elevador de Liquidos Fixo;Numatic;Produto;0.344;0.354
+rentabilidade;Remediação;Elevador de Liquidos Fixo;Sensor;Reposição;0.3446;0.3546
+rentabilidade;Remediação;Elevador de Liquidos Fixo;Sistema;Produto;0.344;0.354
+rentabilidade;Remediação;Elevador de Liquidos Fixo;SOS-4-003;Produto;0.344;0.354
+rentabilidade;Remediação;Filtração Diversos;Sistema;Produto;0.344;0.354
+rentabilidade;Remediação;Medidor de Nivel Diversos;Acessório;Reposição;0.316193647;0.326193647
+rentabilidade;Remediação;Medidor de Nivel Diversos;Anel;Reposição;0.344;0.354
+rentabilidade;Remediação;Medidor de Nivel Diversos;Cabo;Reposição;0.348308305;0.358308305
+rentabilidade;Remediação;Medidor de Nivel Diversos;Controlador;Produto;0.344;0.354
+rentabilidade;Remediação;Medidor de Nivel Diversos;Sensor;Reposição;0.344;0.354
+rentabilidade;Remediação;Medidor de Nivel Fixo;DIPPERLOG;Produto;0.3756;0.3856
+rentabilidade;Remediação;Medidor de Nivel Fixo;DIPPER TOUGH;Produto;0.344;0.354
+rentabilidade;Remediação;Medidor de Nivel Portátil;CONDUCTIVITY PLUS;Produto;0.344;0.354
+rentabilidade;Remediação;Medidor de Nivel Portátil;DIPPER-T;Produto;0.303438949;0.313438949
+rentabilidade;Remediação;Medidor de Nivel Portátil;DIPPER TOUGH;Produto;0.344;0.354
+rentabilidade;Remediação;Medidor de Nivel Portátil;H.OIL;Produto;0.25855848;0.26855848
+rentabilidade;Remediação;Medidor de Nivel Portátil;MP30;Produto;0.344;0.354
+rentabilidade;Remediação;Medidor de Nivel Portátil;SKINNY DIPPER;Produto;0.344;0.354
+rentabilidade;Remediação;Medidor de Nivel Portátil;SM.OIL;Produto;0.344;0.354
+rentabilidade;Remediação;Medidor de Nivel Portátil;WATER TAPE;Produto;0.1811;0.1911
+rentabilidade;Remediação;Medidor de Nivel Portátil;WellTape;Produto;0.344;0.354
+rentabilidade;Remediação;MODFLOW Diversos;Sistema;Produto;0.344;0.354
+rentabilidade;Remediação;Outros Diversos;Acessório;Produto;0.344;0.354
+rentabilidade;Remediação;Outros Diversos;Acessório;Reposição;0.276645493;0.286645493
+rentabilidade;Remediação;Outros Diversos;Diversos;Insumo;0.344;0.354
+rentabilidade;Remediação;Outros Diversos;Outros;Produto;0.344;0.354
+rentabilidade;Remediação;Outros Diversos;REMOX;Produto;0.344;0.354
+rentabilidade;Remediação;Outros Diversos;Sistema;Produto;0.344;0.354
+rentabilidade;Remediação;Outros Diversos;Vapor pin/ Clean;Produto;0.344;0.354
+rentabilidade;Remediação;Painel controlador Diversos;Acessório;Reposição;0.344;0.354
+rentabilidade;Remediação;Painel controlador Diversos;Anel;Reposição;0.344;0.354
+rentabilidade;Remediação;Painel controlador Diversos;Filtro;Insumo;0.344;0.354
+rentabilidade;Remediação;Painel controlador Diversos;SC;Produto;0.344;0.354
+rentabilidade;Remediação;Painel controlador Fixo;Acessório;Reposição;0.1026;0.1126
+rentabilidade;Remediação;Painel controlador Fixo;C100;Produto;0.344;0.354
+rentabilidade;Remediação;Painel controlador Fixo;L360;Produto;0.344;0.354
+rentabilidade;Remediação;Painel controlador Portátil;Acessório;Reposição;0.353517258;0.363517258
+rentabilidade;Remediação;Painel controlador Portátil;Anel;Reposição;0.344;0.354
+rentabilidade;Remediação;Painel controlador Portátil;Filtro;Insumo;0.344;0.354
+rentabilidade;Remediação;Painel controlador Portátil;MP10;Produto;0.297501157;0.307501157
+rentabilidade;Remediação;Painel controlador Portátil;MP15;Produto;0.344;0.354
+rentabilidade;Remediação;Painel controlador Portátil;MP50;Produto;0.344;0.354
+rentabilidade;Remediação;Separador de Agua/ Oleo Fixo;Acessório;Reposição;0.249915763;0.259915763
+rentabilidade;Remediação;Separador de Agua/ Oleo Fixo;Anel;Reposição;0.344;0.354
+rentabilidade;Remediação;Separador de Agua/ Oleo Fixo;Diversos;Insumo;0.344;0.354
+rentabilidade;Remediação;Separador de Agua/ Oleo Fixo;Filtro;Insumo;0.344;0.354
+rentabilidade;Remediação;Separador de Agua/ Oleo Fixo;Manning;Reposição;0.344;0.354
+rentabilidade;Remediação;Separador de Agua/ Oleo Fixo;Manta;Reposição;0.8119;0.8219
+rentabilidade;Remediação;Separador de Agua/ Oleo Fixo;Sistema;Produto;0.344;0.354
+rentabilidade;Remediação;Separador de Agua/ Oleo Fixo;Skimmer;Produto;0.286015153;0.296015153
+rentabilidade;Remediação;Sonda Portátil;Acessório;Reposição;0.344;0.354
+rentabilidade;Remediação;Sonda Portátil;MP20;Produto;0.344;0.354
+rentabilidade;Remediação;Telemetria Fixo;Bomba;Produto;0.344;0.354
+rentabilidade;Remediação;TERMAL Fixo;TERMAL;Serviço;0.344;0.354
+rentabilidade;Remediação;Tratamento Diversos;Quimico;Produto;0.344;0.354
+rentabilidade;Remediação;Tratamento Fixo;Acessório;Produto;0.344;0.354
+rentabilidade;Remediação;Tratamento Fixo;Air Striper;Produto;0.344;0.354
+rentabilidade;Remediação;Tratamento Fixo;Anel;Reposição;0.344;0.354
+rentabilidade;Remediação;Tratamento Fixo;Bomba;Produto;0.344;0.354
+rentabilidade;Remediação;Tratamento Fixo;Painel de Controle;Produto;0.344;0.354
+rentabilidade;Remediação;Tratamento Fixo;Sistema;Produto;0.344;0.354
+rentabilidade;Remediação;UMR Fixo;Acessório;Produto;0.344;0.354
+rentabilidade;Remediação;UMR Fixo;Reforma;Serviço;0.344;0.354
+rentabilidade;Remediação;UMR Fixo;UMR;Produto;0.344;0.354
+rentabilidade;Remediaç��o;Elevador de Liquidos Fixo;Acessório;Reposição;0.2;0.21
+rentabilidade;Saneamento;Analisador Fixo;3017M;Produto;0.446897446;0.456897446
+rentabilidade;Saneamento;Analisador Microbiologico;GeneCount;Produto;0.446897446;0.456897446
+rentabilidade;Saneamento;Analisador Microbiologico;Luminometro;Produto;0.446897446;0.456897446
+rentabilidade;Saneamento;Analisador Microbiologico;Reagente;Insumo;0.423994892;0.433994892
+rentabilidade;Saneamento;Sonda Serie IQ SensorNet;Controlador;Produto;0.4698;0.4798
+rentabilidade;SSO;Amostragem Diversos;CALIBRADOR;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Analisador Fixo;Acessório;Reposição;0.2052;0.2152
+rentabilidade;SSO;Analisador Fixo;Falco;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Analisador Fixo;Filtro;Insumo;0.5858;0.5958
+rentabilidade;SSO;Analisador Fixo;Sensor;Reposição;0.323014856;0.333014856
+rentabilidade;SSO;Analisador Fixo;Titan;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Analisador Portátil;Acessório;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Analisador Portátil;Acessório;Reposição;0.342766072;0.352766072
+rentabilidade;SSO;Analisador Portátil;Anel;Reposição;0.323014856;0.333014856
+rentabilidade;SSO;Analisador Portátil;BW ULTRA;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Analisador Portátil;Filtro;Insumo;0.323014856;0.333014856
+rentabilidade;SSO;Analisador Portátil;Gascheck;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Analisador Portátil;Panther;Produto;0.3036;0.3136
+rentabilidade;SSO;Analisador Portátil;Sensor;Reposição;0.323014856;0.333014856
+rentabilidade;SSO;BOMBA DE AMOSTRAGEM Portátil;Acessório;Produto;0.323014856;0.333014856
+rentabilidade;SSO;BOMBA DE AMOSTRAGEM Portátil;Acessório;Reposição;0.323014856;0.333014856
+rentabilidade;SSO;BOMBA DE AMOSTRAGEM Portátil;Apex;Produto;0.323014856;0.333014856
+rentabilidade;SSO;BOMBA DE AMOSTRAGEM Portátil;Filtro;Insumo;0.323014856;0.333014856
+rentabilidade;SSO;Calibração Diversos;Acessório;Reposição;0.323014856;0.333014856
+rentabilidade;SSO;Calibração Diversos;Cilindro;Insumo;0.460258315;0.470258315
+rentabilidade;SSO;Calibração Diversos;Estação;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Calibração Diversos;Solução;Insumo;0.323014856;0.333014856
+rentabilidade;SSO;Decibelimetro Portátil;Acessório;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Decibelimetro Portátil;Acessório;Reposição;0.323014856;0.333014856
+rentabilidade;SSO;Decibelimetro Portátil;Decibelimetro;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector de Incendio Fixo;Acessório;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector de Incendio Fixo;FIREPRO;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector de Incendio Fixo;GATEWAY;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector de Incendio Fixo;Sensor;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector de Incendio Fixo;Termovelocimétrico;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Diversos;Acessório;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Diversos;Acessório;Reposição;0.305112699;0.315112699
+rentabilidade;SSO;Detector Diversos;Filtro;Insumo;0.323014856;0.333014856
+rentabilidade;SSO;Detector Diversos;MICRO 5;Reposição;0.323014856;0.333014856
+rentabilidade;SSO;Detector Diversos;MicroClip;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Diversos;Rigrat;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Diversos;Sensor;Reposição;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;301C;Produto;0.1769;0.1869
+rentabilidade;SSO;Detector Fixo;Acessório;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;Acessório;Reposição;0.384088458;0.394088458
+rentabilidade;SSO;Detector Fixo;Airscan;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;CEX300;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;CTX 300;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;E3 Point;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;E3SM;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;Extreme;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;Filtro;Insumo;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;FS20X;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;FS24X;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;FSL100;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;Gaspoint;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;HA20;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;HA40;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;HA71;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;HA72;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;IAQ POINT 2;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;ITRANS;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;Manning;Produto;0.246986947;0.256986947
+rentabilidade;SSO;Detector Fixo;Midas;Produto;0.312382061;0.322382061
+rentabilidade;SSO;Detector Fixo;MKII;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;OLCT;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;Optima Plus;Produto;0.382941468;0.392941468
+rentabilidade;SSO;Detector Fixo;Painel de Controle;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;Raeguard;Produto;0.335671306;0.345671306
+rentabilidade;SSO;Detector Fixo;SEARCHLINE;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;Sensor;Reposição;0.286606566;0.296606566
+rentabilidade;SSO;Detector Fixo;TOP TRACK;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;TOUCHPOINT;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;TVOC;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;Vent Line;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;XCD;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;XCL;Produto;0.487688366;0.497688366
+rentabilidade;SSO;Detector Fixo;XNX;Produto;0.300077554;0.310077554
+rentabilidade;SSO;Detector Fixo;XPV;Produto;0.326855201;0.336855201
+rentabilidade;SSO;Detector Fixo;XRL;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Fixo;Zareba;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;Acessório;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;Acessório;Reposição;0.395588983;0.405588983
+rentabilidade;SSO;Detector Portátil;AIR AWARE;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;Anel;Reposição;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;BADGE PLUS;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;BM25;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;BW Clip;Produto;0.2827;0.2927
+rentabilidade;SSO;Detector Portátil;BW Quattro;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;BW SOLO;Produto;0.34489879;0.35489879
+rentabilidade;SSO;Detector Portátil;chempro;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;CUB;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;EC-P2;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;Estação;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;Filtro;Insumo;0.430145708;0.440145708
+rentabilidade;SSO;Detector Portátil;GT;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;IMPACT PRO;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;Intellidox;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;Leakmate;Produto;0.3055;0.3155
+rentabilidade;SSO;Detector Portátil;Max XT;Produto;0.136769165;0.146769165
+rentabilidade;SSO;Detector Portátil;MGD;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;MICRO 4;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;MICRO 5;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;MicroClip;Produto;0.160535844;0.170535844
+rentabilidade;SSO;Detector Portátil;MicroDock;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;MIRAN;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;MVI;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;MX4;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;MX6;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;PHD6;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;Raeguard;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;RIKEN KEIKE;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;Sensor;Reposição;0.34065886;0.35065886
+rentabilidade;SSO;Detector Portátil;SHARPEYE;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;SPM FLEX;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Detector Portátil;TX1;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Diversos Diversos;Calibração;Serviço;0.323014856;0.333014856
+rentabilidade;SSO;Diversos Diversos;Diversos;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Diversos Diversos;Hora Técnica;Serviço;0.323014856;0.333014856
+rentabilidade;SSO;Diversos Portátil;Diversos;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Diversos Portátil;Microdust;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Dosimetro Portátil;Acessório;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Dosimetro Portátil;Dosimetro;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Elevador de Liquidos Fixo;Acessório;Reposição;0.323014856;0.333014856
+rentabilidade;SSO;Medidor de Vazão Portátil;Acessório;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Medidor de Vazão Portátil;SAGE RIO;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Monitoramento Portátil;Sistema;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Outros Diversos;Acessório;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Outros Diversos;Acessório;Reposição;0.323014856;0.333014856
+rentabilidade;SSO;Outros Diversos;Outros;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Outros Fixo;Acessório;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Outros Fixo;Outros;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Painel controlador Diversos;CLEANVIEWERGAS;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Painel controlador Fixo;Acessório;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Painel controlador Fixo;Acessório;Reposição;0.323014856;0.333014856
+rentabilidade;SSO;Painel controlador Fixo;WX16;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Painel controlador Fixo;WX4;Produto;0.323014856;0.333014856
+rentabilidade;SSO;Painel controlador Fixo;WX64;Produto;0.323014856;0.333014856

@@ -1,0 +1,124 @@
+# PLANO DE REFATORAÇÃO DO ROBÔ DE CÁLCULO DE COMISSÕES
+
+## 1. Visão Geral e Objetivos
+
+### 1.1. Problema Identificado
+O robô de cálculo de comissões foi desenvolvido em um único arquivo (`calculo_comissoes.py`), centralizando toda a lógica de negócio, carregamento de dados, cálculos complexos e geração de saídas. Essa abordagem monolítica resultou em um código de alta complexidade, acoplado e de difícil manutenção, comumente referido como "código spaghetti". A depuração de erros e a implementação de novas regras tornaram-se processos lentos e arriscados.
+
+### 1.2. Objetivo Principal
+Refatorar completamente o projeto, migrando de uma arquitetura monolítica para uma **arquitetura modular e orientada a objetos**. O pilar desta refatoração é o princípio de **Separação de Responsabilidades (Separation of Concerns)**, onde cada componente do sistema terá uma única e bem definida responsabilidade.
+
+### 1.3. Benefícios Esperados
+- **Clareza e Legibilidade:** O código será mais fácil de entender, com cada lógica isolada em seu próprio módulo.
+- **Facilidade de Manutenção:** Corrigir um bug ou alterar uma regra de cálculo não exigirá a análise de milhares de linhas de código não relacionadas.
+- **Testabilidade:** Módulos independentes podem ser testados de forma isolada, garantindo maior confiabilidade.
+- **Reusabilidade e Escalabilidade:** Componentes como o calculador de Fator de Correção (FC) ou o gerador de relatórios poderão ser reutilizados e expandidos facilmente.
+
+---
+
+## 2. Nova Estrutura de Arquivos e Pastas Proposta
+
+A estrutura atual, com scripts na raiz, será substituída por uma organização focada em funcionalidades dentro de um diretório `src/`.
+
+```
+PROJETO_COMISSOES_V2/
+│
+├── config/                  # (Permanece) Armazena planilhas de regras e parâmetros.
+│   └── REGRAS_COMISSOES.xlsx  # SUGESTÃO: Unificar todos os arquivos CSV de config aqui.
+│
+├── dados_entrada/           # (Permanece) Armazena os dados brutos mensais.
+│
+├── dados_saida/             # (Permanece) Destino dos relatórios (Excel, PDF) gerados.
+│
+├── src/                     # <--- NOVA PASTA: Contém todo o código-fonte da aplicação.
+│   │
+│   ├── core/                # Módulos com a lógica de negócio principal ("coração" do sistema).
+│   │   ├── fc_calculator.py       # Módulo dedicado EXCLUSIVAMENTE ao cálculo do Fator de Correção (FC).
+│   │   ├── commission_calculator.py # Módulo para o cálculo de comissões (Faturamento e Recebimento).
+│   │   └── state_manager.py       # Gerencia o estado dos processos (leitura, atualização, escrita).
+│   │
+│   ├── io/                  # Módulos responsáveis por entrada (Input) e saída (Output) de dados.
+│   │   ├── data_loader.py         # Responsável por carregar os dados de entrada (Faturados, Análise Financeira, etc.).
+│   │   ├── config_loader.py       # Responsável por carregar TODAS as planilhas de configuração.
+│   │   └── report_generator.py    # Responsável por gerar os arquivos de saída (Excel e PDF).
+│   │
+│   ├── utils/               # Funções auxiliares, classes e utilitários genéricos.
+│   │   ├── normalization.py       # Funções de normalização de texto, datas, etc.
+│   │   ├── styling.py             # Funções para estilização da planilha Excel de saída.
+│   │   └── logging.py             # Módulo para um sistema de log e validação mais robusto.
+│   │
+│   └── main.py              # Ponto de entrada da aplicação. Orquestra a execução dos módulos.
+│
+└── PLANO_REFATORACAO.txt    # Este arquivo de documentação.
+```
+
+---
+
+## 3. Mapeamento de Dados e Fontes de Entrada
+
+Esta seção detalha a origem de cada dado utilizado nos cálculos.
+
+### 3.1. Cálculo de Comissão por FATURAMENTO
+
+A fórmula base é: `Comissão Final = (Faturamento * Taxa * PE) * FC`
+
+| Componente | O que significa? | Arquivo/Aba de Origem | Coluna(s) Relevante(s) |
+| :--- | :--- | :--- | :--- |
+| **Faturamento do Item** | Valor da venda do item. | `dados_entrada/Faturados*.xlsx` | `Valor Realizado` |
+| **Taxa de Rateio** | Taxa de comissão base. | `config/CONFIG_COMISSAO.csv` | `taxa_rateio_maximo_pct` |
+| **Percentual de Elegibilidade (PE)** | "Fatia" da comissão para o cargo. | `config/CONFIG_COMISSAO.csv` | `fatia_cargo_pct` |
+| **Colaboradores** | Pessoas envolvidas na venda. | `Faturados*.xlsx` | `Consultor Interno`, `Representante-pedido` |
+| **Gestores** | Gestores associados ao contexto. | `config/ATRIBUICOES.csv` | Todas (mapeia gestor por Linha, Grupo, etc.) |
+
+### 3.2. Cálculo do Fator de Correção (FC)
+
+O FC é uma soma ponderada do atingimento de metas: `FC = Σ (Atingimento_Meta * Peso_Meta)`
+
+| Componente | O que significa? | Arquivo/Aba de Origem | Coluna(s) Relevante(s) |
+| :--- | :--- | :--- | :--- |
+| **Pesos das Metas** | Importância de cada meta por cargo. | `config/PESOS_METAS.csv` | `faturamento_linha`, `conversao_linha`, etc. |
+| **CAPs (Teto)** | Limites para o atingimento e o FC. | `config/PARAMS.csv` | `cap_atingimento_max`, `cap_fc_max` |
+| **Metas de Aplicação** | Metas por linha/tipo de mercadoria. | `config/METAS_APLICACAO.csv` | `meta` |
+| **Metas Individuais** | Metas por colaborador. | `config/METAS_INDIVIDUAIS.csv` | `meta` |
+| **Metas de Rentabilidade** | Metas de rentabilidade por contexto. | `config/META_RENTABILIDADE.csv` | `meta_rentabilidade_pct` |
+| **Realizado Faturamento** | Soma dos valores faturados. | `dados_entrada/Faturados*.xlsx` | `Valor Realizado` |
+| **Realizado Conversão** | Soma dos valores orçados. | `dados_entrada/Conversões*.xlsx` | `Valor Orçado` |
+| **Realizado Rentabilidade** | Rentabilidade efetiva. | `dados_entrada/Rentabilidade_Realizada_*.xlsx` | `rentabilidade_realizada_pct` |
+
+### 3.3. Cálculo de Comissão por RECEBIMENTO
+
+| Componente | O que significa? | Arquivo/Aba de Origem | Coluna(s) Relevante(s) |
+| :--- | :--- | :--- | :--- |
+| **Pagamentos** | Adiantamentos e parcelas. | `dados_entrada/Análise Financeira.xlsx` | `Documento`, `Valor` |
+| **Estado dos Processos** | Dados persistidos de TCMP/FCMP. | `Estado_Processos_Recebimento.xlsx` | Todas |
+
+---
+
+## 4. Plano de Execução da Refatoração (Fases)
+
+A migração será feita de forma incremental para minimizar riscos.
+
+- **Fase 1: Preparação e Estruturação**
+    1.  **Backup:** Criar uma cópia de segurança completa do projeto.
+    2.  **Criação da Estrutura:** Criar a estrutura de pastas e os arquivos `.py` vazios conforme a seção 2.
+    3.  **Unificação das Configurações (Recomendado):** Migrar todos os arquivos `.csv` da pasta `config/` para abas de um único arquivo `config/REGRAS_COMISSOES.xlsx`.
+
+- **Fase 2: Migração Incremental do Código**
+    1.  **Migrar Utilitários:** Mover funções genéricas (`_normalize_text`, funções de estilo do Excel) para os módulos em `src/utils/`.
+    2.  **Isolar Carregamento de Dados:**
+        - Mover a lógica de leitura dos arquivos de `config/` para `src/io/config_loader.py`.
+        - Mover a lógica de leitura dos arquivos de `dados_entrada/` para `src/io/data_loader.py`.
+    3.  **Extrair Lógica do Fator de Correção (FC):**
+        - Criar a classe `FCCalculator` em `src/core/fc_calculator.py`.
+        - Mover toda a lógica de `_calcular_fc_para_item` para esta classe. A classe receberá os dados de metas e realizará o cálculo, retornando o FC e seus componentes de auditoria.
+    4.  **Extrair Lógica de Cálculo de Comissão:**
+        - Criar a classe `CommissionCalculator` em `src/core/commission_calculator.py`.
+        - Esta classe utilizará uma instância do `FCCalculator`.
+        - Mover a lógica de `_calcular_comissoes` (faturamento) e `_calcular_comissoes_recebimento_nova_logica` para métodos separados dentro desta classe.
+    5.  **Isolar Geração de Relatórios:**
+        - Criar a classe `ReportGenerator` em `src/io/report_generator.py`.
+        - Mover toda a lógica de `_gerar_saida_impl` e `_gerar_detalhamento_pdf` para esta classe. Ela receberá os DataFrames já calculados e será responsável apenas por salvá-los em Excel/PDF.
+
+- **Fase 3: Orquestração e Finalização**
+    1.  **Criar o Orquestrador (`main.py`):** O antigo `calculo_comissoes.py` será substituído pelo `src/main.py`. Sua função `executar` será simplificada para orquestrar as chamadas aos diferentes módulos na ordem correta: carregar configs -> carregar dados -> calcular comissões -> gerar relatório.
+    2.  **Limpeza:** Após validar que a nova estrutura funciona, o script `calculo_comissoes.py` original pode ser arquivado ou removido.

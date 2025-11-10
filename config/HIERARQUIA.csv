@@ -1,0 +1,677 @@
+﻿linha;grupo;subgrupo;tipo_mercadoria;fabricante
+Diversos;Detector Diversos;Serviço;Certificado;Clean
+Diversos;Diversos Diversos;Insumo;Acessório;Clean
+Diversos;Diversos Diversos;Produto;Acessório;Clean
+Diversos;Diversos Diversos;Serviço;Calibração;Clean
+Diversos;Diversos Diversos;Serviço;Certificado;Clean
+Diversos;Diversos Diversos;Insumo;Diversos;
+Diversos;Diversos Diversos;Insumo;Diversos;Clean
+Diversos;Diversos Diversos;Insumo;Diversos;Fabricante
+Diversos;Diversos Diversos;Insumo;Ferramental;AMS
+Diversos;Diversos Diversos;Insumo;Ferramental;Clean
+Diversos;Diversos Diversos;Insumo;Ferramental;HISCO
+Diversos;Diversos Diversos;Produto;Ferramental;AMS
+Diversos;Diversos Diversos;Produto;Ferramental;Clean
+Diversos;Diversos Diversos;Insumo;Filtro;Clean
+Diversos;Diversos Diversos;Serviço;Hora Técnica;Clean
+Diversos;Diversos Diversos;Serviço;Instalação;Clean
+Diversos;Diversos Diversos;Serviço;Treinamento;Clean
+Diversos;Elevador de Liquidos Fixo;Produto;Painel;Clean
+Diversos;Filtração Diversos;Produto;Sistema;Clean
+Diversos;Monitoramento Fixo;Produto;Painel Solar;Clean
+Diversos;Outros Diversos;Produto;Acessório;Clean
+Diversos;Outros Diversos;Reposição;Acessório;Clean
+Diversos;Outros Diversos;Insumo;Diversos;Clean
+Diversos;Outros Diversos;Insumo;Diversos;HON
+Diversos;Outros Diversos;Produto;Diversos;AMS
+Diversos;Outros Diversos;Produto;Ferramental;AMS
+Diversos;Outros Diversos;Produto;Ferramental;Clean
+Diversos;Outros Diversos;Produto;Outros;Clean
+Diversos;Outros Diversos;Reposição;Outros;Clean
+Diversos;Separador de Agua/ Oleo Fixo;Reposição;Diversos;QED
+Diversos;Sonda Portátil;Reposição;Acessório;Clean
+Hidrologia;Alimentação Eletrico;Produto;Sistema;Clean
+Hidrologia;Alimentação Eletrico;Produto;Sistema;YSI
+Hidrologia;Alimentação Solar;Produto;Sistema;Clean
+Hidrologia;Amostrador Diversos;Produto;Acessório;
+Hidrologia;Amostrador Diversos;Produto;Acessório;Clean
+Hidrologia;Amostrador Diversos;Produto;Acessório;ISCO
+Hidrologia;Amostrador Diversos;Reposição;Acessório;
+Hidrologia;Amostrador Diversos;Reposição;Acessório;Clean
+Hidrologia;Amostrador Diversos;Reposição;Acessório;ISCO
+Hidrologia;Amostrador Diversos;Reposição;Anel;ISCO
+Hidrologia;Amostrador Diversos;Reposição;Cabo;
+Hidrologia;Amostrador Diversos;Reposição;Cabo;Clean
+Hidrologia;Amostrador Diversos;Reposição;Cabo;ISCO
+Hidrologia;Amostrador Diversos;Insumo;Filtro;ISCO
+Hidrologia;Amostrador Diversos;Reposição;Sensor;ISCO
+Hidrologia;Amostrador Diversos;Produto;Software;ISCO
+Hidrologia;Amostrador Não Refrigerado Portátil;Produto;Acessório;
+Hidrologia;Amostrador Não Refrigerado Portátil;Produto;Acessório;isco
+Hidrologia;Amostrador Não Refrigerado Portátil;Produto;Amostrador;
+Hidrologia;Amostrador Não Refrigerado Portátil;Produto;Amostrador;ISCO
+Hidrologia;Amostrador Refrigerado Fixo;Produto;Amostrador;
+Hidrologia;Amostrador Refrigerado Fixo;Produto;Amostrador;ISCO
+Hidrologia;Amostrador Refrigerado Fixo;Produto;Amostrador;YSI
+Hidrologia;Amostrador Refrigerado Portátil;Produto;Amostrador;
+Hidrologia;Amostrador Refrigerado Portátil;Produto;Amostrador;ISCO
+Hidrologia;Amostragem Diversos;Produto;Sistema;Clean
+Hidrologia;Amostragem Diversos;Produto;Sistema;Oceanalpha
+Hidrologia;Analisador Diversos;Produto;EmeClean;EMEC
+Hidrologia;Analisador Diversos;Insumo;Reagente;
+Hidrologia;Analisador Diversos;Insumo;Reagente;Luminutra
+Hidrologia;Analisador Fixo;Produto;Transmissor;MJK
+Hidrologia;Analisador Microbiologico;Produto;GeneCount;Luminutra
+Hidrologia;Analisador Microbiologico;Insumo;Reagente;Luminutra
+Hidrologia;Calibração Diversos;Insumo;Solução;Clean
+Hidrologia;Calibração Diversos;Insumo;Solução;QED
+Hidrologia;Calibração Diversos;Insumo;Solução;YSI
+Hidrologia;Colorimetro Portátil;Insumo;Solução;YSI
+Hidrologia;Diversos Diversos;Insumo;Acessório;Clean
+Hidrologia;Diversos Diversos;Serviço;Calibração;Clean
+Hidrologia;Diversos Diversos;Serviço;Hora Técnica;Clean
+Hidrologia;Extração Diversos;Produto;Sistema;Clean
+Hidrologia;Fotometro Portátil;Produto;9500;YSI
+Hidrologia;Fotometro Portátil;Produto;9800;
+Hidrologia;Fotometro Portátil;Produto;9800;YSI
+Hidrologia;Fotometro Portátil;Insumo;Reagente;YSI
+Hidrologia;Medidor de Nivel Diversos;Reposição;Acessório;Clean
+Hidrologia;Medidor de Nivel Fixo;Produto;Transmissor;MJK
+Hidrologia;Medidor de Vazão Argonaut SL;Produto;Argonaut;SON
+Hidrologia;Medidor de Vazão Fixo;Produto;4000 series Isco;ISCO
+Hidrologia;Medidor de Vazão Fixo;Produto;Acessório;SON
+Hidrologia;Medidor de Vazão Fixo;Produto;ADP;SON
+Hidrologia;Medidor de Vazão Fixo;Produto;DURATRACKER;
+Hidrologia;Medidor de Vazão Fixo;Produto;DURATRACKER;ISCO
+Hidrologia;Medidor de Vazão Fixo;Produto;IQ PIPE;SON
+Hidrologia;Medidor de Vazão Fixo;Produto;IQ PLUS;SON
+Hidrologia;Medidor de Vazão Fixo;Produto;IQ Standard;SON
+Hidrologia;Medidor de Vazão Fixo;Produto;MAGFLUX;MJK
+Hidrologia;Medidor de Vazão Fixo;Produto;Sensor;Global Water
+Hidrologia;Medidor de Vazão Fixo;Produto;Signature;
+Hidrologia;Medidor de Vazão Fixo;Produto;Signature;ISCO
+Hidrologia;Medidor de Vazão Fixo;Produto;Sistema;SON
+Hidrologia;Medidor de Vazão FlowTracker;Produto;FlowTracker;
+Hidrologia;Medidor de Vazão FlowTracker;Produto;FlowTracker;SON
+Hidrologia;Medidor de Vazão Portátil;Produto;Acessório;Clean
+Hidrologia;Medidor de Vazão Portátil;Produto;Acessório;ISCO
+Hidrologia;Medidor de Vazão Portátil;Produto;Acessório;NIVELCO
+Hidrologia;Medidor de Vazão Portátil;Produto;Acessório;Oceanalpha
+Hidrologia;Medidor de Vazão Portátil;Produto;Acessório;RDI
+Hidrologia;Medidor de Vazão Portátil;Produto;Acessório;SON
+Hidrologia;Medidor de Vazão Portátil;Reposição;Acessório;
+Hidrologia;Medidor de Vazão Portátil;Reposição;Acessório;Clean
+Hidrologia;Medidor de Vazão Portátil;Reposição;Acessório;ISCO
+Hidrologia;Medidor de Vazão Portátil;Reposição;Acessório;MJK
+Hidrologia;Medidor de Vazão Portátil;Reposição;Acessório;Oceanalpha
+Hidrologia;Medidor de Vazão Portátil;Reposição;Acessório;SON
+Hidrologia;Medidor de Vazão Portátil;Reposição;Anel;SON
+Hidrologia;Medidor de Vazão Portátil;Produto;Argonaut;SON
+Hidrologia;Medidor de Vazão Portátil;Reposição;Cabo;
+Hidrologia;Medidor de Vazão Portátil;Reposição;Cabo;Clean
+Hidrologia;Medidor de Vazão Portátil;Reposição;Cabo;RDI
+Hidrologia;Medidor de Vazão Portátil;Reposição;Cabo;SON
+Hidrologia;Medidor de Vazão Portátil;Produto;DataLogger;RDI
+Hidrologia;Medidor de Vazão Portátil;Produto;DataLogger;SON
+Hidrologia;Medidor de Vazão Portátil;Produto;DataLogger;YSI
+Hidrologia;Medidor de Vazão Portátil;Produto;Embarcação;Oceanalpha
+Hidrologia;Medidor de Vazão Portátil;Produto;Embarcação;SON
+Hidrologia;Medidor de Vazão Portátil;Insumo;Filtro;ISCO
+Hidrologia;Medidor de Vazão Portátil;Reposição;M9;SON
+Hidrologia;Medidor de Vazão Portátil;Produto;MicroADV;SON
+Hidrologia;Medidor de Vazão Portátil;Produto;MV02;ISCO
+Hidrologia;Medidor de Vazão Portátil;Produto;MV03;ISCO
+Hidrologia;Medidor de Vazão Portátil;Produto;PCM;
+Hidrologia;Medidor de Vazão Portátil;Produto;PCM;SON
+Hidrologia;Medidor de Vazão Portátil;Produto;Sensor;Clean
+Hidrologia;Medidor de Vazão Portátil;Produto;Sensor;NIVELCO
+Hidrologia;Medidor de Vazão Portátil;Reposição;Sensor;
+Hidrologia;Medidor de Vazão Portátil;Reposição;Sensor;Global Water
+Hidrologia;Medidor de Vazão Portátil;Reposição;Sensor;ISCO
+Hidrologia;Medidor de Vazão Portátil;Reposição;Sensor;MJK
+Hidrologia;Medidor de Vazão Portátil;Reposição;Sensor;SON
+Hidrologia;Medidor de Vazão Portátil;Produto;Sistema;RDI
+Hidrologia;Medidor de Vazão RS5;Produto;Embarcação;
+Hidrologia;Medidor de Vazão RS5;Produto;Embarcação;SON
+Hidrologia;Medidor de Vazão RS5;Produto;RS5;
+Hidrologia;Medidor de Vazão RS5;Produto;RS5;SON
+Hidrologia;Medidor de Vazão RS6;Produto;RS6;
+Hidrologia;Medidor de Vazão RS7;Produto;RS7;
+Hidrologia;Medidor de Vazão RS-M10;Produto;M10;
+Hidrologia;Medidor de Vazão RS-M11;Produto;M11;
+Hidrologia;Medidor de Vazão RS-M9;Produto;Acessório;
+Hidrologia;Medidor de Vazão RS-M9;Produto;Acessório;Clean
+Hidrologia;Medidor de Vazão RS-M9;Produto;Acessório;SON
+Hidrologia;Medidor de Vazão RS-M9;Produto;ADCP;Clean
+Hidrologia;Medidor de Vazão RS-M9;Produto;ADCP;SON
+Hidrologia;Medidor de Vazão RS-M9;Produto;Embarcação;
+Hidrologia;Medidor de Vazão RS-M9;Produto;Embarcação;SON
+Hidrologia;Medidor de Vazão RS-M9;Produto;M9;
+Hidrologia;Medidor de Vazão RS-M9;Produto;M9;SON
+Hidrologia;Medidor de Vazão RS-M9;Produto;PCM;SON
+Hidrologia;Medidor de Vazão RS-M9;Serviço;Treinamento;SON
+Hidrologia;Medidor de Vazão RS-S5;Produto;ADCP;Clean
+Hidrologia;Metereologia Fixo;Produto;Acessório;Campbell
+Hidrologia;Metereologia Fixo;Produto;Acessório;YSI
+Hidrologia;Metereologia Fixo;Reposição;Acessório;Campbell
+Hidrologia;Metereologia Fixo;Reposição;Acessório;YSI
+Hidrologia;Metereologia Fixo;Reposição;Cabo;YSI
+Hidrologia;Metereologia Fixo;Produto;DataLogger;Clean
+Hidrologia;Metereologia Fixo;Produto;DataLogger;YSI
+Hidrologia;Metereologia Fixo;Produto;Estação;YSI
+Hidrologia;Metereologia Fixo;Produto;Estrutura;Clean
+Hidrologia;Metereologia Fixo;Produto;Moden;YSI
+Hidrologia;Metereologia Fixo;Produto;Sensor;Campbell
+Hidrologia;Metereologia Fixo;Produto;Sensor;Clean
+Hidrologia;Metereologia Fixo;Produto;Sensor;NOVALINX
+Hidrologia;Metereologia Fixo;Produto;Sensor;RIKA
+Hidrologia;Metereologia Fixo;Produto;Sensor;YSI
+Hidrologia;Metereologia Fixo;Produto;Sistema;YSI
+Hidrologia;Metereologia Fixo;Produto;Transdutor;YSI
+Hidrologia;Metereologia Fixo;Produto;Transmissor;YSI
+Hidrologia;Monitoramento Fixo;Produto;Acessório;Clean
+Hidrologia;Monitoramento Fixo;Reposição;Acessório;Clean
+Hidrologia;Monitoramento Fixo;Reposição;Cabo;RIKA
+Hidrologia;Monitoramento Fixo;Produto;Estação;Clean
+Hidrologia;Monitoramento Fixo;Reposição;Estação;Clean
+Hidrologia;Monitoramento Fixo;Produto;Estrutura;Clean
+Hidrologia;Monitoramento Fixo;Serviço;Hora Técnica;Clean
+Hidrologia;Monitoramento Fixo;Serviço;Instalação;Clean
+Hidrologia;Monitoramento Fixo;Produto;Painel Solar;Campbell
+Hidrologia;Monitoramento Fixo;Produto;Painel Solar;Clean
+Hidrologia;Monitoramento Fixo;Produto;Painel Solar;YSI
+Hidrologia;Monitoramento Fixo;Reposição;Sensor;RIKA
+Hidrologia;Monitoramento Fixo;Produto;Sistema;Clean
+Hidrologia;Monitoramento Fixo;Produto;Transdutor;RIKA
+Hidrologia;Monitoramento Fixo;Serviço;Transmissor;Clean
+Hidrologia;Outros Diversos;Produto;Acessório;Clean
+Hidrologia;Painel controlador Diversos;Reposição;Acessório;
+Hidrologia;Painel controlador Diversos;Reposição;Acessório;YSI
+Hidrologia;Painel controlador Diversos;Reposição;Cabo;
+Hidrologia;Painel controlador Diversos;Reposição;Cabo;YSI
+Hidrologia;Painel controlador Diversos;Reposição;Sensor;
+Hidrologia;Painel controlador Diversos;Reposição;Sensor;YSI
+Hidrologia;Sonda Portátil;Reposição;Acessório;
+Hidrologia;Sonda Portátil;Reposição;Acessório;Clean
+Hidrologia;Sonda Portátil;Reposição;Acessório;QED
+Hidrologia;Sonda Portátil;Reposição;Acessório;YSI
+Hidrologia;Sonda Portátil;Reposição;Anel;Clean
+Hidrologia;Sonda Portátil;Reposição;Anel;QED
+Hidrologia;Sonda Portátil;Reposição;Anel;YSI
+Hidrologia;Sonda Portátil;Reposição;Cabo;
+Hidrologia;Sonda Portátil;Reposição;Cabo;Clean
+Hidrologia;Sonda Portátil;Reposição;Cabo;QED
+Hidrologia;Sonda Portátil;Reposição;Cabo;YSI
+Hidrologia;Sonda Portátil;Produto;Castaway;SON
+Hidrologia;Sonda Portátil;Reposição;ProDss;YSI
+Hidrologia;Sonda Portátil;Reposição;Sensor;
+Hidrologia;Sonda Portátil;Reposição;Sensor;Clean
+Hidrologia;Sonda Portátil;Reposição;Sensor;EMEC
+Hidrologia;Sonda Portátil;Reposição;Sensor;QED
+Hidrologia;Sonda Portátil;Reposição;Sensor;YSI
+Hidrologia;Sonda Portátil ;Reposição;Acessório;
+Hidrologia;Sonda Serie 6;Produto;6600;YSI
+Hidrologia;Sonda Serie 6;Produto;Maleta;YSI
+Hidrologia;Sonda Serie 6;Produto;SERIE6;YSI
+Hidrologia;Sonda Serie EcoSense;Produto;Display;YSI
+Hidrologia;Sonda Serie EcoSense;Produto;DO200;YSI
+Hidrologia;Sonda Serie EcoSense;Produto;EC300;YSI
+Hidrologia;Sonda Serie EcoSense;Produto;EC30A;YSI
+Hidrologia;Sonda Serie EcoSense;Produto;Maleta;YSI
+Hidrologia;Sonda Serie EcoSense;Produto;ODO200;YSI
+Hidrologia;Sonda Serie EcoSense;Produto;PH100;YSI
+Hidrologia;Sonda Serie EXO;Produto;Acessório;YSI
+Hidrologia;Sonda Serie EXO;Produto;EXO;
+Hidrologia;Sonda Serie EXO;Produto;EXO;YSI
+Hidrologia;Sonda Serie EXO;Produto;EXO (Completa);Clean
+Hidrologia;Sonda Serie EXO;Produto;EXO (Completa);YSI
+Hidrologia;Sonda Serie EXO;Produto;Maleta;YSI
+Hidrologia;Sonda Serie EXO;Produto;Sensor;YSI
+Hidrologia;Sonda Serie IQ SensorNet;Reposição;Acessório;
+Hidrologia;Sonda Serie IQ SensorNet;Produto;Sensor;
+Hidrologia;Sonda Serie IQ SensorNet;Produto;Sensor;YSI
+Hidrologia;Sonda Serie Lab & Field;Produto;550;YSI
+Hidrologia;Sonda Serie Lab & Field;Produto;556;YSI
+Hidrologia;Sonda Serie Lab & Field;Produto;DBO;YSI
+Hidrologia;Sonda Serie Lab & Field;Produto;Maleta;
+Hidrologia;Sonda Serie Lab & Field;Produto;Maleta;YSI
+Hidrologia;Sonda Serie Lab & Field;Produto;YSI30;YSI
+Hidrologia;Sonda Serie Lab & Field;Produto;YSI3100;YSI
+Hidrologia;Sonda Serie Lab & Field;Produto;YSI3200;YSI
+Hidrologia;Sonda Serie Lab & Field;Produto;YSI5000;YSI
+Hidrologia;Sonda Serie Lab & Field;Produto;YSI5100;YSI
+Hidrologia;Sonda Serie Lab & Field;Produto;YSI55;YSI
+Hidrologia;Sonda Serie Lab & Field;Produto;YSI60;YSI
+Hidrologia;Sonda Serie Lab & Field;Produto;YSI85;YSI
+Hidrologia;Sonda Serie MultiLab;Produto;MULTILAB;
+Hidrologia;Sonda Serie MultiLab;Produto;MULTILAB;YSI
+Hidrologia;Sonda Serie ODO-RTU;Produto;Sonda RTU;
+Hidrologia;Sonda Serie ODO-RTU;Produto;Sonda RTU;YSI
+Hidrologia;Sonda Serie Pro;Produto;Clean Cell Pro;Clean
+Hidrologia;Sonda Serie Pro;Produto;Maleta;YSI
+Hidrologia;Sonda Serie Pro;Produto;PRO10;YSI
+Hidrologia;Sonda Serie Pro;Produto;PRO1020;YSI
+Hidrologia;Sonda Serie Pro;Produto;PRO1030;YSI
+Hidrologia;Sonda Serie Pro;Produto;PRO20;YSI
+Hidrologia;Sonda Serie Pro;Produto;PRO2030;YSI
+Hidrologia;Sonda Serie Pro;Produto;PRO30;YSI
+Hidrologia;Sonda Serie Pro;Produto;Pro Plus;Clean
+Hidrologia;Sonda Serie Pro;Produto;Pro Plus;YSI
+Hidrologia;Sonda Serie Pro;Produto;Pro Quattro;
+Hidrologia;Sonda Serie Pro;Produto;Pro Quattro;YSI
+Hidrologia;Sonda Serie Pro;Produto;Software;YSI
+Hidrologia;Sonda Serie ProDigital;Produto;PRODO;Clean
+Hidrologia;Sonda Serie ProDigital;Produto;PRODO;YSI
+Hidrologia;Sonda Serie ProDigital;Produto;ProDss;
+Hidrologia;Sonda Serie ProDigital;Produto;ProDss;Clean
+Hidrologia;Sonda Serie ProDigital;Produto;ProDss;YSI
+Hidrologia;Sonda Serie ProDigital;Produto;PROSOLO;Clean
+Hidrologia;Sonda Serie ProDigital;Produto;PROSOLO;YSI
+Hidrologia;Sonda Serie ProDigital;Produto;PROSWAP;YSI
+Hidrologia;Sonda Serie TruLab;Produto;TruLab;YSI
+Hidrologia;Telemetria Fixo;Produto;Acessório;
+Hidrologia;Telemetria Fixo;Produto;Acessório;Clean
+Hidrologia;Telemetria Fixo;Produto;Acessório;SON
+Hidrologia;Telemetria Fixo;Produto;Acessório;YSI
+Hidrologia;Telemetria Fixo;Reposição;Cabo;Campbell
+Hidrologia;Telemetria Fixo;Produto;DataLogger;
+Hidrologia;Telemetria Fixo;Produto;DataLogger;Campbell
+Hidrologia;Telemetria Fixo;Produto;DataLogger;Clean
+Hidrologia;Telemetria Fixo;Produto;DataLogger;ISCO
+Hidrologia;Telemetria Fixo;Produto;Estação;Oceanalpha
+Hidrologia;Telemetria Fixo;Produto;Estrutura;Clean
+Hidrologia;Telemetria Fixo;Produto;Moden;Campbell
+Hidrologia;Telemetria Fixo;Produto;Moden;Clean
+Hidrologia;Telemetria Fixo;Produto;Moden;YSI
+Hidrologia;Telemetria Fixo;Produto;Painel;Clean
+Hidrologia;Telemetria Fixo;Produto;Sensor;Campbell
+Hidrologia;Telemetria Fixo;Produto;Sensor;ISCO
+Hidrologia;Telemetria Fixo;Produto;Sistema;Clean
+Hidrologia;Telemetria Fixo;Produto;Sistema;ISCO
+Hidrologia;Telemetria Fixo;Produto;Transdutor;Campbell
+Hidrologia;Transmissão Fixo;Produto;Sistema;Clean
+Hidrologia;UMR Fixo;Produto;Instalação;Clean
+Inativo;Inativo Inativo;Inativo;Inativo;Inativo
+Locação;Locação Diversos;Serviço;Locação;Clean
+Remediação;Absorvedores;Insumo;Absorvedores ;
+Remediação;Absorvedores;Reposição;Manta OWS;
+Remediação;Amostragem Diversos;Produto;Acessório;Clean
+Remediação;Amostragem Diversos;Produto;Acessório;EON
+Remediação;Amostragem Diversos;Produto;Acessório;JCT
+Remediação;Amostragem Diversos;Produto;Acessório;QED
+Remediação;Amostragem Diversos;Produto;Amostrador;Clean
+Remediação;Amostragem Diversos;Produto;Amostrador;EN NOVATIVE
+Remediação;Amostragem Diversos;Produto;Amostrador;environics
+Remediação;Amostragem Diversos;Produto;Amostrador;EON
+Remediação;Amostragem Diversos;Produto;Amostrador;JCT
+Remediação;Amostragem Diversos;Produto;Amostrador;QED
+Remediação;Amostragem Diversos;Produto;Analisador;JCT
+Remediação;Amostragem Diversos;Produto;Bomba;JCT
+Remediação;Amostragem Diversos;Insumo;Filtro;Clean
+Remediação;Amostragem Diversos;Insumo;Filtro;JCT
+Remediação;Amostragem Diversos;Insumo;Filtro;QED
+Remediação;Amostragem Diversos;Produto;Sensor;JCT
+Remediação;Amostragem Diversos;Produto;SHAKETEST;Clean
+Remediação;Amostragem Diversos;Produto;Sistema;AGT
+Remediação;Amostragem Diversos;Produto;Sistema;Clean
+Remediação;Amostragem Diversos;Produto;TadLar Bag;ESS
+Remediação;Analisador Diversos;Produto;Acessório;
+Remediação;Analisador Diversos;Produto;Acessório;SON
+Remediação;Analisador Diversos;Reposição;Acessório;
+Remediação;Analisador Diversos;Reposição;Acessório;CASELLA
+Remediação;Analisador Diversos;Reposição;Acessório;Clean
+Remediação;Analisador Diversos;Reposição;Acessório;EDINBURG
+Remediação;Analisador Diversos;Reposição;Acessório;GRACO
+Remediação;Analisador Diversos;Reposição;Acessório;HON
+Remediação;Analisador Diversos;Reposição;Acessório;QED
+Remediação;Analisador Diversos;Reposição;Acessório;Thermo
+Remediação;Analisador Diversos;Reposição;Anel;QED
+Remediação;Analisador Diversos;Reposição;Cabo;QED
+Remediação;Analisador Diversos;Reposição;Cabo;Thermo
+Remediação;Analisador Diversos;Insumo;Filtro;Clean
+Remediação;Analisador Diversos;Insumo;Filtro;EDINBURG
+Remediação;Analisador Diversos;Insumo;Filtro;HON
+Remediação;Analisador Diversos;Insumo;Filtro;QED
+Remediação;Analisador Diversos;Insumo;Filtro;Thermo
+Remediação;Analisador Diversos;Reposição;Sensor;EDINBURG
+Remediação;Analisador Diversos;Reposição;Sensor;Industrial
+Remediação;Analisador Diversos;Reposição;Sensor;QED
+Remediação;Analisador Diversos;Reposição;Sensor;Thermo
+Remediação;Analisador Fixo;Produto;Acessório;QED
+Remediação;Analisador Fixo;Produto;Acessório;Thermo
+Remediação;Analisador Fixo;Produto;Biogas;
+Remediação;Analisador Fixo;Produto;Biogas;Clean
+Remediação;Analisador Fixo;Produto;Biogas;QED
+Remediação;Analisador Fixo;Produto;GT;Thermo
+Remediação;Analisador Fixo;Produto;INNOVA;Thermo
+Remediação;Analisador Fixo;Produto;Midas;HON
+Remediação;Analisador Fixo;Produto;Painel de Controle;Clean
+Remediação;Analisador Fixo;Produto;Sistema;Thermo
+Remediação;Analisador Fixo;Produto;TVOC;HON
+Remediação;Analisador Fixo;Produto;TVOC;ION
+Remediação;Analisador Portátil;Produto;Acessório;Clean
+Remediação;Analisador Portátil;Produto;Acessório;HON
+Remediação;Analisador Portátil;Produto;Acessório;QED
+Remediação;Analisador Portátil;Produto;Acessório;Thermo
+Remediação;Analisador Portátil;Produto;Estação;HON
+Remediação;Analisador Portátil;Produto;G100;QED
+Remediação;Analisador Portátil;Produto;GASCARD;EDINBURG
+Remediação;Analisador Portátil;Produto;Gascheck;EDINBURG
+Remediação;Analisador Portátil;Produto;GEM;
+Remediação;Analisador Portátil;Produto;GEM;QED
+Remediação;Analisador Portátil;Produto;Guardian;EDINBURG
+Remediação;Analisador Portátil;Produto;Metalyser;Trace2o
+Remediação;Analisador Portátil;Produto;METREX;
+Remediação;Analisador Portátil;Produto;METREX;QED
+Remediação;Analisador Portátil;Produto;MIRAN;Thermo
+Remediação;Analisador Portátil;Produto;PDR1500;Thermo
+Remediação;Analisador Portátil;Produto;Tiger;
+Remediação;Analisador Portátil;Produto;Tiger;Clean
+Remediação;Analisador Portátil;Produto;Tiger;ION
+Remediação;Analisador Portátil;Produto;TVA;
+Remediação;Analisador Portátil;Produto;TVA;Thermo
+Remediação;Aterramento Diversos;Produto;Sistema;Campbell
+Remediação;BOMBA DE AMOSTRAGEM Fixo;Produto;Bomba;QED
+Remediação;BOMBA DE AMOSTRAGEM Fixo;Produto;SAMPLEASE;QED
+Remediação;BOMBA DE AMOSTRAGEM Fixo;Produto;Sample Pro;QED
+Remediação;Bombeamento Fixo;Produto;Sistema;Clean
+Remediação;Caixa Separadora Fixo;Produto;Acessório;
+Remediação;Caixa Separadora Fixo;Produto;OWS;
+Remediação;Caixa Separadora Fixo;Produto;OWS;Clean
+Remediação;Calibração Diversos;Insumo;Cilindro;ISCO
+Remediação;Calibração Diversos;Insumo;Solução;Trace2o
+Remediação;Cromatógrafo Portátil;Produto;Acessório;DFT
+Remediação;Cromatógrafo Portátil;Reposição;Acessório;DFT
+Remediação;Cromatógrafo Portátil;Produto;FROG;
+Remediação;Cromatógrafo Portátil;Produto;FROG;DFT
+Remediação;Cromatógrafo Portátil;Produto;Sensor;
+Remediação;Cromatógrafo Portátil;Produto;Sensor;DFT
+Remediação;Detector Portátil;Produto;EAGLE;AMBIENTAL
+Remediação;Diversos Diversos;Serviço;Calibração;Clean
+Remediação;Diversos Diversos;Insumo;Diversos;Clean
+Remediação;Diversos Diversos;Insumo;Ferramental;AMS
+Remediação;Diversos Diversos;Serviço;Hora Técnica;Clean
+Remediação;Elevador de Liquidos Fixo;Insumo;Acessório;Clean
+Remediação;Elevador de Liquidos Fixo;Produto;Acessório;
+Remediação;Elevador de Liquidos Fixo;Produto;Acessório;Clean
+Remediação;Elevador de Liquidos Fixo;Produto;Acessório;QED
+Remediação;Elevador de Liquidos Fixo;Reposição;Acessório;
+Remediação;Elevador de Liquidos Fixo;Reposição;Acessório;CHP
+Remediação;Elevador de Liquidos Fixo;Reposição;Acessório;Clean
+Remediação;Elevador de Liquidos Fixo;Reposição;Acessório;QED
+Remediação;Elevador de Liquidos Fixo;Reposição;Anel;Clean
+Remediação;Elevador de Liquidos Fixo;Reposição;Anel;QED
+Remediação;Elevador de Liquidos Fixo;Produto;Auto Pump;
+Remediação;Elevador de Liquidos Fixo;Produto;Auto Pump;Clean
+Remediação;Elevador de Liquidos Fixo;Produto;Auto Pump;QED
+Remediação;Elevador de Liquidos Fixo;Produto;Bomba;QED
+Remediação;Elevador de Liquidos Fixo;Produto;CONTADOR DE CICLOS;Clean
+Remediação;Elevador de Liquidos Fixo;Produto;CONTADOR DE CICLOS;QED
+Remediação;Elevador de Liquidos Fixo;Insumo;Filtro;QED
+Remediação;Elevador de Liquidos Fixo;Produto;GENIE;
+Remediação;Elevador de Liquidos Fixo;Produto;GENIE;QED
+Remediação;Elevador de Liquidos Fixo;Produto;NDP - 25 BAN;Clean
+Remediação;Elevador de Liquidos Fixo;Produto;Numatic;QED
+Remediação;Elevador de Liquidos Fixo;Reposição;Sensor;QED
+Remediação;Elevador de Liquidos Fixo;Produto;Sistema;Clean
+Remediação;Elevador de Liquidos Fixo;Produto;SOS-4-003;QED
+Remediação;Filtração Diversos;Produto;Sistema;Clean
+Remediação;Medidor de Nivel Diversos;Reposição;Acessório;HER
+Remediação;Medidor de Nivel Diversos;Reposição;Acessório;QED
+Remediação;Medidor de Nivel Diversos;Reposição;Anel;HER
+Remediação;Medidor de Nivel Diversos;Reposição;Cabo;HER
+Remediação;Medidor de Nivel Diversos;Produto;Controlador;Clean
+Remediação;Medidor de Nivel Diversos;Reposição;Sensor;HER
+Remediação;Medidor de Nivel Fixo;Produto;DIPPERLOG;
+Remediação;Medidor de Nivel Fixo;Produto;DIPPERLOG;HER
+Remediação;Medidor de Nivel Fixo;Produto;DIPPER TOUGH;HER
+Remediação;Medidor de Nivel Portátil;Produto;CONDUCTIVITY PLUS;HER
+Remediação;Medidor de Nivel Portátil;Produto;DIPPER-T;
+Remediação;Medidor de Nivel Portátil;Produto;DIPPER-T;HER
+Remediação;Medidor de Nivel Portátil;Produto;DIPPER TOUGH;HER
+Remediação;Medidor de Nivel Portátil;Produto;H.OIL;HER
+Remediação;Medidor de Nivel Portátil;Produto;MP30;QED
+Remediação;Medidor de Nivel Portátil;Produto;SKINNY DIPPER;HER
+Remediação;Medidor de Nivel Portátil;Produto;SM.OIL;HER
+Remediação;Medidor de Nivel Portátil;Produto;WATER TAPE;HER
+Remediação;Medidor de Nivel Portátil;Produto;WellTape;SHANGHAI
+Remediação;MODFLOW Diversos;Produto;Sistema;waterloo
+Remediação;Outros Diversos;Produto;Acessório;QED
+Remediação;Outros Diversos;Reposição;Acessório;
+Remediação;Outros Diversos;Reposição;Acessório;QED
+Remediação;Outros Diversos;Insumo;Diversos;Clean
+Remediação;Outros Diversos;Produto;Outros;Clean
+Remediação;Outros Diversos;Produto;REMOX;ISCO
+Remediação;Outros Diversos;Produto;Sistema;Clean
+Remediação;Outros Diversos;Produto;Vapor pin/ Clean;Clean
+Remediação;Painel controlador Diversos;Reposição;Acessório;Clean
+Remediação;Painel controlador Diversos;Reposição;Acessório;QED
+Remediação;Painel controlador Diversos;Reposição;Anel;QED
+Remediação;Painel controlador Diversos;Insumo;Filtro;QED
+Remediação;Painel controlador Diversos;Produto;SC;QED
+Remediação;Painel controlador Fixo;Reposição;Acessório;QED
+Remediação;Painel controlador Fixo;Produto;C100;QED
+Remediação;Painel controlador Fixo;Produto;L360;QED
+Remediação;Painel controlador Portátil;Reposição;Acessório;QED
+Remediação;Painel controlador Portátil;Reposição;Anel;QED
+Remediação;Painel controlador Portátil;Insumo;Filtro;QED
+Remediação;Painel controlador Portátil;Produto;MP10;QED
+Remediação;Painel controlador Portátil;Produto;MP15;QED
+Remediação;Painel controlador Portátil;Produto;MP50;QED
+Remediação;Separador de Agua/ Oleo Fixo;Reposição;Acessório;
+Remediação;Separador de Agua/ Oleo Fixo;Reposição;Acessório;ABK
+Remediação;Separador de Agua/ Oleo Fixo;Reposição;Acessório;Clean
+Remediação;Separador de Agua/ Oleo Fixo;Reposição;Acessório;QED
+Remediação;Separador de Agua/ Oleo Fixo;Reposição;Anel;QED
+Remediação;Separador de Agua/ Oleo Fixo;Insumo;Diversos;Clean
+Remediação;Separador de Agua/ Oleo Fixo;Insumo;Filtro;COPPI
+Remediação;Separador de Agua/ Oleo Fixo;Reposição;Manning;Clean
+Remediação;Separador de Agua/ Oleo Fixo;Reposição;Manta;Clean
+Remediação;Separador de Agua/ Oleo Fixo;Produto;Sistema;Clean
+Remediação;Separador de Agua/ Oleo Fixo;Produto;Skimmer;
+Remediação;Separador de Agua/ Oleo Fixo;Produto;Skimmer;ABK
+Remediação;Separador de Agua/ Oleo Fixo;Produto;Skimmer;QED
+Remediação;Sonda Portátil;Reposição;Acessório;QED
+Remediação;Sonda Portátil;Produto;MP20;QED
+Remediação;Telemetria Fixo;Produto;Bomba;Clean
+Remediação;TERMAL Fixo;Serviço;TERMAL;Clean
+Remediação;Tratamento Diversos;Produto;Quimico;Regenesis
+Remediação;Tratamento Fixo;Produto;Acessório;Clean
+Remediação;Tratamento Fixo;Produto;Acessório;QED
+Remediação;Tratamento Fixo;Produto;Air Striper;QED
+Remediação;Tratamento Fixo;Reposição;Anel;QED
+Remediação;Tratamento Fixo;Produto;Bomba;EMEC
+Remediação;Tratamento Fixo;Produto;Painel de Controle;Clean
+Remediação;Tratamento Fixo;Produto;Sistema;Clean
+Remediação;UMR Fixo;Produto;Acessório;Clean
+Remediação;UMR Fixo;Serviço;Reforma;Clean
+Remediação;UMR Fixo;Produto;UMR;Clean
+Saneamento;Analisador Fixo;Produto;3017M;YSI
+Saneamento;Analisador Microbiologico;Produto;GeneCount;
+Saneamento;Analisador Microbiologico;Produto;GeneCount;Luminutra
+Saneamento;Analisador Microbiologico;Produto;Luminometro;
+Saneamento;Analisador Microbiologico;Produto;Luminometro;Luminutra
+Saneamento;Analisador Microbiologico;Insumo;Reagente;
+Saneamento;Analisador Microbiologico;Insumo;Reagente;Luminutra
+Saneamento;Sonda Serie IQ SensorNet;Produto;Controlador;
+Saneamento;Sonda Serie IQ SensorNet;Produto;Controlador;YSI
+SSO;Amostragem Diversos;Produto;CALIBRADOR;CASELLA
+SSO;Analisador Fixo;Reposição;Acessório;ION
+SSO;Analisador Fixo;Produto;Falco;ION
+SSO;Analisador Fixo;Insumo;Filtro;ION
+SSO;Analisador Fixo;Reposição;Sensor;ION
+SSO;Analisador Fixo;Produto;Titan;ION
+SSO;Analisador Portátil;Produto;Acessório;ION
+SSO;Analisador Portátil;Reposição;Acessório;ION
+SSO;Analisador Portátil;Reposição;Anel;ION
+SSO;Analisador Portátil;Produto;BW ULTRA;
+SSO;Analisador Portátil;Produto;BW ULTRA;HON
+SSO;Analisador Portátil;Insumo;Filtro;ION
+SSO;Analisador Portátil;Produto;Gascheck;ION
+SSO;Analisador Portátil;Produto;Panther;ION
+SSO;Analisador Portátil;Reposição;Sensor;ION
+SSO;BOMBA DE AMOSTRAGEM Portátil;Produto;Acessório;CASELLA
+SSO;BOMBA DE AMOSTRAGEM Portátil;Reposição;Acessório;CASELLA
+SSO;BOMBA DE AMOSTRAGEM Portátil;Produto;Apex;CASELLA
+SSO;BOMBA DE AMOSTRAGEM Portátil;Insumo;Filtro;CASELLA
+SSO;Calibração Diversos;Reposição;Acessório;Clean
+SSO;Calibração Diversos;Insumo;Cilindro;
+SSO;Calibração Diversos;Insumo;Cilindro;Air Liquide
+SSO;Calibração Diversos;Insumo;Cilindro;Clean
+SSO;Calibração Diversos;Insumo;Cilindro;Coregas
+SSO;Calibração Diversos;Insumo;Cilindro;HON
+SSO;Calibração Diversos;Insumo;Cilindro;Industrial
+SSO;Calibração Diversos;Insumo;Cilindro;LINDE
+SSO;Calibração Diversos;Insumo;Cilindro;QED
+SSO;Calibração Diversos;Insumo;Cilindro;Thermo
+SSO;Calibração Diversos;Insumo;Cilindro;White
+SSO;Calibração Diversos;Produto;Estação;HON
+SSO;Calibração Diversos;Insumo;Solução;Clean
+SSO;Decibelimetro Portátil;Produto;Acessório;CASELLA
+SSO;Decibelimetro Portátil;Reposição;Acessório;CASELLA
+SSO;Decibelimetro Portátil;Produto;Decibelimetro;CASELLA
+SSO;Detector de Incendio Fixo;Produto;Acessório;Clean
+SSO;Detector de Incendio Fixo;Produto;Acessório;SF
+SSO;Detector de Incendio Fixo;Produto;Acessório;TDS
+SSO;Detector de Incendio Fixo;Produto;FIREPRO;TDS
+SSO;Detector de Incendio Fixo;Produto;GATEWAY;TDS
+SSO;Detector de Incendio Fixo;Produto;Sensor;Clean
+SSO;Detector de Incendio Fixo;Produto;Sensor;SF
+SSO;Detector de Incendio Fixo;Produto;Sensor;TDS
+SSO;Detector de Incendio Fixo;Produto;Termovelocimétrico;TDS
+SSO;Detector Diversos;Produto;Acessório;Clean
+SSO;Detector Diversos;Produto;Acessório;HON
+SSO;Detector Diversos;Reposição;Acessório;Clean
+SSO;Detector Diversos;Reposição;Acessório;HON
+SSO;Detector Diversos;Reposição;Acessório;Industrial
+SSO;Detector Diversos;Reposição;Acessório;Thermo
+SSO;Detector Diversos;Insumo;Filtro;HON
+SSO;Detector Diversos;Reposição;MICRO 5;HON
+SSO;Detector Diversos;Produto;MicroClip;HON
+SSO;Detector Diversos;Produto;Rigrat;HON
+SSO;Detector Diversos;Reposição;Sensor;HON
+SSO;Detector Diversos;Reposição;Sensor;Industrial
+SSO;Detector Fixo;Produto;301C;HON
+SSO;Detector Fixo;Produto;Acessório;Clean
+SSO;Detector Fixo;Produto;Acessório;HON
+SSO;Detector Fixo;Produto;Acessório;Industrial
+SSO;Detector Fixo;Reposição;Acessório;
+SSO;Detector Fixo;Reposição;Acessório;HON
+SSO;Detector Fixo;Reposição;Acessório;Industrial
+SSO;Detector Fixo;Reposição;Acessório;ION
+SSO;Detector Fixo;Produto;Airscan;HON
+SSO;Detector Fixo;Produto;CEX300;Industrial
+SSO;Detector Fixo;Produto;CTX 300;Industrial
+SSO;Detector Fixo;Produto;E3 Point;HON
+SSO;Detector Fixo;Produto;E3SM;HON
+SSO;Detector Fixo;Produto;Extreme;HON
+SSO;Detector Fixo;Insumo;Filtro;HON
+SSO;Detector Fixo;Produto;FS20X;HON
+SSO;Detector Fixo;Produto;FS24X;HON
+SSO;Detector Fixo;Produto;FSL100;HON
+SSO;Detector Fixo;Produto;Gaspoint;HON
+SSO;Detector Fixo;Produto;HA20;HON
+SSO;Detector Fixo;Produto;HA40;HON
+SSO;Detector Fixo;Produto;HA71;HON
+SSO;Detector Fixo;Produto;HA72;HON
+SSO;Detector Fixo;Produto;IAQ POINT 2;HON
+SSO;Detector Fixo;Produto;ITRANS;Industrial
+SSO;Detector Fixo;Produto;Manning;HON
+SSO;Detector Fixo;Produto;Midas;
+SSO;Detector Fixo;Produto;Midas;HON
+SSO;Detector Fixo;Produto;MKII;HON
+SSO;Detector Fixo;Produto;OLCT;Industrial
+SSO;Detector Fixo;Produto;Optima Plus;HON
+SSO;Detector Fixo;Produto;Painel de Controle;Clean
+SSO;Detector Fixo;Produto;Raeguard;
+SSO;Detector Fixo;Produto;Raeguard;HON
+SSO;Detector Fixo;Produto;SEARCHLINE;HON
+SSO;Detector Fixo;Reposição;Sensor;
+SSO;Detector Fixo;Reposição;Sensor;HON
+SSO;Detector Fixo;Reposição;Sensor;Industrial
+SSO;Detector Fixo;Reposição;Sensor;ION
+SSO;Detector Fixo;Produto;TOP TRACK;Clean
+SSO;Detector Fixo;Produto;TOUCHPOINT;
+SSO;Detector Fixo;Produto;TOUCHPOINT;HON
+SSO;Detector Fixo;Produto;TVOC;ION
+SSO;Detector Fixo;Produto;Vent Line;HON
+SSO;Detector Fixo;Produto;XCD;HON
+SSO;Detector Fixo;Produto;XCL;HON
+SSO;Detector Fixo;Produto;XNX;Clean
+SSO;Detector Fixo;Produto;XNX;HON
+SSO;Detector Fixo;Produto;XPV;HON
+SSO;Detector Fixo;Produto;XRL;HON
+SSO;Detector Fixo;Produto;Zareba;HON
+SSO;Detector Portátil;Produto;Acessório;Clean
+SSO;Detector Portátil;Produto;Acessório;HON
+SSO;Detector Portátil;Produto;Acessório;Industrial
+SSO;Detector Portátil;Produto;Acessório;ION
+SSO;Detector Portátil;Reposição;Acessório;
+SSO;Detector Portátil;Reposição;Acessório;DPUNION
+SSO;Detector Portátil;Reposição;Acessório;HON
+SSO;Detector Portátil;Reposição;Acessório;Industrial
+SSO;Detector Portátil;Reposição;Acessório;ION
+SSO;Detector Portátil;Produto;AIR AWARE;Industrial
+SSO;Detector Portátil;Reposição;Anel;ION
+SSO;Detector Portátil;Produto;BADGE PLUS;Industrial
+SSO;Detector Portátil;Produto;BM25;Industrial
+SSO;Detector Portátil;Produto;BW Clip;HON
+SSO;Detector Portátil;Produto;BW Quattro;HON
+SSO;Detector Portátil;Produto;BW SOLO;
+SSO;Detector Portátil;Produto;BW SOLO;HON
+SSO;Detector Portátil;Produto;chempro;environics
+SSO;Detector Portátil;Produto;CUB;ION
+SSO;Detector Portátil;Produto;EC-P2;HON
+SSO;Detector Portátil;Produto;Estação;Industrial
+SSO;Detector Portátil;Insumo;Filtro;DPUNION
+SSO;Detector Portátil;Insumo;Filtro;HON
+SSO;Detector Portátil;Insumo;Filtro;Industrial
+SSO;Detector Portátil;Insumo;Filtro;ION
+SSO;Detector Portátil;Produto;GT;Thermo
+SSO;Detector Portátil;Produto;IMPACT PRO;HON
+SSO;Detector Portátil;Produto;Intellidox;HON
+SSO;Detector Portátil;Produto;Leakmate;ION
+SSO;Detector Portátil;Produto;Max XT;
+SSO;Detector Portátil;Produto;Max XT;HON
+SSO;Detector Portátil;Produto;MGD;RADIONDETECTION
+SSO;Detector Portátil;Produto;MICRO 4;HON
+SSO;Detector Portátil;Produto;MICRO 5;HON
+SSO;Detector Portátil;Produto;MicroClip;
+SSO;Detector Portátil;Produto;MicroClip;HON
+SSO;Detector Portátil;Produto;MicroDock;HON
+SSO;Detector Portátil;Produto;MIRAN;Thermo
+SSO;Detector Portátil;Produto;MVI;ION
+SSO;Detector Portátil;Produto;MX4;Industrial
+SSO;Detector Portátil;Produto;MX6;Industrial
+SSO;Detector Portátil;Produto;PHD6;HON
+SSO;Detector Portátil;Produto;Raeguard;HON
+SSO;Detector Portátil;Produto;RIKEN KEIKE;Clean
+SSO;Detector Portátil;Reposição;Sensor;DPUNION
+SSO;Detector Portátil;Reposição;Sensor;HON
+SSO;Detector Portátil;Reposição;Sensor;Industrial
+SSO;Detector Portátil;Produto;SHARPEYE;Industrial
+SSO;Detector Portátil;Produto;SPM FLEX;HON
+SSO;Detector Portátil;Produto;TX1;Industrial
+SSO;Diversos Diversos;Serviço;Calibração;Clean
+SSO;Diversos Diversos;Produto;Diversos;
+SSO;Diversos Diversos;Serviço;Hora Técnica;Clean
+SSO;Diversos Portátil;Produto;Diversos;CASELLA
+SSO;Diversos Portátil;Produto;Microdust;CASELLA
+SSO;Dosimetro Portátil;Produto;Acessório;CASELLA
+SSO;Dosimetro Portátil;Produto;Dosimetro;CASELLA
+SSO;Elevador de Liquidos Fixo;Reposição;Acessório;QED
+SSO;Medidor de Vazão Portátil;Produto;Acessório;Clean
+SSO;Medidor de Vazão Portátil;Produto;SAGE RIO;Clean
+SSO;Monitoramento Portátil;Produto;Sistema;CASELLA
+SSO;Outros Diversos;Produto;Acessório;HON
+SSO;Outros Diversos;Reposição;Acessório;Clean
+SSO;Outros Diversos;Reposição;Acessório;HON
+SSO;Outros Diversos;Produto;Outros;Clean
+SSO;Outros Fixo;Produto;Acessório;HON
+SSO;Outros Fixo;Produto;Outros;HON
+SSO;Painel controlador Diversos;Produto;CLEANVIEWERGAS;Clean
+SSO;Painel controlador Fixo;Produto;Acessório;Industrial
+SSO;Painel controlador Fixo;Reposição;Acessório;QED
+SSO;Painel controlador Fixo;Produto;WX16;Industrial
+SSO;Painel controlador Fixo;Produto;WX4;Industrial
+SSO;Painel controlador Fixo;Produto;WX64;Industrial

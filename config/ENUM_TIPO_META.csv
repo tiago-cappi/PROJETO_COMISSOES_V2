@@ -1,0 +1,6 @@
+﻿tipo_meta;escopo;descricao
+faturamento_linha;linha;Realizado da linha / Meta da linha
+conversao_linha;linha;Conversões da linha / Meta conversões da linha
+rentabilidade;item|periodo;Margem do item (ou período) / Meta de margem
+faturamento_individual;individual;Realizado individual / Meta individual
+conversao_individual;individual;Conversões do indivíduo / Meta conversões indivíduo

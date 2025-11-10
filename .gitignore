@@ -1,0 +1,34 @@
+# Arquivos Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Arquivos Excel temporários
+~$*.xlsx
+~$*.xls
+
+# Cache de taxas de câmbio (pode ser grande)
+cache_taxas_cambio.json
+
+# Arquivos de saída gerados
+Comissoes_Calculadas_*.xlsx
+Detalhamento_Comissoes_*.pdf
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log

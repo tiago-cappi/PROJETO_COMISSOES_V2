@@ -10,7 +10,7 @@ from openpyxl import Workbook
 from openpyxl.styles import PatternFill
 
 # Adicionar o diretório raiz ao path para importar os módulos
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.utils.normalization import normalize_text, calcular_atingimento
 from src.utils.styling import style_output_workbook, light_fill, PALETTE, match_group

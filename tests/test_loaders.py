@@ -8,7 +8,7 @@ import sys
 import pandas as pd
 
 # Adicionar o diretório raiz ao path para importar os módulos
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.io.config_loader import ConfigLoader
 from src.io.data_loader import DataLoader

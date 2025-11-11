@@ -163,7 +163,7 @@ class DataLoader:
         """
         Carrega arquivo de rentabilidade agrupada.
         
-        Procura em: rentabilidades/rentabilidade_{MM}_{AAAA}_agrupada.xlsx
+        Procura em: dados_entrada/rentabilidades/ ou rentabilidades/
         
         Args:
             mes: Mês de apuração
@@ -174,30 +174,60 @@ class DataLoader:
         Returns:
             DataFrame com rentabilidade ou DataFrame vazio com estrutura esperada
         """
+        # DEBUG: Log de início
+        print(f"\n[DEBUG RENTABILIDADE] DataLoader.load_rentabilidade: mes={mes}, ano={ano}, base_path={base_path}")
+        
         # Se foi fornecido caminho direto, usar
         if arquivo_rentabilidade and os.path.exists(arquivo_rentabilidade):
+            print(f"[DEBUG RENTABILIDADE] Usando arquivo direto: {arquivo_rentabilidade}")
             try:
-                return pd.read_excel(arquivo_rentabilidade)
-            except Exception:
+                df = pd.read_excel(arquivo_rentabilidade)
+                print(f"[DEBUG RENTABILIDADE] Arquivo carregado: {len(df)} linhas")
+                return df
+            except Exception as e:
+                print(f"[DEBUG RENTABILIDADE] ERRO ao carregar arquivo direto: {e}")
                 pass
         
         # Tentar encontrar arquivo na pasta rentabilidades
         mm = str(mes).zfill(2)
-        rentabilidades_dir = os.path.join(base_path, "dados_entrada", "rentabilidades")
-        if not os.path.exists(rentabilidades_dir):
-            rentabilidades_dir = os.path.join(base_path, "rentabilidades")
+        rentabilidades_dir1 = os.path.join(base_path, "dados_entrada", "rentabilidades")
+        rentabilidades_dir2 = os.path.join(base_path, "rentabilidades")
         
-        if os.path.exists(rentabilidades_dir):
-            # Buscar arquivo com padrão
-            pattern = os.path.join(rentabilidades_dir, f"*{mm}*{ano}*agrupada*.xlsx")
+        print(f"[DEBUG RENTABILIDADE] Procurando em: {rentabilidades_dir1}")
+        print(f"[DEBUG RENTABILIDADE] Procurando em: {rentabilidades_dir2}")
+        
+        # Tentar primeiro em dados_entrada/rentabilidades
+        if os.path.exists(rentabilidades_dir1):
+            pattern = os.path.join(rentabilidades_dir1, f"*{mm}*{ano}*agrupada*.xlsx")
             encontrados = glob.glob(pattern)
+            print(f"[DEBUG RENTABILIDADE] Padrão: {pattern}")
+            print(f"[DEBUG RENTABILIDADE] Encontrados em dados_entrada/rentabilidades: {encontrados}")
             if encontrados:
                 try:
-                    return pd.read_excel(encontrados[0])
-                except Exception:
+                    df = pd.read_excel(encontrados[0])
+                    print(f"[DEBUG RENTABILIDADE] Arquivo carregado de dados_entrada/rentabilidades: {len(df)} linhas")
+                    return df
+                except Exception as e:
+                    print(f"[DEBUG RENTABILIDADE] ERRO ao carregar: {e}")
+                    pass
+        
+        # Tentar em rentabilidades/ (fallback)
+        if os.path.exists(rentabilidades_dir2):
+            pattern = os.path.join(rentabilidades_dir2, f"*{mm}*{ano}*agrupada*.xlsx")
+            encontrados = glob.glob(pattern)
+            print(f"[DEBUG RENTABILIDADE] Padrão: {pattern}")
+            print(f"[DEBUG RENTABILIDADE] Encontrados em rentabilidades/: {encontrados}")
+            if encontrados:
+                try:
+                    df = pd.read_excel(encontrados[0])
+                    print(f"[DEBUG RENTABILIDADE] Arquivo carregado de rentabilidades/: {len(df)} linhas")
+                    return df
+                except Exception as e:
+                    print(f"[DEBUG RENTABILIDADE] ERRO ao carregar: {e}")
                     pass
         
         # Se não encontrou, retornar DataFrame vazio com estrutura esperada
+        print(f"[DEBUG RENTABILIDADE] AVISO: Arquivo não encontrado! Retornando DataFrame vazio.")
         return pd.DataFrame(
             columns=[
                 "Negócio",

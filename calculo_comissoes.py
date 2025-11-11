@@ -76,6 +76,8 @@ from src.core.currency_rates import CurrencyRateManager
 
 # Flag simples de verbosidade (NÃO muda cálculo)
 LOG_VERBOSE = os.getenv("COMISSOES_VERBOSE", "0") == "1"
+# NOVO: Flag específica para debug de rentabilidade (pode ser ativada independentemente)
+DEBUG_RENTABILIDADE = os.getenv("DEBUG_RENTABILIDADE", "0") == "1"
 
 try:  # Instrumentação de progresso (opcional, não altera cálculo)
     from progress_tracker import ProgressTracker, step_timer as _step_timer
@@ -642,9 +644,50 @@ class CalculoComissao:
         rent_realizada = self.data["RENTABILIDADE_REALIZADA"].rename(
             columns={"Negócio": "linha"}
         )
+
+        # ========================================================================
+        # DEBUG RENTABILIDADE: Carregamento de Rentabilidade Realizada
+        # ========================================================================
+        print("\n" + "=" * 80)
+        print("DEBUG RENTABILIDADE: CARREGAMENTO DE RENTABILIDADE REALIZADA")
+        print("=" * 80)
+        print(f"DataFrame carregado: {len(rent_realizada)} linhas")
+        if not rent_realizada.empty:
+            print(f"Colunas disponíveis: {list(rent_realizada.columns)}")
+            print(f"Primeiras 3 linhas:")
+            for idx, row in rent_realizada.head(3).iterrows():
+                print(
+                    f"  - Linha: {row.get('linha', 'N/A')}, Grupo: {row.get('Grupo', 'N/A')}, "
+                    f"Subgrupo: {row.get('Subgrupo', 'N/A')}, Tipo: {row.get('Tipo de Mercadoria', 'N/A')}, "
+                    f"Rent: {row.get('rentabilidade_realizada_pct', 'N/A')}"
+                )
+        else:
+            print("AVISO: DataFrame de rentabilidade está VAZIO!")
+        print("=" * 80 + "\n")
+
+        # NOVO: Garantir que valores de índice sejam strings normalizadas para correspondência exata
+        if not rent_realizada.empty:
+            # Normalizar valores das colunas de índice para garantir correspondência
+            for col in ["linha", "Grupo", "Subgrupo", "Tipo de Mercadoria"]:
+                if col in rent_realizada.columns:
+                    rent_realizada[col] = rent_realizada[col].astype(str).str.strip()
+
         self.realizado["rentabilidade"] = rent_realizada.set_index(
             ["linha", "Grupo", "Subgrupo", "Tipo de Mercadoria"]
         )["rentabilidade_realizada_pct"]
+
+        # DEBUG: Mostrar índices criados
+        print("=" * 80)
+        print("DEBUG RENTABILIDADE: ÍNDICES CRIADOS DA SERIES")
+        print("=" * 80)
+        if isinstance(self.realizado["rentabilidade"], pd.Series):
+            print(f"Total de índices: {len(self.realizado['rentabilidade'])}")
+            print(f"Primeiros 5 índices:")
+            for idx in list(self.realizado["rentabilidade"].index)[:5]:
+                print(f"  - {idx} -> {self.realizado['rentabilidade'][idx]}")
+        else:
+            print("AVISO: Series de rentabilidade não foi criada corretamente!")
+        print("=" * 80 + "\n")
 
     def _get_meta(self, tipo_meta, chave):
         """Busca o valor da meta correspondente."""
@@ -667,20 +710,124 @@ class CalculoComissao:
                 ]["valor_meta"].iloc[0]
                 return valor
             elif tipo_meta == "rentabilidade":
+                # ========================================================================
+                # DEBUG RENTABILIDADE: Busca de Meta de Rentabilidade
+                # ========================================================================
                 df = self.data["META_RENTABILIDADE"]
                 linha, grupo, subgrupo, tipo_mercadoria = chave
-                valor = df[
-                    (df["linha"] == linha)
-                    & (df["grupo"] == grupo)
-                    & (df["subgrupo"] == subgrupo)
-                    & (df["tipo_mercadoria"] == tipo_mercadoria)
-                ]["meta_rentabilidade_alvo_pct"].iloc[0]
-                return valor
-        except (IndexError, KeyError):
+
+                print(f"\n[DEBUG RENTABILIDADE] Buscando meta de rentabilidade:")
+                print(
+                    f"  - Chave original: linha='{linha}', grupo='{grupo}', subgrupo='{subgrupo}', tipo='{tipo_mercadoria}'"
+                )
+                print(f"  - Total de metas disponíveis: {len(df)}")
+
+                # NOVO: Normalizar valores da chave para garantir correspondência exata
+                linha_norm = (
+                    str(linha).strip()
+                    if linha is not None and not pd.isna(linha)
+                    else ""
+                )
+                grupo_norm = (
+                    str(grupo).strip()
+                    if grupo is not None and not pd.isna(grupo)
+                    else ""
+                )
+                subgrupo_norm = (
+                    str(subgrupo).strip()
+                    if subgrupo is not None and not pd.isna(subgrupo)
+                    else ""
+                )
+                tipo_norm = (
+                    str(tipo_mercadoria).strip()
+                    if tipo_mercadoria is not None and not pd.isna(tipo_mercadoria)
+                    else ""
+                )
+
+                print(
+                    f"  - Chave normalizada: linha='{linha_norm}', grupo='{grupo_norm}', subgrupo='{subgrupo_norm}', tipo='{tipo_norm}'"
+                )
+
+                # Buscar com valores normalizados
+                filtro = (
+                    (df["linha"].astype(str).str.strip() == linha_norm)
+                    & (df["grupo"].astype(str).str.strip() == grupo_norm)
+                    & (df["subgrupo"].astype(str).str.strip() == subgrupo_norm)
+                    & (df["tipo_mercadoria"].astype(str).str.strip() == tipo_norm)
+                )
+                candidatos = df[filtro]
+                print(
+                    f"  - Candidatos encontrados (busca normalizada): {len(candidatos)}"
+                )
+
+                if len(candidatos) > 0:
+                    valor = candidatos["meta_rentabilidade_alvo_pct"].iloc[0]
+                    print(f"  - Meta encontrada: {valor}")
+                    print("=" * 80)
+                    return valor
+                else:
+                    # DEBUG: Log quando não encontra
+                    print(
+                        f"  - AVISO: Meta não encontrada para chave normalizada. Tentando busca sem normalização..."
+                    )
+                    # Fallback: tentar sem normalização (busca original)
+                    filtro_original = (
+                        (df["linha"] == linha)
+                        & (df["grupo"] == grupo)
+                        & (df["subgrupo"] == subgrupo)
+                        & (df["tipo_mercadoria"] == tipo_mercadoria)
+                    )
+                    candidatos_original = df[filtro_original]
+                    print(
+                        f"  - Candidatos encontrados (busca original): {len(candidatos_original)}"
+                    )
+                    if len(candidatos_original) > 0:
+                        valor = candidatos_original["meta_rentabilidade_alvo_pct"].iloc[
+                            0
+                        ]
+                        print(f"  - Meta encontrada (busca original): {valor}")
+                        print("=" * 80)
+                        return valor
+                    else:
+                        print(
+                            f"  - ERRO: Meta NÃO encontrada nem com busca normalizada nem original!"
+                        )
+                        print("=" * 80)
+                    # Se ainda não encontrou, deixar o erro ser capturado pelo except abaixo
+        except (IndexError, KeyError) as e:
+            # NOVO: Log mais detalhado para rentabilidade
+            if tipo_meta == "rentabilidade":
+                linha, grupo, subgrupo, tipo_mercadoria = (
+                    chave
+                    if isinstance(chave, tuple) and len(chave) == 4
+                    else (None, None, None, None)
+                )
+                self._log_validacao(
+                    "AVISO",
+                    f"Meta de rentabilidade não encontrada para tipo '{tipo_meta}' e chave '{chave}'.",
+                    {
+                        "tipo_meta": tipo_meta,
+                        "chave": chave,
+                        "linha": linha,
+                        "grupo": grupo,
+                        "subgrupo": subgrupo,
+                        "tipo_mercadoria": tipo_mercadoria,
+                        "erro": str(e),
+                    },
+                )
+            else:
+                self._log_validacao(
+                    "AVISO",
+                    f"Meta não encontrada para tipo '{tipo_meta}' e chave '{chave}'.",
+                    {"tipo_meta": tipo_meta, "chave": chave, "erro": str(e)},
+                )
+            return None
+        except Exception as e:
+            # NOVO: Capturar outros erros e logar
             self._log_validacao(
-                "AVISO",
-                f"Meta não encontrada para tipo '{tipo_meta}' e chave '{chave}'.",
-                {"tipo_meta": tipo_meta, "chave": chave},
+                "ERRO",
+                f"Erro inesperado ao buscar meta para tipo '{tipo_meta}' e chave '{chave}': {e}",
+                {"tipo_meta": tipo_meta, "chave": chave, "erro": str(e)},
             )
             return None
         return None
@@ -820,8 +967,87 @@ class CalculoComissao:
                         f"[RECONC-DEBUG-FC] {tipo_meta}: buscando '{chave_busca}' em '{realizado_key}' {series_info} -> valor={realizado}"
                     )
             else:  # rentabilidade
+                # ========================================================================
+                # DEBUG RENTABILIDADE: Busca de Rentabilidade Realizada
+                # ========================================================================
                 chave_busca = meta_chave
-                realizado = self.realizado[realizado_key].get(chave_busca, 0)
+                # NOVO: Normalizar chave de rentabilidade para garantir correspondência exata
+                # meta_chave é uma tupla (linha, grupo, subgrupo, tipo_mercadoria)
+                # Precisamos garantir que corresponda exatamente ao índice da Series
+                chave_normalizada = tuple(
+                    str(v).strip() if v is not None and not pd.isna(v) else ""
+                    for v in chave_busca
+                )
+
+                # DEBUG: Log detalhado para rentabilidade (SEMPRE)
+                series_rent = self.realizado[realizado_key]
+                indices_disponiveis = (
+                    list(series_rent.index)[:5]
+                    if isinstance(series_rent, pd.Series)
+                    else []
+                )
+                print(f"\n[DEBUG RENTABILIDADE] Buscando rentabilidade realizada:")
+                print(
+                    f"  - Item: {item_faturado.get('Código Produto', 'N/A')} (Processo: {item_faturado.get('Processo', 'N/A')})"
+                )
+                print(f"  - Chave original: {chave_busca}")
+                print(f"  - Chave normalizada: {chave_normalizada}")
+                print(f"  - Índices disponíveis (amostra): {indices_disponiveis}")
+
+                # Tentar busca com chave normalizada
+                realizado = self.realizado[realizado_key].get(chave_normalizada, None)
+                print(f"  - Resultado busca normalizada: {realizado}")
+
+                # Se não encontrou, tentar com chave original (fallback)
+                if realizado is None or (
+                    isinstance(realizado, (int, float))
+                    and realizado == 0
+                    and chave_normalizada not in self.realizado[realizado_key].index
+                ):
+                    realizado = self.realizado[realizado_key].get(chave_busca, 0)
+                    print(f"  - Resultado busca original (fallback): {realizado}")
+                    if realizado == 0:
+                        print(
+                            f"  - AVISO: Rentabilidade não encontrada para chave {chave_normalizada} (original: {chave_busca}). Retornando 0."
+                        )
+
+                # Se ainda não encontrou, logar aviso
+                if realizado is None or (
+                    isinstance(realizado, (int, float)) and realizado == 0
+                ):
+                    # Verificar se a chave existe no índice (pode ser problema de correspondência)
+                    series_rent = self.realizado[realizado_key]
+                    if (
+                        isinstance(series_rent, pd.Series)
+                        and chave_normalizada not in series_rent.index
+                    ):
+                        print(
+                            f"  - ERRO: Chave {chave_normalizada} NÃO existe no índice da Series!"
+                        )
+                        # Verificar se há chaves similares
+                        if isinstance(series_rent, pd.Series):
+                            chaves_similares = [
+                                idx
+                                for idx in series_rent.index
+                                if str(idx[0]).strip().upper()
+                                == str(chave_normalizada[0]).strip().upper()
+                            ]
+                            if chaves_similares:
+                                print(
+                                    f"  - Chaves similares encontradas (mesma linha): {chaves_similares[:3]}"
+                                )
+                        self._log_validacao(
+                            "AVISO",
+                            f"Rentabilidade não encontrada para chave {chave_normalizada} (item: {item_faturado.get('Código Produto', 'N/A')})",
+                            {
+                                "chave_busca": chave_normalizada,
+                                "chave_original": chave_busca,
+                                "item": item_faturado.get("Código Produto", None),
+                                "processo": item_faturado.get("Processo", None),
+                            },
+                        )
+                    realizado = realizado if realizado is not None else 0
+
                 # garantir que realizado de rentabilidade esteja em decimal (ex: 0.12)
                 try:
                     if realizado is not None:
@@ -832,13 +1058,49 @@ class CalculoComissao:
                 except Exception:
                     pass
 
+                print(
+                    f"  - Realizado final (após conversão): {realizado} (tipo: {type(realizado).__name__})"
+                )
+                print("=" * 80)
+
             meta = self._get_meta(tipo_meta, meta_chave)
+
+            # ========================================================================
+            # DEBUG RENTABILIDADE: Cálculo do Componente FC
+            # ========================================================================
+            if tipo_meta == "rentabilidade":
+                print(f"\n[DEBUG RENTABILIDADE] Calculando componente FC:")
+                print(f"  - Realizado: {realizado}")
+                print(f"  - Meta: {meta}")
+                print(f"  - Peso: {peso}")
+
+                if meta is None:
+                    print(f"  - ERRO: Meta de rentabilidade é None!")
+                    self._log_validacao(
+                        "AVISO",
+                        f"Meta de rentabilidade é None para item {item_faturado.get('Código Produto', 'N/A')}",
+                        {
+                            "item": item_faturado.get("Código Produto", None),
+                            "chave": meta_chave,
+                            "realizado": realizado,
+                        },
+                    )
+                elif realizado == 0:
+                    print(f"  - AVISO: Realizado é 0 para chave {meta_chave}")
+
             atingimento = _calcular_atingimento(realizado, meta)
 
             cap_atingimento = float(self.params.get("cap_atingimento_max", 1.0))
             atingimento_cap = min(atingimento, cap_atingimento)
             componente_fc = atingimento_cap * peso
             fc_total_item += componente_fc
+
+            if tipo_meta == "rentabilidade":
+                print(f"  - Atingimento: {atingimento:.4f}")
+                print(f"  - Atingimento (cap): {atingimento_cap:.4f}")
+                print(f"  - Componente FC: {componente_fc:.6f}")
+                print(f"  - FC total acumulado: {fc_total_item:.6f}")
+                print("=" * 80)
 
             # armazenar detalhe deste componente
             detalhes_fc[tipo_meta] = {
@@ -1916,7 +2178,17 @@ class CalculoComissao:
                 "[Recebimentos] Início do cálculo de comissões por recebimento (nova lógica)"
             )
             loader = FinancialPaymentsLoader()
-            path_fin = os.path.join(self.base_path, "Análise Financeira.xlsx")
+            # NOVO: Procurar arquivo primeiro em dados_entrada/, depois na raiz
+            path_fin_entrada = os.path.join("dados_entrada", "Análise Financeira.xlsx")
+            path_fin_raiz = os.path.join(self.base_path, "Análise Financeira.xlsx")
+            if os.path.exists(path_fin_entrada):
+                path_fin = path_fin_entrada
+            elif os.path.exists(path_fin_raiz):
+                path_fin = path_fin_raiz
+            else:
+                path_fin = (
+                    path_fin_raiz  # Tentar mesmo assim (pode gerar erro mais claro)
+                )
             pagamentos = loader.load_from_file(path_fin)
 
             # NOVO (DEBUG): Salvar DataFrame normalizado para aba de debug
@@ -4464,7 +4736,65 @@ class CalculoComissao:
         # Em seguida, comissões de recebimento (usa TCMP/FCMP quando disponível)
         _phase("5.2 Calculando comissões por recebimento (nova lógica)...")
         with _timer_ctx("Comissões por recebimento", _safe_percent("estado_adiant")):
-            self._calcular_comissoes_recebimento_nova_logica()
+            try:
+                print("\n" + "=" * 80)
+                print(
+                    "[RECEBIMENTO] ===== INÍCIO DO PROCESSO DE GERAÇÃO DO ARQUIVO DE RECEBIMENTO ====="
+                )
+                print(
+                    f"[RECEBIMENTO] Mês/Ano de apuração: {self.mes_apuracao:02d}/{self.ano_apuracao}"
+                )
+                print(f"[RECEBIMENTO] Base path: {self.base_path}")
+                print("=" * 80 + "\n")
+
+                from src.recebimento.recebimento_orchestrator import (
+                    RecebimentoOrchestrator,
+                )
+
+                print("[RECEBIMENTO] [ETAPA 1/6] Importando RecebimentoOrchestrator...")
+                orchestrator = RecebimentoOrchestrator(
+                    self, self.mes_apuracao, self.ano_apuracao, self.base_path
+                )
+                print(
+                    "[RECEBIMENTO] [ETAPA 1/6] RecebimentoOrchestrator inicializado com sucesso"
+                )
+
+                print("[RECEBIMENTO] [ETAPA 2/6] Iniciando execução do orquestrador...")
+                arquivo_recebimento = orchestrator.executar()
+
+                print("\n" + "=" * 80)
+                print(
+                    f"[RECEBIMENTO] ===== ARQUIVO DE RECEBIMENTO GERADO COM SUCESSO ====="
+                )
+                print(f"[RECEBIMENTO] Caminho do arquivo: {arquivo_recebimento}")
+                print("=" * 80 + "\n")
+
+                _info(
+                    f"[Recebimentos] Arquivo de recebimentos gerado: {arquivo_recebimento}"
+                )
+
+                # Manter compatibilidade: definir comissoes_recebimento_df vazio
+                # (os dados estão no arquivo separado)
+                self.comissoes_recebimento_df = pd.DataFrame()
+            except Exception as e:
+                import traceback
+
+                print("\n" + "=" * 80)
+                print(
+                    "[RECEBIMENTO] ===== ERRO NO PROCESSO DE GERAÇÃO DO ARQUIVO DE RECEBIMENTO ====="
+                )
+                print(f"[RECEBIMENTO] Erro: {str(e)}")
+                print(f"[RECEBIMENTO] Tipo do erro: {type(e).__name__}")
+                print("[RECEBIMENTO] Traceback completo:")
+                traceback.print_exc()
+                print("=" * 80 + "\n")
+
+                _info(f"[Recebimentos] Erro ao calcular comissões por recebimento: {e}")
+                # Fallback para método antigo se houver erro
+                try:
+                    self._calcular_comissoes_recebimento_nova_logica()
+                except Exception:
+                    self.comissoes_recebimento_df = pd.DataFrame()
         # Por fim, comissões por faturamento (lógica existente, item a item)
         _phase("5.3 Calculando comissões e FC item a item (faturamento)...")
         with _timer_ctx("Calcular comissões e FC", _safe_percent("comissoes")):
@@ -4589,22 +4919,37 @@ if __name__ == "__main__":
 
         # Selecionar o arquivo de rentabilidade agrupada correto na pasta 'rentabilidades'
         mm = str(mes).zfill(2)
-        candidato = f"rentabilidades/rentabilidade_{mm}_{ano}_agrupada.xlsx"
         import glob
 
-        encontrados = glob.glob(f"rentabilidades/*{mm}*{ano}*agrupada*.xlsx")
+        # NOVO: Procurar primeiro em dados_entrada/rentabilidades, depois em rentabilidades/
+        candidato1 = (
+            f"dados_entrada/rentabilidades/rentabilidade_{mm}_{ano}_agrupada.xlsx"
+        )
+        candidato2 = f"rentabilidades/rentabilidade_{mm}_{ano}_agrupada.xlsx"
+
+        # Buscar com glob em ambos os locais
+        encontrados1 = glob.glob(
+            f"dados_entrada/rentabilidades/*{mm}*{ano}*agrupada*.xlsx"
+        )
+        encontrados2 = glob.glob(f"rentabilidades/*{mm}*{ano}*agrupada*.xlsx")
+
+        encontrados = encontrados1 + encontrados2
+
         if encontrados:
             ARQUIVO_RENTABILIDADE = encontrados[0]
             _info(f"Usando arquivo de rentabilidade: {ARQUIVO_RENTABILIDADE}")
         else:
             # fallback para nome padrão caso não encontre agrupada
-            padrao = f"rentabilidades/rentabilidade_{mm}_{ano}_agrupada.xlsx"
-            if os.path.exists(padrao):
-                ARQUIVO_RENTABILIDADE = padrao
+            if os.path.exists(candidato1):
+                ARQUIVO_RENTABILIDADE = candidato1
+                _info(f"Usando arquivo de rentabilidade: {ARQUIVO_RENTABILIDADE}")
+            elif os.path.exists(candidato2):
+                ARQUIVO_RENTABILIDADE = candidato2
                 _info(f"Usando arquivo de rentabilidade: {ARQUIVO_RENTABILIDADE}")
             else:
                 _info(
-                    f"Aviso: não foi encontrado arquivo de rentabilidade agrupada para {mm}/{ano} na pasta 'rentabilidades'. Procurados: {candidato}"
+                    f"Aviso: não foi encontrado arquivo de rentabilidade agrupada para {mm}/{ano}. "
+                    f"Procurados em: dados_entrada/rentabilidades/ e rentabilidades/"
                 )
 
         calculadora = CalculoComissao()

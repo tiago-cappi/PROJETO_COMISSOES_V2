@@ -30,8 +30,33 @@ def _parse_dates_smart(series):
 
 
 # --- CONFIGURAÇÕES ---
+# Caminhos: procurar primeiro em dados_entrada/, depois na raiz
+PASTA_DADOS_ENTRADA = "dados_entrada"
 ARQUIVO_ANALISE_COMPLETA = "Analise_Comercial_Completa.csv"
 ARQUIVO_SAIDA_FATURADOS = "Faturados.xlsx"
+
+
+def _encontrar_arquivo_entrada(nome_arquivo: str) -> str:
+    """
+    Procura arquivo primeiro em dados_entrada/, depois na raiz.
+
+    Args:
+        nome_arquivo: Nome do arquivo (ex: "Analise_Comercial_Completa.xlsx")
+
+    Returns:
+        Caminho completo do arquivo encontrado ou None se não encontrado
+    """
+    # Tentar primeiro em dados_entrada/
+    caminho_entrada = os.path.join(PASTA_DADOS_ENTRADA, nome_arquivo)
+    if os.path.exists(caminho_entrada):
+        return caminho_entrada
+
+    # Tentar na raiz
+    if os.path.exists(nome_arquivo):
+        return nome_arquivo
+
+    return None
+
 
 # Default column sets used to create empty files when inputs are missing
 DEFAULT_WANTED_FATURADOS = [
@@ -98,12 +123,15 @@ DEFAULT_YTD_WANTED = [
 
 # Auto-conversão: suportar .xlsx e .csv
 # Se existir .xlsx e não existir .csv, converte automaticamente
-if os.path.exists("Analise_Comercial_Completa.xlsx") and not os.path.exists(
-    ARQUIVO_ANALISE_COMPLETA
-):
+# NOVO: Procurar primeiro em dados_entrada/
+xlsx_path = _encontrar_arquivo_entrada("Analise_Comercial_Completa.xlsx")
+csv_path = _encontrar_arquivo_entrada(ARQUIVO_ANALISE_COMPLETA)
+
+if xlsx_path and not csv_path:
     try:
-        print("Detectado Analise_Comercial_Completa.xlsx - convertendo para .csv...")
-        df_temp = pd.read_excel("Analise_Comercial_Completa.xlsx", dtype=str)
+        print(f"Detectado {xlsx_path} - convertendo para .csv...")
+        df_temp = pd.read_excel(xlsx_path, dtype=str)
+        # Salvar CSV na raiz (onde o código espera)
         df_temp.to_csv(ARQUIVO_ANALISE_COMPLETA, index=False, encoding="utf-8-sig")
         print(f"[OK] Conversao concluida: {ARQUIVO_ANALISE_COMPLETA} criado.")
     except Exception as e:
@@ -625,13 +653,15 @@ def run_preparador(mes: int, ano: int) -> bool:
     """
     print(f"--- Preparador: gerando arquivos para {mes}/{ano} ---")
 
-    # Auto-conversão: se existir .xlsx e não existir .csv, converte automaticamente
-    if not os.path.exists(ARQUIVO_ANALISE_COMPLETA):
-        xlsx_path = "Analise_Comercial_Completa.xlsx"
-        if os.path.exists(xlsx_path):
+    # NOVO: Auto-conversão procurando primeiro em dados_entrada/
+    csv_path = _encontrar_arquivo_entrada(ARQUIVO_ANALISE_COMPLETA)
+    if not csv_path:
+        xlsx_path = _encontrar_arquivo_entrada("Analise_Comercial_Completa.xlsx")
+        if xlsx_path:
             try:
                 print(f"Detectado {xlsx_path} - convertendo para .csv...")
                 df_temp = pd.read_excel(xlsx_path, dtype=str)
+                # Salvar CSV na raiz (onde o código espera)
                 df_temp.to_csv(
                     ARQUIVO_ANALISE_COMPLETA, index=False, encoding="utf-8-sig"
                 )
@@ -641,69 +671,97 @@ def run_preparador(mes: int, ano: int) -> bool:
                 print("Tentarei usar o arquivo .xlsx diretamente se possivel.")
         else:
             print(
-                f"\nERRO CRÍTICO: O arquivo '{ARQUIVO_ANALISE_COMPLETA}' não foi encontrado e '{xlsx_path}' também não existe."
+                f"\nERRO CRÍTICO: O arquivo '{ARQUIVO_ANALISE_COMPLETA}' não foi encontrado em '{PASTA_DADOS_ENTRADA}/' nem na raiz, "
+                f"e 'Analise_Comercial_Completa.xlsx' também não existe em '{PASTA_DADOS_ENTRADA}/' nem na raiz."
             )
             return False
 
-    if not os.path.exists(ARQUIVO_ANALISE_COMPLETA):
+    # Determinar qual arquivo usar
+    arquivo_para_ler = None
+
+    # Prioridade 1: CSV na raiz (já convertido ou já existia)
+    if os.path.exists(ARQUIVO_ANALISE_COMPLETA):
+        arquivo_para_ler = ARQUIVO_ANALISE_COMPLETA
+    # Prioridade 2: CSV em dados_entrada/
+    elif csv_path:
+        arquivo_para_ler = csv_path
+    # Prioridade 3: .xlsx encontrado (já convertido acima ou usar diretamente)
+    elif xlsx_path:
+        # Se não foi convertido acima, usar .xlsx diretamente
+        if not os.path.exists(ARQUIVO_ANALISE_COMPLETA):
+            arquivo_para_ler = xlsx_path
+        else:
+            arquivo_para_ler = ARQUIVO_ANALISE_COMPLETA
+    else:
         print(
             f"\nERRO CRÍTICO: O arquivo '{ARQUIVO_ANALISE_COMPLETA}' não foi encontrado após tentativa de conversão."
         )
         return False
 
     print(
-        f"\nLendo o arquivo '{ARQUIVO_ANALISE_COMPLETA}'... (Isso pode levar alguns instantes)"
+        f"\nLendo o arquivo '{arquivo_para_ler}'... (Isso pode levar alguns instantes)"
     )
     df_analise = None
     encodings_to_try = ["utf-8-sig", "utf-8", "latin1"]
     last_exc = None
 
-    def _detect_sep(path, encodings=("utf-8-sig", "utf-8", "latin1")):
-        for enc in encodings:
-            try:
-                with open(path, "r", encoding=enc, errors="replace") as fh:
-                    first = fh.readline()
-                    counts = {
-                        ",": first.count(","),
-                        ";": first.count(";"),
-                        "\t": first.count("\t"),
-                    }
-                    sep = max(counts, key=lambda k: (counts[k], 1 if k == ";" else 0))
-                    if counts[sep] == 0:
-                        sep = ","
-                    return sep, enc
-            except Exception:
-                continue
-        return ",", encodings[0]
-
-    sep_detected, used_enc_for_sep = _detect_sep(
-        ARQUIVO_ANALISE_COMPLETA, encodings_to_try
-    )
-    for enc in encodings_to_try:
+    # Ler arquivo (suporta .xlsx e .csv)
+    if arquivo_para_ler.endswith(".xlsx"):
         try:
-            df_analise = pd.read_csv(
-                ARQUIVO_ANALISE_COMPLETA,
-                sep=sep_detected,
-                engine="python",
-                on_bad_lines="warn",
-                dtype=str,
-                encoding=enc,
-            )
+            df_analise = pd.read_excel(arquivo_para_ler, dtype=str)
             df_analise.columns = [c.strip() for c in df_analise.columns]
-            print(
-                f"Arquivo lido com sucesso com encoding={enc} and sep='{sep_detected}'."
-            )
-            break
+            print(f"Arquivo .xlsx lido com sucesso: {arquivo_para_ler}")
         except Exception as e:
-            last_exc = e
-            print(f"Aviso: falha ao ler com encoding={enc}: {e}")
-            df_analise = None
+            print(f"\nERRO CRÍTICO: Falha ao ler o arquivo '{arquivo_para_ler}': {e}")
+            return False
+    else:
+        # É CSV
+        def _detect_sep(path, encodings=("utf-8-sig", "utf-8", "latin1")):
+            for enc in encodings:
+                try:
+                    with open(path, "r", encoding=enc, errors="replace") as fh:
+                        first = fh.readline()
+                        counts = {
+                            ",": first.count(","),
+                            ";": first.count(";"),
+                            "\t": first.count("\t"),
+                        }
+                        sep = max(
+                            counts, key=lambda k: (counts[k], 1 if k == ";" else 0)
+                        )
+                        if counts[sep] == 0:
+                            sep = ","
+                        return sep, enc
+                except Exception:
+                    continue
+            return ",", encodings[0]
 
-    if df_analise is None:
-        print(
-            f"\nERRO CRÍTICO: Falha ao ler o arquivo '{ARQUIVO_ANALISE_COMPLETA}' com encodings tentados. Último erro: {last_exc}"
-        )
-        return False
+        sep_detected, used_enc_for_sep = _detect_sep(arquivo_para_ler, encodings_to_try)
+        for enc in encodings_to_try:
+            try:
+                df_analise = pd.read_csv(
+                    arquivo_para_ler,
+                    sep=sep_detected,
+                    engine="python",
+                    on_bad_lines="warn",
+                    dtype=str,
+                    encoding=enc,
+                )
+                df_analise.columns = [c.strip() for c in df_analise.columns]
+                print(
+                    f"Arquivo lido com sucesso com encoding={enc} and sep='{sep_detected}'."
+                )
+                break
+            except Exception as e:
+                last_exc = e
+                print(f"Aviso: falha ao ler com encoding={enc}: {e}")
+                df_analise = None
+
+        if df_analise is None:
+            print(
+                f"\nERRO CRÍTICO: Falha ao ler o arquivo '{arquivo_para_ler}' com encodings tentados. Último erro: {last_exc}"
+            )
+            return False
 
     # Tentar normalização de colunas e consolidar
     df_analise.columns = [c.strip() for c in df_analise.columns]
@@ -753,30 +811,46 @@ def prepare_dataframes_for_month(mes: int, ano: int):
     para o mês/ano solicitado sem gravar arquivos em disco. Usa a mesma lógica interna
     dos geradores, mas retorna DataFrames temporários.
     """
-    if not os.path.exists(ARQUIVO_ANALISE_COMPLETA):
-        raise FileNotFoundError(ARQUIVO_ANALISE_COMPLETA)
+    # NOVO: Procurar arquivo em dados_entrada/ primeiro
+    arquivo_analise = _encontrar_arquivo_entrada(ARQUIVO_ANALISE_COMPLETA)
+    if not arquivo_analise:
+        # Tentar .xlsx também
+        arquivo_analise = _encontrar_arquivo_entrada("Analise_Comercial_Completa.xlsx")
+        if not arquivo_analise:
+            raise FileNotFoundError(
+                f"Arquivo não encontrado em '{PASTA_DADOS_ENTRADA}/' nem na raiz: {ARQUIVO_ANALISE_COMPLETA}"
+            )
 
     # Ler arquivo como em run_preparador
-    sep_detected, used_enc_for_sep = _detect_sep(
-        ARQUIVO_ANALISE_COMPLETA, ["utf-8-sig", "utf-8", "latin1"]
-    )
-    df_analise = None
-    for enc in ["utf-8-sig", "utf-8", "latin1"]:
+    # Se for .xlsx, ler diretamente
+    if arquivo_analise.endswith(".xlsx"):
         try:
-            df_analise = pd.read_csv(
-                ARQUIVO_ANALISE_COMPLETA,
-                sep=sep_detected,
-                engine="python",
-                on_bad_lines="warn",
-                dtype=str,
-                encoding=enc,
-            )
+            df_analise = pd.read_excel(arquivo_analise, dtype=str)
             df_analise.columns = [c.strip() for c in df_analise.columns]
-            break
-        except Exception:
-            df_analise = None
-    if df_analise is None:
-        raise RuntimeError("Falha ao ler Analise_Comercial_Completa")
+        except Exception as e:
+            raise RuntimeError(f"Falha ao ler {arquivo_analise}: {e}")
+    else:
+        # É CSV
+        sep_detected, used_enc_for_sep = _detect_sep(
+            arquivo_analise, ["utf-8-sig", "utf-8", "latin1"]
+        )
+        df_analise = None
+        for enc in ["utf-8-sig", "utf-8", "latin1"]:
+            try:
+                df_analise = pd.read_csv(
+                    arquivo_analise,
+                    sep=sep_detected,
+                    engine="python",
+                    on_bad_lines="warn",
+                    dtype=str,
+                    encoding=enc,
+                )
+                df_analise.columns = [c.strip() for c in df_analise.columns]
+                break
+            except Exception:
+                df_analise = None
+        if df_analise is None:
+            raise RuntimeError(f"Falha ao ler {arquivo_analise}")
 
     # Consolidar colunas duplicadas
     def _consolidate_duplicates_local(df_local):
@@ -1523,14 +1597,34 @@ def main():
     mes, ano = obter_mes_ano()
 
     # 2. Ler o arquivo de análise completa
-    if not os.path.exists(ARQUIVO_ANALISE_COMPLETA):
-        print(
-            f"\nERRO CRÍTICO: O arquivo '{ARQUIVO_ANALISE_COMPLETA}' não foi encontrado."
-        )
-        sys.exit(1)  # Termina o script se o arquivo principal não existe
+    # NOVO: Procurar primeiro em dados_entrada/
+    arquivo_analise = _encontrar_arquivo_entrada(ARQUIVO_ANALISE_COMPLETA)
+    if not arquivo_analise:
+        # Tentar .xlsx também
+        arquivo_analise = _encontrar_arquivo_entrada("Analise_Comercial_Completa.xlsx")
+        if not arquivo_analise:
+            print(
+                f"\nERRO CRÍTICO: O arquivo '{ARQUIVO_ANALISE_COMPLETA}' não foi encontrado em '{PASTA_DADOS_ENTRADA}/' nem na raiz, "
+                f"e 'Analise_Comercial_Completa.xlsx' também não existe em '{PASTA_DADOS_ENTRADA}/' nem na raiz."
+            )
+            sys.exit(1)  # Termina o script se o arquivo principal não existe
+
+    # Se encontrou .xlsx e não existe CSV, converter
+    if arquivo_analise.endswith(".xlsx") and not os.path.exists(
+        ARQUIVO_ANALISE_COMPLETA
+    ):
+        try:
+            print(f"Detectado {arquivo_analise} - convertendo para .csv...")
+            df_temp = pd.read_excel(arquivo_analise, dtype=str)
+            df_temp.to_csv(ARQUIVO_ANALISE_COMPLETA, index=False, encoding="utf-8-sig")
+            print(f"[OK] Conversao concluida: {ARQUIVO_ANALISE_COMPLETA} criado.")
+            arquivo_analise = ARQUIVO_ANALISE_COMPLETA
+        except Exception as e:
+            print(f"AVISO: Falha ao converter .xlsx para .csv: {e}")
+            print("Tentarei usar o arquivo .xlsx diretamente.")
 
     print(
-        f"\nLendo o arquivo '{ARQUIVO_ANALISE_COMPLETA}'... (Isso pode levar alguns instantes)"
+        f"\nLendo o arquivo '{arquivo_analise}'... (Isso pode levar alguns instantes)"
     )
     df_analise = None
     encodings_to_try = ["utf-8-sig", "utf-8", "latin1"]
@@ -1558,35 +1652,44 @@ def main():
                 continue
         return ",", encodings[0]
 
-    sep_detected, used_enc_for_sep = _detect_sep(
-        ARQUIVO_ANALISE_COMPLETA, encodings_to_try
-    )
-    for enc in encodings_to_try:
+    # Ler arquivo (suporta .xlsx e .csv)
+    if arquivo_analise.endswith(".xlsx"):
         try:
-            df_analise = pd.read_csv(
-                ARQUIVO_ANALISE_COMPLETA,
-                sep=sep_detected,
-                engine="python",
-                on_bad_lines="warn",
-                dtype=str,
-                encoding=enc,
-            )
-            # strip column names
+            df_analise = pd.read_excel(arquivo_analise, dtype=str)
             df_analise.columns = [c.strip() for c in df_analise.columns]
-            print(
-                f"Arquivo lido com sucesso com encoding={enc} and sep='{sep_detected}'."
-            )
-            break
+            print(f"Arquivo .xlsx lido com sucesso: {arquivo_analise}")
         except Exception as e:
-            last_exc = e
-            print(f"Aviso: falha ao ler com encoding={enc}: {e}")
-            df_analise = None
+            print(f"\nERRO CRÍTICO: Falha ao ler o arquivo '{arquivo_analise}': {e}")
+            sys.exit(1)
+    else:
+        # É CSV
+        sep_detected, used_enc_for_sep = _detect_sep(arquivo_analise, encodings_to_try)
+        for enc in encodings_to_try:
+            try:
+                df_analise = pd.read_csv(
+                    arquivo_analise,
+                    sep=sep_detected,
+                    engine="python",
+                    on_bad_lines="warn",
+                    dtype=str,
+                    encoding=enc,
+                )
+                # strip column names
+                df_analise.columns = [c.strip() for c in df_analise.columns]
+                print(
+                    f"Arquivo lido com sucesso com encoding={enc} and sep='{sep_detected}'."
+                )
+                break
+            except Exception as e:
+                last_exc = e
+                print(f"Aviso: falha ao ler com encoding={enc}: {e}")
+                df_analise = None
 
-    if df_analise is None:
-        print(
-            f"\nERRO CRÍTICO: Falha ao ler o arquivo '{ARQUIVO_ANALISE_COMPLETA}' com encodings tentados. Último erro: {last_exc}"
-        )
-        sys.exit(1)
+        if df_analise is None:
+            print(
+                f"\nERRO CRÍTICO: Falha ao ler o arquivo '{arquivo_analise}' com encodings tentados. Último erro: {last_exc}"
+            )
+            sys.exit(1)
 
     # Normalizar/renomear colunas para os nomes canônicos esperados pelo gerador
     import unicodedata

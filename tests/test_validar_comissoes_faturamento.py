@@ -8,6 +8,9 @@ import sys
 import pandas as pd
 from typing import Dict, List, Tuple
 
+# Adicionar o diretório raiz ao path para importar os módulos
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 def validar_arquivo_comissoes(mes: int, ano: int) -> Tuple[bool, Dict]:
     """

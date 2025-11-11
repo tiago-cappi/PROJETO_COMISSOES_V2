@@ -12,6 +12,9 @@ import pandas as pd
 from datetime import datetime
 from typing import Dict, List, Tuple, Optional
 
+# Adicionar o diretório raiz ao path para importar os módulos
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 def verificar_arquivo_entrada() -> Tuple[bool, Optional[str], Optional[pd.DataFrame]]:
     """

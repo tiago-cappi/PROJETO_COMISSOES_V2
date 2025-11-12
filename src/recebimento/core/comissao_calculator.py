@@ -94,20 +94,33 @@ class ComissaoCalculator:
         Returns:
             Lista de dicts com comissões calculadas
         """
+        print(f"[RECEBIMENTO] [COMISSAO_CALC] calcular_regular chamado:")
+        print(f"[RECEBIMENTO] [COMISSAO_CALC]   - processo={processo}")
+        print(f"[RECEBIMENTO] [COMISSAO_CALC]   - valor={valor}")
+        print(f"[RECEBIMENTO] [COMISSAO_CALC]   - tcmp_dict={tcmp_dict}")
+        print(f"[RECEBIMENTO] [COMISSAO_CALC]   - fcmp_dict={fcmp_dict}")
+        print(f"[RECEBIMENTO] [COMISSAO_CALC]   - mes_faturamento={mes_faturamento}")
+        
         comissoes = []
         
         for colaborador, tcmp in tcmp_dict.items():
+            print(f"[RECEBIMENTO] [COMISSAO_CALC] Processando colaborador: {colaborador}, tcmp={tcmp}")
+            
             if tcmp <= 0:
+                print(f"[RECEBIMENTO] [COMISSAO_CALC]   - TCMP <= 0. Pulando...")
                 continue
             
             # Obter FCMP do colaborador
             fcmp = fcmp_dict.get(colaborador, 0.0)
+            print(f"[RECEBIMENTO] [COMISSAO_CALC]   - FCMP obtido: {fcmp}")
             
             if fcmp <= 0:
                 # Se FCMP não estiver disponível, usar 1.0 como fallback
+                print(f"[RECEBIMENTO] [COMISSAO_CALC]   - FCMP <= 0. Usando fallback 1.0")
                 fcmp = 1.0
             
             comissao = valor * tcmp * fcmp
+            print(f"[RECEBIMENTO] [COMISSAO_CALC]   - Comissão calculada: {valor} * {tcmp} * {fcmp} = {comissao}")
             
             comissoes.append({
                 'processo': str(processo).strip(),
@@ -124,6 +137,8 @@ class ComissaoCalculator:
                 'mes_faturamento': mes_faturamento,
                 'mes_calculo': None  # Será preenchido depois
             })
+            print(f"[RECEBIMENTO] [COMISSAO_CALC]   - Comissão adicionada à lista")
         
+        print(f"[RECEBIMENTO] [COMISSAO_CALC] Total de comissões geradas: {len(comissoes)}")
         return comissoes
 

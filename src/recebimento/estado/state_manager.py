@@ -328,6 +328,19 @@ class StateManager:
         )
         self.estado_df.at[idx, "ULTIMA_ATUALIZACAO"] = datetime.now()
     
+    def obter_processos_cadastrados(self) -> list:
+        """
+        Retorna lista de IDs de processos cadastrados no estado.
+        
+        Returns:
+            Lista de IDs de processos (strings)
+        """
+        if self.estado_df.empty or "PROCESSO" not in self.estado_df.columns:
+            return []
+        
+        processos = self.estado_df["PROCESSO"].dropna().astype(str).str.strip().unique().tolist()
+        return processos
+    
     def obter_dataframe_estado(self) -> pd.DataFrame:
         """
         Retorna DataFrame do estado completo para salvar em Excel.

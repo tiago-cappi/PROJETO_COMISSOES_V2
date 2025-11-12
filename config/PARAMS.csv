@@ -4,3 +4,4 @@ arred_percent_decimais;6;Casas decimais percentuais intermediários
 cap_atingimento_max;1.0;Limite superior para atingimento
 cap_fc_max;1.0;Limite superior para fator de correção
 cross_selling_default_option;B;Define a opção padrão ('A' ou 'B') se o robô for executado em modo não interativo.
+gerar_pdf_auditoria;True;Gerar PDF de auditoria para comissões por recebimento (requer ReportLab)

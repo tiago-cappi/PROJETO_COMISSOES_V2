@@ -101,9 +101,23 @@ class IdentificadorColaboradores:
             
             atribuidos_gestao = self.atribuicoes_df[mask]
             
-            if not atribuidos_gestao.empty and "colaborador" in atribuidos_gestao.columns:
-                gestores = atribuidos_gestao["colaborador"].dropna().astype(str).str.strip().unique()
-                colaboradores_gestao.update(gestores)
+            if not atribuidos_gestao.empty:
+                if "colaborador" in atribuidos_gestao.columns:
+                    gestores = atribuidos_gestao["colaborador"].dropna().astype(str).str.strip().unique()
+                    colaboradores_gestao.update(gestores)
+                elif "id_colaborador" in atribuidos_gestao.columns and not self.colaboradores_df.empty:
+                    ids = atribuidos_gestao["id_colaborador"].dropna().astype(str).str.strip().unique()
+                    # Mapear IDs -> nomes via COLABORADORES
+                    mapa = self.colaboradores_df[["id_colaborador", "nome_colaborador"]].copy()
+                    mapa["id_colaborador"] = mapa["id_colaborador"].astype(str).str.strip()
+                    nomes = (
+                        mapa[mapa["id_colaborador"].isin(ids)]["nome_colaborador"]
+                        .dropna()
+                        .astype(str)
+                        .str.strip()
+                        .unique()
+                    )
+                    colaboradores_gestao.update(nomes)
         
         # 4. Combinar todos os colaboradores
         todos_colaboradores = colaboradores_operacionais.union(colaboradores_gestao)
@@ -172,7 +186,10 @@ class IdentificadorColaboradores:
         if self.df_comercial.empty:
             return None
         
-        colunas_df = {col.lower().strip(): col for col in self.df_comercial.columns}
+        # Remover BOM (\ufeff) e normalizar
+        colunas_df = {
+            col.lower().strip().replace("\ufeff", ""): col for col in self.df_comercial.columns
+        }
         
         for nome in nomes_possiveis:
             nome_norm = nome.lower().strip()
@@ -195,7 +212,8 @@ class IdentificadorColaboradores:
         if df_item.empty:
             return None
         
-        colunas_df = {col.lower().strip(): col for col in df_item.columns}
+        # Remover BOM (\ufeff) e normalizar
+        colunas_df = {str(col).lower().strip().replace("\ufeff", ""): col for col in df_item.columns}
         
         for nome in nomes_possiveis:
             nome_norm = nome.lower().strip()

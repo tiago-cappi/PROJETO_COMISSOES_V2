@@ -57,17 +57,20 @@ class MetricasCalculator:
             - 'FCMP': Dict {nome_colaborador: fcmp}
             - 'colaboradores': Lista de nomes
         """
+        print(f"[RECEBIMENTO] [MÉTRICAS] Iniciando cálculo de métricas para processo={processo}, mes={mes_apuracao}, ano={ano_apuracao}")
         processo = str(processo).strip()
         
         # 1. Buscar TODOS os itens do processo no Analise_Comercial_Completa
         df_comercial = self.calc_comissao.data.get("ANALISE_COMERCIAL_COMPLETA", pd.DataFrame())
         
         if df_comercial.empty:
+            print(f"[RECEBIMENTO] [MÉTRICAS] AVISO: Análise Comercial vazia")
             return {"TCMP": {}, "FCMP": {}, "colaboradores": []}
         
         # Encontrar coluna de processo
         proc_col = self._encontrar_coluna(df_comercial, ["processo", "Processo", "PROCESSO"])
         if not proc_col:
+            print(f"[RECEBIMENTO] [MÉTRICAS] AVISO: Coluna 'Processo' não encontrada")
             return {"TCMP": {}, "FCMP": {}, "colaboradores": []}
         
         itens = df_comercial[
@@ -75,13 +78,20 @@ class MetricasCalculator:
         ]
         
         if itens.empty:
+            print(f"[RECEBIMENTO] [MÉTRICAS] AVISO: Nenhum item encontrado para o processo {processo}")
             return {"TCMP": {}, "FCMP": {}, "colaboradores": []}
+        else:
+            print(f"[RECEBIMENTO] [MÉTRICAS] Itens encontrados para processo {processo}: {len(itens)}")
         
         # 2. Identificar colaboradores que recebem por recebimento
         colaboradores = self.identificador.identificar_colaboradores(processo)
         
         if not colaboradores:
+            print(f"[RECEBIMENTO] [MÉTRICAS] AVISO: Nenhum colaborador elegível por recebimento encontrado para o processo {processo}")
             return {"TCMP": {}, "FCMP": {}, "colaboradores": []}
+        else:
+            nomes = [c['nome'] for c in colaboradores]
+            print(f"[RECEBIMENTO] [MÉTRICAS] Colaboradores identificados ({len(nomes)}): {nomes}")
         
         # 3. Estruturas para acumular dados por colaborador
         dados_por_colaborador = {}
@@ -122,18 +132,34 @@ class MetricasCalculator:
                 
                 # Obter regra de comissão
                 try:
+                    print(f"[RECEBIMENTO] [MÉTRICAS] [TAXA] Buscando regra para:")
+                    print(f"[RECEBIMENTO] [MÉTRICAS] [TAXA]   - Colaborador: {nome}, Cargo: {cargo}")
+                    print(f"[RECEBIMENTO] [MÉTRICAS] [TAXA]   - Linha: {str(item.get('Negócio', '')).strip()}")
+                    print(f"[RECEBIMENTO] [MÉTRICAS] [TAXA]   - Grupo: {str(item.get('Grupo', '')).strip()}")
+                    print(f"[RECEBIMENTO] [MÉTRICAS] [TAXA]   - Subgrupo: {str(item.get('Subgrupo', '')).strip()}")
+                    print(f"[RECEBIMENTO] [MÉTRICAS] [TAXA]   - Tipo de Mercadoria: {str(item.get('Tipo de Mercadoria', '')).strip()}")
+                    
                     regra = self.calc_comissao._get_regra_comissao(
                         linha=str(item.get("Negócio", "")).strip(),
                         grupo=str(item.get("Grupo", "")).strip(),
                         subgrupo=str(item.get("Subgrupo", "")).strip(),
-                        tipo=str(item.get("Tipo de Mercadoria", "")).strip(),
+                        tipo_mercadoria=str(item.get("Tipo de Mercadoria", "")).strip(),
                         cargo=cargo
                     )
+                    
+                    print(f"[RECEBIMENTO] [MÉTRICAS] [TAXA] Regra obtida: {regra}")
                     
                     taxa_rateio = float(regra.get("taxa_rateio_maximo_pct", 0.0) or 0.0) / 100.0
                     fatia_cargo = float(regra.get("fatia_cargo_pct", 0.0) or 0.0) / 100.0
                     taxa = taxa_rateio * fatia_cargo
-                except Exception:
+                    
+                    print(f"[RECEBIMENTO] [MÉTRICAS] [TAXA]   - taxa_rateio: {taxa_rateio}")
+                    print(f"[RECEBIMENTO] [MÉTRICAS] [TAXA]   - fatia_cargo: {fatia_cargo}")
+                    print(f"[RECEBIMENTO] [MÉTRICAS] [TAXA]   - taxa final: {taxa}")
+                except Exception as e:
+                    print(f"[RECEBIMENTO] [MÉTRICAS] [TAXA] ERRO ao buscar regra: {e}")
+                    import traceback
+                    traceback.print_exc()
                     taxa = 0.0
                 
                 # Acumular dados
@@ -160,6 +186,8 @@ class MetricasCalculator:
             
             # FCMP = média ponderada dos FCs
             fcmp_dict[nome] = float((fcs * valores).sum() / valores.sum())
+        
+        print(f"[RECEBIMENTO] [MÉTRICAS] Resultado: TCMP({len(tcmp_dict)}), FCMP({len(fcmp_dict)})")
         
         return {
             "TCMP": tcmp_dict,
@@ -201,6 +229,10 @@ class MetricasCalculator:
             df_comercial,
             ["Dt Emissão", "dt emissão", "DT_EMISSAO", "Data Emissão"]
         )
+        nf_col = self._encontrar_coluna(
+            df_comercial,
+            ["Numero NF", "numero nf", "número nf", "num nf"]
+        )
         
         if not proc_col or not status_col:
             return False
@@ -210,6 +242,12 @@ class MetricasCalculator:
         
         # Filtrar por status faturado
         mask_faturado = df_comercial[status_col].astype(str).str.strip().str.upper() == "FATURADO"
+        # Alternativa: Numero NF não vazio
+        if nf_col:
+            nf_vals = df_comercial[nf_col].astype(str).str.strip().str.upper()
+            mask_nf = (~nf_vals.isna()) & (nf_vals != "") & (nf_vals != "NAN")
+        else:
+            mask_nf = False
         
         # Filtrar por mês/ano (se coluna de data existir)
         if data_col:
@@ -217,11 +255,11 @@ class MetricasCalculator:
                 df_comercial[data_col] = pd.to_datetime(df_comercial[data_col], errors='coerce')
                 mask_mes = df_comercial[data_col].dt.month == mes
                 mask_ano = df_comercial[data_col].dt.year == ano
-                mask = mask_processo & mask_faturado & mask_mes & mask_ano
+                mask = mask_processo & (mask_faturado | mask_nf) & mask_mes & mask_ano
             except Exception:
-                mask = mask_processo & mask_faturado
+                mask = mask_processo & (mask_faturado | mask_nf)
         else:
-            mask = mask_processo & mask_faturado
+            mask = mask_processo & (mask_faturado | mask_nf)
         
         return mask.any()
     
@@ -253,7 +291,8 @@ class MetricasCalculator:
         if df.empty:
             return None
         
-        colunas_df = {col.lower().strip(): col for col in df.columns}
+        # Remover BOM (\ufeff) e normalizar
+        colunas_df = {col.lower().strip().replace("\ufeff", ""): col for col in df.columns}
         
         for nome in nomes_possiveis:
             nome_norm = nome.lower().strip()

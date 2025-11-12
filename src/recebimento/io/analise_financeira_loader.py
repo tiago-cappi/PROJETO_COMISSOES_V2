@@ -71,7 +71,16 @@ class AnaliseFinanceiraLoader:
         # Carregar arquivo Excel
         print(f"[RECEBIMENTO] [LOADER] Carregando arquivo Excel: {path}")
         try:
-            df = pd.read_excel(path)
+            # Primeiro, ler apenas o cabeçalho para identificar a coluna Documento
+            df_temp = pd.read_excel(path, nrows=0)
+            col_doc_temp = self._encontrar_coluna(df_temp, ["Documento", "documento", "DOCUMENTO"])
+            
+            # Usar converters para forçar leitura como string e preservar zeros à esquerda
+            converters = {}
+            if col_doc_temp:
+                converters[col_doc_temp] = str
+            
+            df = pd.read_excel(path, converters=converters)
             print(f"[RECEBIMENTO] [LOADER] Arquivo carregado: {len(df)} linha(s), {len(df.columns)} coluna(s)")
             print(f"[RECEBIMENTO] [LOADER] Colunas encontradas: {list(df.columns)[:10]}...")  # Primeiras 10 colunas
         except Exception as e:
@@ -144,8 +153,14 @@ class AnaliseFinanceiraLoader:
         depois_filtro_data = len(df_filtrado)
         print(f"[RECEBIMENTO] [LOADER] Após filtro de data: {antes_filtro_data} -> {depois_filtro_data} linha(s)")
         
-        # Normalizar coluna Documento (trim, uppercase)
+        # Normalizar coluna Documento (trim, uppercase, preservar valor exato)
+        # A coluna já foi lida como string via converters
+        # Apenas fazer trim e uppercase, mantendo zeros à esquerda
         df_filtrado["Documento"] = df_filtrado["Documento"].astype(str).str.strip().str.upper()
+        
+        # Log para debug: mostrar o documento carregado
+        if len(df_filtrado) > 0:
+            print(f"[RECEBIMENTO] [LOADER] Documento(s) carregado(s): {df_filtrado['Documento'].tolist()}")
         
         # Remover linhas com Documento vazio ou inválido
         df_filtrado = df_filtrado[df_filtrado["Documento"].notna()]

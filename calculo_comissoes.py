@@ -351,6 +351,10 @@ class CalculoComissao:
 
             # Processar PARAMS primeiro para obter mes/ano se necessário
             params_df = self.data.get("PARAMS", pd.DataFrame())
+            # Preservar mes_apuracao e ano_apuracao se já foram definidos manualmente
+            mes_apuracao_preservado = self.params.get("mes_apuracao")
+            ano_apuracao_preservado = self.params.get("ano_apuracao")
+
             if not params_df.empty:
                 self.params = config_loader.process_params(params_df)
                 param_base_path = self.params.get("base_path")
@@ -359,8 +363,15 @@ class CalculoComissao:
                 self.legacy_token = self.params.get("legacy_scope_token", "__legacy__")
             else:
                 # Fallback se PARAMS não existir
-                self.params = {}
+                if not self.params:
+                    self.params = {}
                 self.legacy_token = "__legacy__"
+
+            # Restaurar mes/ano se foram definidos manualmente (têm prioridade)
+            if mes_apuracao_preservado is not None:
+                self.params["mes_apuracao"] = mes_apuracao_preservado
+            if ano_apuracao_preservado is not None:
+                self.params["ano_apuracao"] = ano_apuracao_preservado
 
             # Obter mes/ano dos params (se disponíveis) para carregar dados de entrada
             try:
@@ -1664,7 +1675,9 @@ class CalculoComissao:
                 return 0.0
             # Normalizar coluna de processo
             possible_proc_cols = [
-                c for c in df_anal.columns if str(c).strip().lower() == "processo"
+                c
+                for c in df_anal.columns
+                if str(c).strip().lower().replace("\ufeff", "") == "processo"
             ]
             if not possible_proc_cols:
                 # tentar variações
@@ -1692,7 +1705,7 @@ class CalculoComissao:
             valor_cols = [
                 c
                 for c in subset.columns
-                if str(c).strip().lower()
+                if str(c).strip().lower().replace("\ufeff", "")
                 in (
                     "valor realizado",
                     "valor_realizado",
@@ -1706,7 +1719,8 @@ class CalculoComissao:
                 alt = [
                     c
                     for c in subset.columns
-                    if "valor" in str(c).lower() and "real" in str(c).lower()
+                    if "valor" in str(c).lower().replace("\ufeff", "")
+                    and "real" in str(c).lower().replace("\ufeff", "")
                 ]
                 valor_cols = alt
             if not valor_cols:
@@ -4737,12 +4751,26 @@ class CalculoComissao:
         _phase("5.2 Calculando comissões por recebimento (nova lógica)...")
         with _timer_ctx("Comissões por recebimento", _safe_percent("estado_adiant")):
             try:
+                # Obter mês e ano de apuração dos params
+                from datetime import datetime
+
+                mes_apuracao = (
+                    int(self.params.get("mes_apuracao", 0))
+                    if self.params.get("mes_apuracao")
+                    else datetime.now().month
+                )
+                ano_apuracao = (
+                    int(self.params.get("ano_apuracao", 0))
+                    if self.params.get("ano_apuracao")
+                    else datetime.now().year
+                )
+
                 print("\n" + "=" * 80)
                 print(
                     "[RECEBIMENTO] ===== INÍCIO DO PROCESSO DE GERAÇÃO DO ARQUIVO DE RECEBIMENTO ====="
                 )
                 print(
-                    f"[RECEBIMENTO] Mês/Ano de apuração: {self.mes_apuracao:02d}/{self.ano_apuracao}"
+                    f"[RECEBIMENTO] Mês/Ano de apuração: {mes_apuracao:02d}/{ano_apuracao}"
                 )
                 print(f"[RECEBIMENTO] Base path: {self.base_path}")
                 print("=" * 80 + "\n")
@@ -4753,7 +4781,7 @@ class CalculoComissao:
 
                 print("[RECEBIMENTO] [ETAPA 1/6] Importando RecebimentoOrchestrator...")
                 orchestrator = RecebimentoOrchestrator(
-                    self, self.mes_apuracao, self.ano_apuracao, self.base_path
+                    self, mes_apuracao, ano_apuracao, self.base_path
                 )
                 print(
                     "[RECEBIMENTO] [ETAPA 1/6] RecebimentoOrchestrator inicializado com sucesso"
@@ -4953,6 +4981,9 @@ if __name__ == "__main__":
                 )
 
         calculadora = CalculoComissao()
+        # Definir mes/ano de apuração nos params para uso em todo o fluxo
+        calculadora.params["mes_apuracao"] = mes
+        calculadora.params["ano_apuracao"] = ano
         calculadora.executar()
         _tracker_finish(True, f"Arquivo gerado: {NOME_ARQUIVO_SAIDA}")
     except Exception as e:

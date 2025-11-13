@@ -115,7 +115,7 @@ class TableBuilder:
         Cria uma tabela de chave-valor (2 colunas).
         
         Args:
-            dados: Lista de tuplas (chave, valor)
+            dados: Lista de tuplas (chave, valor) - pode conter strings ou objetos Paragraph
             largura_chave: Largura da coluna de chaves
             largura_valor: Largura da coluna de valores
             
@@ -125,8 +125,27 @@ class TableBuilder:
         if not dados or len(dados) == 0:
             return None
         
-        # Converter tuplas em lista de listas
-        dados_tabela = [[chave, valor] for chave, valor in dados]
+        from reportlab.platypus import Paragraph
+        from auditoria_pdf.styles.pdf_styles import STYLE_CORPO, STYLE_DESTAQUE
+        
+        # Converter tuplas em lista de listas, processando HTML quando necessário
+        dados_tabela = []
+        for chave, valor in dados:
+            # Processar chave
+            if isinstance(chave, str) and ('<b>' in chave or '<i>' in chave):
+                # Tem HTML, converter para Paragraph
+                chave_processada = Paragraph(chave, STYLE_DESTAQUE)
+            else:
+                chave_processada = chave
+            
+            # Processar valor
+            if isinstance(valor, str) and ('<b>' in valor or '<i>' in valor):
+                # Tem HTML, converter para Paragraph
+                valor_processado = Paragraph(valor, STYLE_CORPO)
+            else:
+                valor_processado = valor
+            
+            dados_tabela.append([chave_processada, valor_processado])
         
         # Criar tabela sem header
         tabela = Table(dados_tabela, colWidths=[largura_chave, largura_valor])

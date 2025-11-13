@@ -28,16 +28,26 @@ class AuditDataBuilder:
         Returns:
             Dados formatados e prontos para o PDF
         """
-        return {
+        # Manter dados gerais originais para acesso direto
+        dados_formatados = {
+            'dados_gerais': dados_processo['dados_gerais'],  # Manter original
             'dados_gerais_formatados': self._formatar_dados_gerais(dados_processo['dados_gerais']),
+            'itens': dados_processo['itens'],  # Manter original
             'itens_formatados': self._formatar_itens(dados_processo['itens']),
+            'pagamentos': dados_processo['pagamentos'],  # Manter original
             'pagamentos_formatados': self._formatar_pagamentos(dados_processo['pagamentos']),
+            'colaboradores': dados_processo['colaboradores'],  # Manter original
             'colaboradores_formatados': self._formatar_colaboradores(dados_processo['colaboradores']),
+            'calculos_tcmp': dados_processo['calculos_tcmp'],  # Manter original
             'tcmp_formatado': self._formatar_tcmp(dados_processo['calculos_tcmp']),
+            'calculos_fcmp': dados_processo['calculos_fcmp'],  # Manter original
             'fcmp_formatado': self._formatar_fcmp(dados_processo['calculos_fcmp']),
+            'comissoes': dados_processo['comissoes'],  # Manter original
             'comissoes_formatadas': self._formatar_comissoes(dados_processo['comissoes']),
             'estatisticas': self._calcular_estatisticas(dados_processo)
         }
+        
+        return dados_formatados
     
     def _formatar_dados_gerais(self, dados_gerais: Dict) -> Dict:
         """Formata dados gerais do processo."""

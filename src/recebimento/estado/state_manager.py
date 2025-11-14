@@ -2,11 +2,13 @@
 Gerenciador de estado dos processos de recebimento.
 """
 
-import pandas as pd
 import os
 import json
-from typing import Dict, Optional, Any
 from datetime import datetime
+from typing import Any, Dict, Optional
+
+import pandas as pd
+
 from .state_schema import COLUNAS_ESTADO, VALORES_PADRAO_ESTADO
 
 
@@ -326,6 +328,89 @@ class StateManager:
         self.estado_df.at[idx, "SALDO_A_RECEBER"] = (
             valor_total - self.estado_df.at[idx, "TOTAL_PAGO_ACUMULADO"]
         )
+        self.estado_df.at[idx, "ULTIMA_ATUALIZACAO"] = datetime.now()
+    
+    def armazenar_comissoes_adiantadas(
+        self, processo_id: str, comissoes_por_colaborador: Dict[str, float]
+    ):
+        """
+        Armazena comissões adiantadas por colaborador (acumulativo).
+
+        Args:
+            processo_id: ID do processo
+            comissoes_por_colaborador: Dict {nome_colaborador: comissao}
+        """
+        processo_id = str(processo_id).strip()
+        mask = self.estado_df["PROCESSO"] == processo_id
+
+        if not mask.any():
+            # Criar processo se não existir
+            self.criar_processo(processo_id)
+            mask = self.estado_df["PROCESSO"] == processo_id
+
+        idx = self.estado_df[mask].index[0]
+
+        # Carregar comissões existentes
+        comissoes_json = self.estado_df.at[idx, "COMISSOES_ADIANTADAS_JSON"]
+        try:
+            comissoes_existentes = json.loads(comissoes_json) if comissoes_json else {}
+        except Exception:
+            comissoes_existentes = {}
+
+        # Acumular novas comissões
+        for colaborador, comissao in comissoes_por_colaborador.items():
+            if colaborador in comissoes_existentes:
+                comissoes_existentes[colaborador] += float(comissao or 0.0)
+            else:
+                comissoes_existentes[colaborador] = float(comissao or 0.0)
+
+        # Salvar de volta
+        self.estado_df.at[idx, "COMISSOES_ADIANTADAS_JSON"] = json.dumps(
+            comissoes_existentes, ensure_ascii=False
+        )
+        self.estado_df.at[idx, "ULTIMA_ATUALIZACAO"] = datetime.now()
+
+    def obter_comissoes_adiantadas(self, processo_id: str) -> Dict[str, float]:
+        """
+        Retorna comissões adiantadas por colaborador para um processo.
+
+        Args:
+            processo_id: ID do processo
+
+        Returns:
+            Dict {nome_colaborador: comissao_total} ou {}
+        """
+        processo = self.obter_processo(processo_id)
+        if not processo:
+            return {}
+
+        try:
+            comissoes_json = processo.get("COMISSOES_ADIANTADAS_JSON", "{}")
+            comissoes = json.loads(comissoes_json) if comissoes_json else {}
+            # Garantir que os valores sejam floats
+            return {
+                str(colab): float(valor or 0.0)
+                for colab, valor in comissoes.items()
+            }
+        except Exception:
+            return {}
+
+    def marcar_reconciliacao_calculada(self, processo_id: str):
+        """
+        Marca que a reconciliação foi calculada para o processo.
+
+        Args:
+            processo_id: ID do processo
+        """
+        processo_id = str(processo_id).strip()
+        mask = self.estado_df["PROCESSO"] == processo_id
+
+        if not mask.any():
+            return
+
+        idx = self.estado_df[mask].index[0]
+        if "STATUS_RECONCILIACAO" in self.estado_df.columns:
+            self.estado_df.at[idx, "STATUS_RECONCILIACAO"] = "CALCULADO"
         self.estado_df.at[idx, "ULTIMA_ATUALIZACAO"] = datetime.now()
     
     def obter_processos_cadastrados(self) -> list:

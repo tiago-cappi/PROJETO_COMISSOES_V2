@@ -11,13 +11,14 @@ A busca de taxas de câmbio estava travando o cálculo de comissões durante a E
 
 ## Nova Abordagem Implementada
 
-### 1. Módulo Separado: `src/core/currency_rates.py`
+### 1. Camada de Câmbio Centralizada: `src/currency/` + JSON persistente
 
-A lógica de busca de taxas foi **completamente removida** de `calculo_comissoes.py` e movida para um módulo dedicado:
+A lógica de busca e armazenamento de taxas foi **completamente removida** de `calculo_comissoes.py` e do módulo antigo `src/core/currency_rates.py` e substituída por uma camada dedicada:
 
-- **Classe `CurrencyRateManager`**: Gerencia todas as operações de busca e cache
-- **Cache persistente**: Salva taxas em arquivo JSON (`cache_taxas_cambio.json`) para evitar buscas repetidas
-- **Cache em memória**: Mantém taxas em memória durante a execução para acesso rápido
+- **`src/currency/rate_fetcher.py` (`RateFetcher`)**: responsável por buscar taxas médias mensais nas APIs.
+- **`src/currency/rate_storage.py` (`RateStorage`)**: gerencia o JSON persistente de câmbio em `data/currency_rates/monthly_avg_rates.json`.
+- **`src/currency/rate_validator.py` (`RateValidator`)**: identifica (moeda, ano, mês) faltantes no JSON.
+- **`src/currency/rate_calculator.py` (`RateCalculator`)**: usa o JSON para converter faturamento YTD em BRL para a moeda do fornecedor, sem fazer chamadas HTTP.
 
 ### 2. Pré-carregamento Otimizado
 
@@ -41,78 +42,87 @@ for item in itens:
     # ... cálculo com taxas
 ```
 
-### 3. Otimizações de Performance
+### 3. Estratégia de Busca e Timeouts
 
-#### Timeout Reduzido
-- **Antes**: 12 segundos por requisição
-- **Agora**: 5 segundos por requisição
-- **Benefício**: Falhas são detectadas mais rapidamente
+Hoje a busca de taxas é feita **somente na etapa de preparação do JSON**, antes de qualquer cálculo de comissão. Isso permite usar um timeout maior por requisição, já que esse passo acontece poucas vezes.
 
-#### Menos Tentativas
-- **Antes**: 3 tentativas com backoff exponencial (pode demorar 12s + 24s + 48s = 84s)
-- **Agora**: 2 tentativas com backoff curto (máximo ~10s)
-- **Benefício**: Fallback mais rápido entre APIs
+- **APIs utilizadas (em ordem de prioridade)**:
+  1. `exchangerate.host/timeseries` — média mensal verdadeira (muitos dias).
+  2. `frankfurter.app` — taxa do dia central do mês.
+  3. `exchangerate.host/convert` — taxa do dia central do mês.
 
-#### Cache Persistente
-- **Arquivo**: `cache_taxas_cambio.json`
-- **Formato**: `{ano_mes_moedas: {moeda: {mes: taxa}}}`
-- **Benefício**: Taxas já buscadas não precisam ser buscadas novamente
+- **Timeout e tentativas (`RateFetcher`)**:
+  - Timeout padrão: **60 segundos** por requisição.
+  - Tentativas: **2** por API.
 
-#### Cache em Memória
-- Durante a execução, taxas ficam em `self.taxas_precarregadas`
-- Acesso instantâneo durante o loop de itens
-- **Benefício**: Zero latência durante o cálculo
+Como essa etapa é feita **antes do cálculo das comissões** e apenas para meses/moedas faltantes, é aceitável que a preparação leve alguns minutos se necessário, em troca de maior chance de obter as taxas de câmbio corretas.
 
-### 4. Estratégia de Busca (Mantida, mas Otimizada)
+### 4. JSON Persistente de Câmbio
 
-A ordem de tentativas foi mantida, mas com timeouts menores:
+- **Arquivo**: `data/currency_rates/monthly_avg_rates.json`
+- **Formato** (simplificado):
 
-1. **exchangerate.host/timeseries** (média mensal - mais preciso)
-   - Timeout: 5s
-   - Tentativas: 2
-   - Backoff: 0.5s, 1.0s
+```json
+{
+  "metadata": {
+    "ultima_atualizacao": "2025-11-14T10:30:00",
+    "ano_atual": 2025,
+    "mes_atual": 11,
+    "moedas_disponiveis": ["USD", "GBP"],
+    "schema_version": 1
+  },
+  "taxas": {
+    "2025": {
+      "USD": {
+        "1": {
+          "taxa_media": 0.201234,
+          "fonte": "exchangerate.host/timeseries",
+          "dias_utilizados": 31,
+          "data_atualizacao": "...",
+          "fallback": false,
+          "observacao": null
+        }
+      }
+    }
+  }
+}
+```
 
-2. **frankfurter.app** (dia 15 do mês - fallback rápido)
-   - Timeout: 5s
-   - Tentativas: 2
-   - Backoff: 0.3s, 0.6s
+Quando não é possível buscar a taxa de um mês em nenhuma API, o sistema:
 
-3. **exchangerate.host/convert** (dia 15 do mês - último recurso)
-   - Timeout: 5s
-   - Tentativas: 2
-   - Backoff: 0.3s, 0.6s
+1. Calcula a **média simples das taxas do mesmo ano até o mês anterior**.
+2. Grava essa média como `taxa_media` com:
+   - `fallback = true`
+   - `fonte = "fallback_media_anual"`
+   - `observacao` explicando claramente que foi usada a média do ano até o mês anterior.
 
-### 5. Fluxo de Execução
+### 5. Fluxo de Execução (atualizado)
 
 ```
+┌─────────────────────────────────────────────────────────┐
+│ 0. Verificação Inicial de Câmbio                        │
+│    - Lê `config/METAS_FORNECEDORES.csv`                 │
+│    - Descobre moedas dos fornecedores (exceto BRL)      │
+│    - Para o ano atual, meses 1..(mês_atual-1):          │
+│      ├─ Verifica quais (moeda, mês) ainda não existem   │
+│      │   no JSON                                        │
+│      ├─ Busca taxas nas APIs para os faltantes          │
+│      └─ Se falhar, usa média do ano até mês anterior    │
+│         como fallback, anotando isso no JSON            │
+└─────────────────────────────────────────────────────────┘
+                    ↓
 ┌─────────────────────────────────────────────────────────┐
 │ 1. Início da Etapa 5                                    │
 │    - Carrega dados (FATURADOS, ATRIBUICOES, etc.)       │
 └─────────────────────────────────────────────────────────┘
                     ↓
 ┌─────────────────────────────────────────────────────────┐
-│ 2. Identificar Moedas Necessárias                       │
-│    - Analisa METAS_FORNECEDORES                         │
-│    - Extrai todas as moedas únicas                      │
-│    - Exemplo: {USD, EUR, GBP}                           │
-└─────────────────────────────────────────────────────────┘
-                    ↓
-┌─────────────────────────────────────────────────────────┐
-│ 3. Pré-carregar Taxas (UMA VEZ)                         │
-│    - Verifica cache persistente (arquivo JSON)          │
-│    - Se não encontrado, busca todas as taxas            │
-│    - Salva no cache persistente                         │
-│    - Armazena em self.taxas_precarregadas               │
-│    - Tempo: ~10-30s (dependendo de moedas/meses)        │
-└─────────────────────────────────────────────────────────┘
-                    ↓
-┌─────────────────────────────────────────────────────────┐
-│ 4. Loop de Itens (RÁPIDO)                               │
-│    for item in itens:                                   │
-│      - Identifica moedas do item                        │
-│      - Extrai taxas do cache pré-carregado (instantâneo) │
-│      - Calcula FC com taxas                             │
-│      - Nenhuma requisição HTTP aqui!                    │
+│ 2. Cálculo de FC dos Fornecedores                       │
+│    - Usa FATURADOS_YTD para calcular faturamento YTD    │
+│      em BRL por fornecedor                              │
+│    - Usa `RateCalculator` para converter para moeda     │
+│      alvo usando SOMENTE o JSON persistente             │
+│    - Nenhuma requisição HTTP durante o loop de itens    │
 └─────────────────────────────────────────────────────────┘
 ```
 

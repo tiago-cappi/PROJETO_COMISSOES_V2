@@ -885,7 +885,7 @@ def calcular_regular(self, processo, valor, tcmp_dict, fcmp_dict, documento,
 
 ---
 
-## Reconciliações (A Implementar)
+## Reconciliações
 
 ### Conceito
 
@@ -915,56 +915,47 @@ Diferença (Reconciliação):
 
 ### Fórmula de Reconciliação
 
-**Para o processo inteiro:**
-
-```
-Saldo_Reconciliacao_Processo = Σ_colaboradores (
-    Total_Adiantado × w_colaborador × (FCMP_colaborador - 1,0)
-)
-
-Onde:
-- Total_Adiantado = TOTAL_ANTECIPACOES do ESTADO
-- w_colaborador = TCMP_colaborador / Σ(TCMP_todos)  (peso do colaborador)
-- FCMP_colaborador = Fator de Correção Médio Ponderado
-```
-
 **Para cada colaborador:**
 
 ```
-Reconciliacao_Colaborador = (
-    Total_Adiantado × w_colaborador × (FCMP_colaborador - 1,0)
-)
+Reconciliação_Colaborador = Comissao_Adiantada_Colaborador × (FCMP_colaborador - 1,0)
+
+Onde:
+- Comissao_Adiantada_Colaborador = soma de todas as comissões pagas em adiantamentos
+  para aquele colaborador naquele processo (armazenado em COMISSOES_ADIANTADAS_JSON no ESTADO)
+- FCMP_colaborador = Fator de Correção Médio Ponderado do colaborador
 ```
 
 ### Exemplo Numérico
 
 ```
 Processo "999999":
-- Total_Adiantado: R$ 1.000,00
+- Total_Adiantado: R$ 1.000,00 (para o processo)
 - Colaboradores:
   - Alessandro Cappi: TCMP=0,05, FCMP=0,89
   - Neimar: TCMP=0,03, FCMP=0,92
 
-Passo 1: Calcular pesos (w_colaborador)
-w_Alessandro = 0,05 / (0,05 + 0,03) = 0,05 / 0,08 = 0,625 (62,5%)
-w_Neimar = 0,03 / (0,05 + 0,03) = 0,03 / 0,08 = 0,375 (37,5%)
+Suponha que o processo tenha tido um adiantamento de R$ 1.000,00 e que as comissões
+adiantadas tenham sido:
+- Alessandro: Comissao_Adiantada_Alessandro = R$ 1.000,00 × 0,05 × 1,0 = R$ 50,00
+- Neimar:     Comissao_Adiantada_Neimar     = R$ 1.000,00 × 0,03 × 1,0 = R$ 30,00
 
-Passo 2: Calcular reconciliação por colaborador
-Reconciliacao_Alessandro = R$ 1.000 × 0,625 × (0,89 - 1,0)
-                         = R$ 1.000 × 0,625 × (-0,11)
-                         = -R$ 68,75
+Passo 1: Calcular reconciliação por colaborador
+Reconciliacao_Alessandro = R$ 50,00 × (0,89 - 1,0)
+                         = R$ 50,00 × (-0,11)
+                         = -R$ 5,50
 
-Reconciliacao_Neimar = R$ 1.000 × 0,375 × (0,92 - 1,0)
-                     = R$ 1.000 × 0,375 × (-0,08)
-                     = -R$ 30,00
+Reconciliacao_Neimar = R$ 30,00 × (0,92 - 1,0)
+                     = R$ 30,00 × (-0,08)
+                     = -R$ 2,40
 
-Passo 3: Total da reconciliação do processo
-Saldo_Reconciliacao = -R$ 68,75 + (-R$ 30,00) = -R$ 98,75
+Passo 2: Total da reconciliação do processo
+Saldo_Reconciliacao = -R$ 5,50 + (-R$ 2,40) = -R$ 7,90
 
 Interpretação:
-- Alessandro Cappi recebe R$ 68,75 a menos
-- Neimar recebe R$ 30,00 a menos
-- Total: R$ 98,75 foi pago a mais nos adiantamentos
+- Alessandro Cappi recebe R$ 5,50 a menos
+- Neimar recebe R$ 2,40 a menos
+- Total: R$ 7,90 foi pago a mais nos adiantamentos
 ```
 
 ### Momento de Aplicação
@@ -973,19 +964,19 @@ A reconciliação é **aplicada no mês do faturamento** e aparece como:
 - Uma linha adicional na aba `RECONCILIACOES`
 - Um ajuste no `RESUMO_COLABORADOR` (subtrai da comissão total)
 
-### Estrutura da Aba RECONCILIACOES (A Implementar)
+### Estrutura da Aba RECONCILIACOES
 
-| Coluna | Descrição |
-|--------|-----------|
-| PROCESSO | ID do processo |
-| MES_ANO_FATURAMENTO | Mês/ano em que foi faturado |
-| TOTAL_ADIANTADO | Total de adiantamentos |
-| COLABORADOR | Nome do colaborador |
-| TCMP | Taxa de Comissão Média Ponderada |
-| FCMP | Fator de Correção Médio Ponderado |
-| PESO_COLABORADOR | Proporção do colaborador (w) |
-| DIFERENCA_FC | FCMP - 1,0 |
-| RECONCILIACAO | Valor da reconciliação |
+| Coluna                    | Descrição                                                                 |
+|---------------------------|---------------------------------------------------------------------------|
+| `processo`                | ID do processo                                                           |
+| `colaborador`            | Nome do colaborador                                                      |
+| `tcmp`                    | Taxa de Comissão Média Ponderada do colaborador                         |
+| `fcmp`                    | Fator de Correção Médio Ponderado do colaborador                        |
+| `comissao_adiantada_fc_1` | Comissão paga nos adiantamentos (considerando FC = 1,0)                 |
+| `comissao_deveria_fc_real` | Comissão que deveria ter sido paga (considerando FC = FCMP_real)       |
+| `diferenca_fc`           | FCMP - 1,0                                                               |
+| `ajuste_reconciliacao`   | Valor do ajuste de reconciliação (geralmente negativo)                   |
+| `mes_faturamento`        | Mês/ano em que o processo foi faturado                                   |
 
 ---
 

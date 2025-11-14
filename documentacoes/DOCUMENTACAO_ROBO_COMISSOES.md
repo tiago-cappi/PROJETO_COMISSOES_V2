@@ -37,6 +37,7 @@
 - `conversao_linha`: soma de `Valor Orçado` por `Negócio`.
 - `conversao_individual`: soma de `Valor Orçado` por `Consultor Interno`.
 - `rentabilidade`: série indexada por `(linha, Grupo, Subgrupo, Tipo de Mercadoria)` com `rentabilidade_realizada_pct`.
+  - Para componentes de **fornecedor** (`meta_fornecedor_1/2`), o realizado considera o faturamento YTD por fabricante convertido da moeda BRL para a moeda do fornecedor usando as taxas armazenadas em `data/currency_rates/monthly_avg_rates.json` (sem buscar APIs durante o cálculo).
 
 **Regras De Comissão**
 - Resolução por hierarquia (em `_get_regra_comissao(linha, grupo, subgrupo, tipo, cargo)`):

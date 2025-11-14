@@ -110,7 +110,7 @@ class RecebimentoOutputGenerator:
                     )
                     print(f"[RECEBIMENTO] [OUTPUT] Aba COMISSOES_REGULARES vazia criada")
                 
-                # Aba 3: RECONCILIACOES (pode estar vazio para fase futura)
+                # Aba 3: RECONCILIACOES
                 print(f"[RECEBIMENTO] [OUTPUT] Criando aba RECONCILIACOES...")
                 if not dados.get('reconciliacoes', pd.DataFrame()).empty:
                     dados['reconciliacoes'].to_excel(
@@ -121,11 +121,17 @@ class RecebimentoOutputGenerator:
                     print(f"[RECEBIMENTO] [OUTPUT] Aba RECONCILIACOES criada")
                 else:
                     print(f"[RECEBIMENTO] [OUTPUT] Nenhuma reconciliação. Criando aba vazia...")
-                    # Criar DataFrame vazio
+                    # Criar DataFrame vazio com colunas esperadas
                     df_vazio = pd.DataFrame(columns=[
-                        'processo', 'valor_total_processo', 'total_adiantamentos',
-                        'total_comissao_adiantamentos', 'saldo_reconciliacao',
-                        'colaborador', 'ajuste_reconciliacao', 'mes_reconciliacao'
+                        'processo',
+                        'colaborador',
+                        'tcmp',
+                        'fcmp',
+                        'comissao_adiantada_fc_1',
+                        'comissao_deveria_fc_real',
+                        'diferenca_fc',
+                        'ajuste_reconciliacao',
+                        'mes_faturamento',
                     ])
                     df_vazio.to_excel(
                         writer,
@@ -244,10 +250,11 @@ class RecebimentoOutputGenerator:
         """
         try:
             wb = load_workbook(filepath)
-            
+
             # Cores para destacar tipos
             fill_adiantamento = PatternFill(start_color="E3F2FD", end_color="E3F2FD", fill_type="solid")
             fill_regular = PatternFill(start_color="F1F8E9", end_color="F1F8E9", fill_type="solid")
+            fill_reconciliacao = PatternFill(start_color="FFF3E0", end_color="FFF3E0", fill_type="solid")
             fill_header = PatternFill(start_color="37474F", end_color="37474F", fill_type="solid")
             font_header = Font(bold=True, color="FFFFFF")
             
@@ -284,6 +291,10 @@ class RecebimentoOutputGenerator:
                         for row in ws.iter_rows(min_row=2, max_row=ws.max_row):
                             for cell in row:
                                 cell.fill = fill_regular
+                    elif sheet_name == "RECONCILIACOES":
+                        for row in ws.iter_rows(min_row=2, max_row=ws.max_row):
+                            for cell in row:
+                                cell.fill = fill_reconciliacao
             
             wb.save(filepath)
         except Exception:

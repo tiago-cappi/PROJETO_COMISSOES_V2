@@ -71,8 +71,8 @@ from src.io.config_loader import ConfigLoader
 from src.io.data_loader import DataLoader
 from src.utils.logging import ValidationLogger
 
-# Import do gerenciador de taxas de câmbio (otimizado)
-from src.core.currency_rates import CurrencyRateManager
+# Novos serviços de câmbio centralizados
+from src.currency import RateFetcher, RateStorage, RateValidator, RateCalculator
 
 # Flag simples de verbosidade (NÃO muda cálculo)
 LOG_VERBOSE = os.getenv("COMISSOES_VERBOSE", "0") == "1"
@@ -114,6 +114,11 @@ def _tracker_finish(success: bool, message: str | None = None) -> None:
 def _tracker_update(etapa: str, message: str | None = None) -> None:
     if TRACKER:
         TRACKER.update(etapa=etapa, message=message)
+
+
+def _log_cambio(msg: str) -> None:
+    """Log específico do fluxo de câmbio, com prefixo dedicado."""
+    print(f"[CAMBIO_SETUP] {msg}")
 
 
 @contextmanager
@@ -253,12 +258,9 @@ class CalculoComissao:
         self.validation_logger = ValidationLogger()
         self.legacy_token = "__legacy__"
         self.cache_regras = {}
-        # NOVO: Gerenciador de taxas de câmbio (substitui cache_cambio)
-        self.currency_manager = CurrencyRateManager(
-            cache_file="cache_taxas_cambio.json", logger=getattr(self, "_logger", None)
-        )
-        # Taxas pré-carregadas (serão preenchidas antes do loop de itens)
-        self.taxas_precarregadas: Dict[str, Dict[int, float]] = {}
+        # Serviços de câmbio baseados em JSON persistente
+        self.rate_storage = RateStorage("data/currency_rates/monthly_avg_rates.json")
+        self.rate_calculator = RateCalculator(self.rate_storage)
         # Coleta de depuração para metas de fornecedores
         self.debug_fornecedores = []
         # Decisões e marcações de cross-selling por Processo
@@ -1296,43 +1298,6 @@ class CalculoComissao:
                         else:
                             ano_corrente = datetime.now().year
 
-                    # Preparar lista de moedas necessárias para busca de câmbio
-                    moedas_necessarias = set()
-                    for f in fornecedores[:2]:
-                        moeda = f.get("moeda")
-                        if moeda and str(moeda).upper() != "BRL":
-                            moedas_necessarias.add(str(moeda).upper())
-
-                    # NOVO: Usar taxas pré-carregadas (não buscar durante o loop)
-                    if moedas_necessarias and (peso_forn_1 > 0.0 or peso_forn_2 > 0.0):
-                        # Extrair taxas das moedas necessárias do cache pré-carregado
-                        taxas = {}
-                        for moeda in moedas_necessarias:
-                            moeda_upper = str(moeda).upper()
-                            if moeda_upper in self.taxas_precarregadas:
-                                # Filtrar apenas os meses necessários (1 até mes_apuracao)
-                                taxas[moeda_upper] = {
-                                    mes: taxa
-                                    for mes, taxa in self.taxas_precarregadas[
-                                        moeda_upper
-                                    ].items()
-                                    if mes <= mes_apuracao
-                                }
-                            else:
-                                # Se não estiver no cache pré-carregado, tentar buscar agora (fallback)
-                                _info(
-                                    f"[FC] AVISO: Moeda {moeda_upper} não encontrada no cache pré-carregado. Buscando agora..."
-                                )
-                                taxas_busca = self.currency_manager.get_rates(
-                                    ano_corrente, mes_apuracao, [moeda_upper]
-                                )
-                                if moeda_upper in taxas_busca:
-                                    taxas[moeda_upper] = taxas_busca[moeda_upper]
-                                else:
-                                    taxas[moeda_upper] = {}
-                    else:
-                        taxas = {}
-
                     # Para cada fornecedor (até 2), calculamos o componente
                     for idx, fornecedor in enumerate(fornecedores[:2], start=1):
                         fornecedor_nome = fornecedor.get("fornecedor")
@@ -1359,7 +1324,6 @@ class CalculoComissao:
 
                         # Calcular faturamento realizado YTD para este fabricante/fornecedor
                         faturados_ytd = self.data.get("FATURADOS_YTD", pd.DataFrame())
-                        # Filtra por fabricante/fornecedor; assumimos coluna 'Fabricante' corresponde ao fornecedor
                         if faturados_ytd.empty:
                             faturamento_realizado_ytd = 0.0
                         else:
@@ -1370,10 +1334,11 @@ class CalculoComissao:
                                     "Dt Emissão"
                                 ].dt.month
                             else:
-                                # Tentar inferir mês a partir de outra coluna ou assumir todo em mes_apuracao
+                                # Se não houver data de emissão, assume-se todo o faturamento no mês de apuração
                                 vendas_fornecedor["mes"] = mes_apuracao
 
-                            faturamento_realizado_ytd = 0.0
+                            # Montar mapa de faturamento mensal em BRL
+                            faturamento_mensal_brl: Dict[int, float] = {}
                             for mes in range(1, mes_apuracao + 1):
                                 vendas_do_mes = vendas_fornecedor[
                                     vendas_fornecedor["mes"] == mes
@@ -1383,41 +1348,15 @@ class CalculoComissao:
                                     if not vendas_do_mes.empty
                                     else 0.0
                                 )
-                                # NOVO: Buscar taxa do cache pré-carregado
-                                taxa_mes = None
-                                moeda_upper = str(moeda).upper() if moeda else None
-                                if (
-                                    moeda_upper
-                                    and taxas
-                                    and moeda_upper in taxas
-                                    and mes in taxas[moeda_upper]
-                                ):
-                                    taxa_mes = taxas[moeda_upper].get(mes)
+                                faturamento_mensal_brl[mes] = float(soma_brl)
 
-                                # Se taxa_mes for None ou zero, evitamos conversão e consideramos 0 convertido
-                                if taxa_mes and taxa_mes != 0:
-                                    # taxa_mes é a taxa no formato (moeda por 1 BRL),
-                                    # ou seja: 1 BRL = taxa_mes * MOEDA. Para converter
-                                    # soma_brl (em BRL) para a moeda alvo, multiplicamos.
-                                    faturamento_convertido = float(soma_brl) * float(
-                                        taxa_mes
-                                    )
-                                else:
-                                    faturamento_convertido = 0.0
-                                    if moeda_upper and mes_apuracao > 0:
-                                        _debug(
-                                            f"[FC] Taxa não encontrada no cache para {moeda_upper} mês {mes} - usando 0.0"
-                                        )
-
-                                # Log mensal detalhado
-                                try:
-                                    if logger and logger.isEnabledFor(logging.DEBUG):
-                                        logger.debug(
-                                            f"Fornecedor#{idx} mes={mes}: soma_brl={soma_brl:.2f} taxa_mes={taxa_mes} faturamento_convertido={faturamento_convertido:.4f}"
-                                        )
-                                except Exception:
-                                    pass
-                                faturamento_realizado_ytd += faturamento_convertido
+                            # Converter YTD usando apenas taxas já armazenadas no JSON
+                            faturamento_realizado_ytd = self.rate_calculator.calcular_faturamento_convertido_ytd(  # type: ignore[attr-defined]
+                                faturamento_mensal_brl=faturamento_mensal_brl,
+                                moeda=moeda,
+                                ano=ano_corrente,
+                                mes_final=mes_apuracao,
+                            )
 
                     # Cálculo do atingimento e componente
                     atingimento = _calcular_atingimento(
@@ -1628,8 +1567,10 @@ class CalculoComissao:
 
         return min(fc_total_item, cap_fc), detalhes_fc
 
-    # MÉTODO REMOVIDO: _get_taxas_de_cambio foi movido para src/core/currency_rates.py
-    # A lógica agora usa CurrencyRateManager com pré-carregamento otimizado.
+    # MÉTODO REMOVIDO: _get_taxas_de_cambio foi movido anteriormente para
+    # src/core/currency_rates.py. A lógica atual utiliza o pacote src.currency
+    # com JSON persistente (data/currency_rates/monthly_avg_rates.json) para
+    # evitar buscas repetidas em APIs e simplificar o cálculo do FC de fornecedores.
     # As taxas são pré-carregadas ANTES do loop de itens para evitar travamentos.
 
     # ------------------ Estado e Reconciliacao (Recebimentos) ------------------
@@ -4840,6 +4781,158 @@ class CalculoComissao:
 
 if __name__ == "__main__":
     try:
+        # ------------------------------------------------------------------
+        # 0. Verificação/atualização prévia de taxas de câmbio
+        #    (ANTES de solicitar mês/ano ao usuário)
+        # ------------------------------------------------------------------
+        def _atualizar_taxas_cambio_iniciais() -> None:
+            """
+            Garante que o JSON de câmbio tenha taxas de JAN até o último mês
+            FECHADO do ano atual, para todas as moedas de METAS_FORNECEDORES.
+
+            Regra:
+            - Considera apenas ano atual
+            - Usa meses 1..(mes_atual-1) como "últimos meses fechados"
+            - Nunca busca nem sobrescreve taxa do mês atual
+            - Se uma taxa não puder ser buscada nas APIs, usa média do ano
+              até o mês anterior e marca o registro como fallback, com
+              observação clara no JSON.
+            """
+            from pathlib import Path
+
+            now = datetime.now()
+            ano_atual = now.year
+            mes_atual = now.month
+            mes_limite = mes_atual - 1
+
+            _log_cambio(
+                f"Iniciando verificação de taxas de câmbio para ano={ano_atual}, meses 1..{max(mes_limite,0)}."
+            )
+
+            if mes_limite <= 0:
+                _log_cambio(
+                    "Nenhum mês fechado no ano atual ainda (mes_atual=1). Pulando verificação de câmbio."
+                )
+                return
+
+            metas_path = Path("config/METAS_FORNECEDORES.csv")
+            if not metas_path.exists():
+                _log_cambio(
+                    f"Arquivo {metas_path} não encontrado. Não há metas de fornecedores para derivar moedas; pulando verificação de câmbio."
+                )
+                return
+
+            try:
+                metas_df = pd.read_csv(metas_path, sep=";")
+            except Exception as e:
+                _log_cambio(
+                    f"Falha ao ler METAS_FORNECEDORES.csv para verificação de câmbio: {e}"
+                )
+                return
+
+            if "moeda" not in metas_df.columns:
+                _log_cambio(
+                    "Coluna 'moeda' não encontrada em METAS_FORNECEDORES.csv; pulando verificação de câmbio."
+                )
+                return
+
+            moedas = (
+                metas_df["moeda"]
+                .dropna()
+                .map(lambda m: str(m).strip().upper())
+                .tolist()
+            )
+            moedas = [m for m in moedas if m and m != "BRL"]
+            moedas_unicas = sorted(set(moedas))
+
+            if not moedas_unicas:
+                _log_cambio(
+                    "Nenhuma moeda de fornecedor encontrada em METAS_FORNECEDORES.csv (após remover BRL). Nada a fazer."
+                )
+                return
+
+            _log_cambio(
+                f"Moedas de fornecedores detectadas: {', '.join(moedas_unicas)}."
+            )
+
+            storage = RateStorage("data/currency_rates/monthly_avg_rates.json")
+            validator = RateValidator(storage)
+            # Timeout maior porque essa etapa roda poucas vezes e pode demorar
+            # alguns minutos sem impactar a experiência do usuário.
+            fetcher = RateFetcher(timeout=60.0, max_retries=2)
+
+            faltantes = validator.identificar_taxas_faltantes(
+                moedas_unicas, ano_atual, mes_limite
+            )
+
+            if not faltantes:
+                _log_cambio(
+                    "Todas as taxas necessárias (JAN até último mês fechado) já estão presentes no JSON. Nenhuma busca adicional requerida."
+                )
+                return
+
+            _log_cambio(
+                f"{len(faltantes)} taxa(s) faltante(s) detectada(s) para o ano {ano_atual}. Iniciando busca nas APIs..."
+            )
+
+            for moeda, ano, mes in faltantes:
+                _log_cambio(f"Buscando taxa média para {moeda} {ano}-{mes:02d}...")
+                resultado = fetcher.buscar_taxa_media_mensal(moeda, ano, mes)
+
+                if resultado is not None:
+                    taxa_media, fonte, dias = resultado
+                    storage.salvar_taxa(
+                        moeda=moeda,
+                        ano=ano,
+                        mes=mes,
+                        taxa_media=taxa_media,
+                        fonte=fonte,
+                        dias_utilizados=dias,
+                        fallback=False,
+                        observacao=None,
+                    )
+                    _log_cambio(
+                        f"✓ Taxa registrada para {moeda} {ano}-{mes:02d}: {taxa_media:.6f} (fonte={fonte}, dias={dias})."
+                    )
+                    continue
+
+                # Fallback: usar média do ano até mês anterior
+                taxa_fallback = storage.calcular_media_ano_ate_mes(
+                    moeda, ano, mes - 1
+                )
+                if taxa_fallback is not None:
+                    observacao = (
+                        f"FALHA AO BUSCAR TAXA NAS APIS PARA {moeda} {ano}-{mes:02d}; "
+                        f"USANDO MÉDIA DO ANO ATÉ {ano}-{mes-1:02d} COMO FALLBACK."
+                    )
+                    storage.salvar_taxa(
+                        moeda=moeda,
+                        ano=ano,
+                        mes=mes,
+                        taxa_media=taxa_fallback,
+                        fonte="fallback_media_anual",
+                        dias_utilizados=max(1, mes - 1),
+                        fallback=True,
+                        observacao=observacao,
+                    )
+                    _log_cambio(
+                        f"ATENÇÃO: não foi possível obter taxa real para {moeda} {ano}-{mes:02d}. "
+                        f"Registrada taxa de fallback ({taxa_fallback:.6f}) com observação no JSON."
+                    )
+                else:
+                    _log_cambio(
+                        f"AVISO CRÍTICO: não foi possível obter taxa nem calcular média do ano para {moeda} {ano}-{mes:02d}. "
+                        f"Esse mês/ano permanecerá sem taxa registrada."
+                    )
+
+            storage.atualizar_metadata(moedas_unicas)
+            _log_cambio(
+                "Verificação/atualização de taxas de câmbio concluída. JSON atualizado em data/currency_rates/monthly_avg_rates.json."
+            )
+
+        # Executar verificação de câmbio antes de qualquer outra ação
+        _atualizar_taxas_cambio_iniciais()
+
         # Suporte a modo não-interativo via CLI e variáveis de ambiente
         def _parse_cli_env_mes_ano():
             mes_cli = None

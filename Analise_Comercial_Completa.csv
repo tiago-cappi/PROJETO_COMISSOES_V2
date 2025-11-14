@@ -1,0 +1,14 @@
+﻿Processo,Status Processo,Numero NF,Dt Emissão,Valor Realizado,Consultor Interno,Representante-pedido,Gerente Comercial-Pedido,Negócio,Grupo,Subgrupo,Tipo de Mercadoria,Aplicação Mat./Serv.,Cliente,Nome Cliente,Cidade,UF,Código Produto,Descrição Produto,Qtde Atendida,Operação
+100001,PENDENTE,,,10000,Alessandro Cappi,,,SSO,Analisador Fixo,Falco,Produto,Industrial,9999,CLIENTE TESTE LTDA,São Paulo,SP,PROD001,Produto de Teste,1,PVEN - Pedido de venda
+100002,FATURADO,048001,2025-08-25,15000,Alessandro Cappi,,,SSO,Analisador Fixo,Falco,Produto,Industrial,9999,CLIENTE TESTE LTDA,São Paulo,SP,PROD001,Produto de Teste,1,PVEN - Pedido de venda
+100003,FATURADO,048002,2025-09-10,20000,Alessandro Cappi,,,SSO,Analisador Fixo,Falco,Produto,Industrial,9999,CLIENTE TESTE LTDA,São Paulo,SP,PROD001,Produto de Teste,1,PVEN - Pedido de venda
+100004,FATURADO,048003,2025-09-15,25000,Alessandro Cappi,,,SSO,Analisador Fixo,Falco,Produto,Industrial,9999,CLIENTE TESTE LTDA,São Paulo,SP,PROD001,Produto de Teste,1,PVEN - Pedido de venda
+100005,FATURADO,048004,2025-08-20,12000,André Caramello,,,SSO,Analisador Portátil,Acessório,Produto,Industrial,9999,CLIENTE TESTE LTDA,São Paulo,SP,PROD001,Produto de Teste,1,PVEN - Pedido de venda
+100006,FATURADO,048006,2025-09-20,18000,Alessandro Cappi,,,SSO,Analisador Fixo,Falco,Produto,Industrial,9999,CLIENTE TESTE LTDA,São Paulo,SP,PROD001,Produto de Teste,1,PVEN - Pedido de venda
+100006,FATURADO,048006,2025-09-20,12000,André Caramello,,,SSO,Analisador Portátil,Acessório,Produto,Industrial,9999,CLIENTE TESTE LTDA,São Paulo,SP,PROD001,Produto de Teste,1,PVEN - Pedido de venda
+100007,FATURADO,048007,2025-09-25,30000,Alessandro Cappi,,,SSO,Diversos Diversos,Calibração,Serviço,Industrial,9999,CLIENTE TESTE LTDA,São Paulo,SP,PROD001,Produto de Teste,1,PVEN - Pedido de venda
+100008,FATURADO,048005,2025-08-15,50000,Alessandro Cappi,,,SSO,Analisador Fixo,Falco,Produto,Industrial,9999,CLIENTE TESTE LTDA,São Paulo,SP,PROD001,Produto de Teste,1,PVEN - Pedido de venda
+100009,FATURADO,12345,2025-08-18,8000,André Caramello,,,SSO,Analisador Fixo,Titan,Produto,Industrial,9999,CLIENTE TESTE LTDA,São Paulo,SP,PROD001,Produto de Teste,1,PVEN - Pedido de venda
+100010,FATURADO,048008,2025-09-28,40000,Alessandro Cappi,,,SSO,Analisador Fixo,Falco,Produto,Industrial,9999,CLIENTE TESTE LTDA,São Paulo,SP,PROD001,Produto de Teste,1,PVEN - Pedido de venda
+100010,FATURADO,048008,2025-09-28,30000,Alessandro Cappi,,,SSO,Diversos Diversos,Calibração,Serviço,Industrial,9999,CLIENTE TESTE LTDA,São Paulo,SP,PROD001,Produto de Teste,1,PVEN - Pedido de venda
+100010,FATURADO,048008,2025-09-28,20000,Alessandro Cappi,,,SSO,Analisador Fixo,Acessório,Reposição,Industrial,9999,CLIENTE TESTE LTDA,São Paulo,SP,PROD001,Produto de Teste,1,PVEN - Pedido de venda

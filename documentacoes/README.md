@@ -105,7 +105,7 @@ documentacoes/
 - **TCMP**: [COMISSOES_POR_RECEBIMENTO_DETALHADO.md](./COMISSOES_POR_RECEBIMENTO_DETALHADO.md#cálculo-de-tcmp)
 - **FCMP**: [COMISSOES_POR_RECEBIMENTO_DETALHADO.md](./COMISSOES_POR_RECEBIMENTO_DETALHADO.md#cálculo-de-fcmp)
 - **FC (Fator de Correção)**: [DOCUMENTACAO_ROBO_COMISSOES.md](./DOCUMENTACAO_ROBO_COMISSOES.md#cálculo-do-fator-de-correção-fc)
-- **Reconciliação**: [COMISSOES_POR_RECEBIMENTO_DETALHADO.md](./COMISSOES_POR_RECEBIMENTO_DETALHADO.md#reconciliações-a-implementar)
+- **Reconciliação**: [COMISSOES_POR_RECEBIMENTO_DETALHADO.md](./COMISSOES_POR_RECEBIMENTO_DETALHADO.md#reconciliações)
 
 ### Arquivos de Entrada
 - **Análise Financeira.xlsx**: [COMISSOES_POR_RECEBIMENTO_DETALHADO.md](./COMISSOES_POR_RECEBIMENTO_DETALHADO.md#1-análise-financeiraxlsx)
@@ -119,7 +119,7 @@ documentacoes/
 ### Cálculos e Fórmulas
 - **Adiantamento**: [COMISSOES_POR_RECEBIMENTO_DETALHADO.md](./COMISSOES_POR_RECEBIMENTO_DETALHADO.md#comissões-por-adiantamento)
 - **Pagamento Regular**: [COMISSOES_POR_RECEBIMENTO_DETALHADO.md](./COMISSOES_POR_RECEBIMENTO_DETALHADO.md#comissões-por-pagamento-regular)
-- **Reconciliação**: [COMISSOES_POR_RECEBIMENTO_DETALHADO.md](./COMISSOES_POR_RECEBIMENTO_DETALHADO.md#reconciliações-a-implementar)
+- **Reconciliação**: [COMISSOES_POR_RECEBIMENTO_DETALHADO.md](./COMISSOES_POR_RECEBIMENTO_DETALHADO.md#reconciliações)
 
 ### Exemplos Práticos
 - **Exemplos Completos**: [COMISSOES_POR_RECEBIMENTO_DETALHADO.md](./COMISSOES_POR_RECEBIMENTO_DETALHADO.md#exemplos-práticos)

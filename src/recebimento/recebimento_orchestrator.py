@@ -8,12 +8,18 @@ import os
 from datetime import datetime
 from typing import Optional
 
-from .io.analise_financeira_loader import AnaliseFinanceiraLoader
+from .core.comissao_calculator import ComissaoCalculator
+from .core.metricas_calculator import MetricasCalculator
 from .core.process_mapper import ProcessMapper
 from .estado.state_manager import StateManager
-from .core.metricas_calculator import MetricasCalculator
-from .core.comissao_calculator import ComissaoCalculator
+from .io.analise_financeira_loader import AnaliseFinanceiraLoader
 from .io.output_generator import RecebimentoOutputGenerator
+from .reconciliacao import (
+    ReconciliacaoAggregator,
+    ReconciliacaoCalculator,
+    ReconciliacaoDetector,
+    ReconciliacaoValidator,
+)
 
 
 class RecebimentoOrchestrator:
@@ -45,9 +51,16 @@ class RecebimentoOrchestrator:
         self.comissao_calc = ComissaoCalculator()
         self.output_gen = RecebimentoOutputGenerator()
 
-        # DataFrames de saída
+        # Componentes de reconciliação
+        self.reconciliacao_detector = ReconciliacaoDetector(self.state_manager, mes, ano)
+        self.reconciliacao_calc = ReconciliacaoCalculator()
+        self.reconciliacao_aggregator = ReconciliacaoAggregator()
+        self.reconciliacao_validator = ReconciliacaoValidator()
+
+        # DataFrames / listas de saída
         self.comissoes_adiantamentos = []
         self.comissoes_regulares = []
+        self.reconciliacoes_calculadas = []
         self.documentos_nao_mapeados = []
 
     def executar(self) -> str:
@@ -217,14 +230,21 @@ class RecebimentoOrchestrator:
         self._calcular_metricas_processos_faturados()
         print("[RECEBIMENTO] [ETAPA 2.5/6] Cálculo de métricas concluído")
 
-        # 6. Gerar arquivo de saída
-        print("[RECEBIMENTO] [ETAPA 2.6/6] Gerando arquivo de saída...")
-        arquivo_gerado = self._gerar_arquivo_saida()
-        print(f"[RECEBIMENTO] [ETAPA 2.6/6] Arquivo gerado: {arquivo_gerado}")
-
-        # 7. Gerar PDF de auditoria (opcional)
+        # 6. Calcular reconciliações para processos faturados com adiantamentos
         print(
-            "[RECEBIMENTO] [ETAPA 2.7/6] Verificando se deve gerar PDF de auditoria..."
+            "[RECEBIMENTO] [ETAPA 2.6/6] Calculando reconciliações para processos faturados..."
+        )
+        self._calcular_reconciliacoes()
+        print("[RECEBIMENTO] [ETAPA 2.6/6] Cálculo de reconciliações concluído")
+
+        # 7. Gerar arquivo de saída
+        print("[RECEBIMENTO] [ETAPA 2.7/6] Gerando arquivo de saída...")
+        arquivo_gerado = self._gerar_arquivo_saida()
+        print(f"[RECEBIMENTO] [ETAPA 2.7/6] Arquivo gerado: {arquivo_gerado}")
+
+        # 8. Gerar PDF de auditoria (opcional)
+        print(
+            "[RECEBIMENTO] [ETAPA 2.8/6] Verificando se deve gerar PDF de auditoria..."
         )
         self._gerar_pdf_auditoria()
 
@@ -286,6 +306,17 @@ class RecebimentoOrchestrator:
         print(
             f"[RECEBIMENTO] [ADIANTAMENTO] Total de comissão: R$ {total_comissao:.2f}"
         )
+        # Armazenar comissões adiantadas por colaborador (para futuras reconciliações)
+        comissoes_por_colaborador = {
+            c["nome_colaborador"]: c["comissao_calculada"] for c in comissoes
+        }
+        self.state_manager.armazenar_comissoes_adiantadas(
+            processo, comissoes_por_colaborador
+        )
+        print(
+            f"[RECEBIMENTO] [ADIANTAMENTO] Comissões adiantadas armazenadas por colaborador: {comissoes_por_colaborador}"
+        )
+
         self.state_manager.atualizar_pagamento_adiantamento(
             processo, valor, total_comissao, data_pagamento
         )
@@ -527,6 +558,100 @@ class RecebimentoOrchestrator:
             f"[RECEBIMENTO] [MÉTRICAS] Cálculo de métricas concluído: {processos_calculados} processo(s) com métricas calculadas"
         )
 
+    def _calcular_reconciliacoes(self):
+        """
+        Calcula reconciliações para processos faturados no mês que tiveram adiantamentos.
+        """
+        print("[RECEBIMENTO] [RECONCILIACAO] Iniciando cálculo de reconciliações...")
+
+        processos_para_reconciliar = (
+            self.reconciliacao_detector.detectar_processos_para_reconciliar()
+        )
+
+        print(
+            f"[RECEBIMENTO] [RECONCILIACAO] {len(processos_para_reconciliar)} processo(s) detectado(s) para reconciliação"
+        )
+
+        if not processos_para_reconciliar:
+            print(
+                "[RECEBIMENTO] [RECONCILIACAO] Nenhum processo elegível para reconciliação."
+            )
+            return
+
+        total_reconciliacoes = 0
+        for processo_id in processos_para_reconciliar:
+            print(
+                f"[RECEBIMENTO] [RECONCILIACAO] Processando reconciliação do processo {processo_id}..."
+            )
+
+            dados = self.reconciliacao_detector.obter_dados_para_reconciliacao(
+                processo_id
+            )
+            if not dados:
+                print(
+                    f"[RECEBIMENTO] [RECONCILIACAO] AVISO: Dados não encontrados para processo {processo_id}"
+                )
+                continue
+
+            valido, mensagem = self.reconciliacao_validator.validar_dados_processo(
+                dados
+            )
+            if not valido:
+                print(
+                    f"[RECEBIMENTO] [RECONCILIACAO] AVISO: Dados inválidos para processo {processo_id}: {mensagem}"
+                )
+                continue
+
+            reconciliacoes_processo = (
+                self.reconciliacao_calc.calcular_reconciliacao_processo(
+                    processo_id=dados["processo"],
+                    comissoes_adiantadas=dados["comissoes_adiantadas"],
+                    tcmp_dict=dados["tcmp"],
+                    fcmp_dict=dados["fcmp"],
+                    mes_faturamento=dados["mes_faturamento"],
+                )
+            )
+
+            if not reconciliacoes_processo:
+                print(
+                    f"[RECEBIMENTO] [RECONCILIACAO] Nenhuma reconciliação calculada para processo {processo_id}"
+                )
+                continue
+
+            todas_validas, erros = (
+                self.reconciliacao_validator.validar_todas_reconciliacoes(
+                    reconciliacoes_processo
+                )
+            )
+            if not todas_validas:
+                print(
+                    f"[RECEBIMENTO] [RECONCILIACAO] ERROS de validação no processo {processo_id}:"
+                )
+                for erro in erros:
+                    print(f"[RECEBIMENTO] [RECONCILIACAO]   - {erro}")
+                continue
+
+            saldo_total = self.reconciliacao_calc.calcular_saldo_total_processo(
+                reconciliacoes_processo
+            )
+
+            print(
+                f"[RECEBIMENTO] [RECONCILIACAO] Processo {processo_id}: {len(reconciliacoes_processo)} reconciliação(ões), saldo total: R$ {saldo_total:.2f}"
+            )
+
+            self.reconciliacoes_calculadas.extend(reconciliacoes_processo)
+            total_reconciliacoes += len(reconciliacoes_processo)
+
+            # Marcar processo como reconciliado no estado
+            self.state_manager.marcar_reconciliacao_calculada(processo_id)
+            print(
+                f"[RECEBIMENTO] [RECONCILIACAO] Processo {processo_id} marcado como reconciliado no ESTADO"
+            )
+
+        print(
+            f"[RECEBIMENTO] [RECONCILIACAO] Reconciliações concluídas: {total_reconciliacoes} ajuste(s) calculado(s)"
+        )
+
     def _gerar_arquivo_saida(self) -> str:
         """Gera arquivo de saída com todas as abas."""
         print(
@@ -536,7 +661,14 @@ class RecebimentoOrchestrator:
         # Preparar DataFrames
         df_adiantamentos = pd.DataFrame(self.comissoes_adiantamentos)
         df_regulares = pd.DataFrame(self.comissoes_regulares)
-        df_reconciliacoes = pd.DataFrame()  # Vazio para fase futura
+
+        if self.reconciliacoes_calculadas:
+            df_reconciliacoes = self.reconciliacao_aggregator.criar_dataframe_reconciliacoes(
+                self.reconciliacoes_calculadas
+            )
+        else:
+            df_reconciliacoes = pd.DataFrame()
+
         df_estado = self.state_manager.obter_dataframe_estado()
         df_avisos = pd.DataFrame(self.documentos_nao_mapeados)
 
@@ -545,6 +677,9 @@ class RecebimentoOrchestrator:
             f"[RECEBIMENTO] [GERAÇÃO]   - Adiantamentos: {len(df_adiantamentos)} linha(s)"
         )
         print(f"[RECEBIMENTO] [GERAÇÃO]   - Regulares: {len(df_regulares)} linha(s)")
+        print(
+            f"[RECEBIMENTO] [GERAÇÃO]   - Reconciliações: {len(df_reconciliacoes)} linha(s)"
+        )
         print(f"[RECEBIMENTO] [GERAÇÃO]   - Estado: {len(df_estado)} linha(s)")
         print(f"[RECEBIMENTO] [GERAÇÃO]   - Avisos: {len(df_avisos)} linha(s)")
 

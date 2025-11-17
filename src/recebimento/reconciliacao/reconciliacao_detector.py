@@ -134,6 +134,9 @@ class ReconciliacaoDetector:
         except Exception:
             total_comissao_adiantamentos = 0.0
 
+        # Obter mês de faturamento do processo
+        mes_faturamento = str(processo.get("MES_ANO_FATURAMENTO", "") or "").strip()
+
         return {
             "processo": str(processo_id).strip(),
             "valor_total_processo": valor_total_processo,

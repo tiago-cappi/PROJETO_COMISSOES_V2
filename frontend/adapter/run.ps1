@@ -3,14 +3,12 @@
 Write-Host "Iniciando adapter FastAPI..." -ForegroundColor Green
 Write-Host ""
 
-# Verificar se existe arquivo .env
+# Verificar se existe arquivo .env (opcional - o adapter detecta automaticamente o caminho)
 if (-not (Test-Path .env)) {
     Write-Host "AVISO: Arquivo .env não encontrado!" -ForegroundColor Yellow
-    Write-Host "Criando .env a partir do exemplo..." -ForegroundColor Yellow
-    Copy-Item .env.example .env
-    Write-Host "Por favor, edite o arquivo .env e configure ROBO_ROOT_PATH" -ForegroundColor Yellow
-    pause
-    exit 1
+    Write-Host "O adapter detectará automaticamente o caminho do robô (pasta pai)" -ForegroundColor Cyan
+    Write-Host "Para configurar manualmente, crie .env com: ROBO_ROOT_PATH=caminho" -ForegroundColor Cyan
+    Write-Host ""
 }
 
 # Verificar se venv existe

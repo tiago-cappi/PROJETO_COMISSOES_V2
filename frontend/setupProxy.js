@@ -50,5 +50,19 @@ module.exports = function(app) {
       changeOrigin: true,
     })
   );
+  app.use(
+    '/api',
+    createProxyMiddleware({
+      target: 'http://localhost:8000',
+      changeOrigin: true,
+    })
+  );
+  app.use(
+    '/debug',
+    createProxyMiddleware({
+      target: 'http://localhost:8000',
+      changeOrigin: true,
+    })
+  );
 };
 

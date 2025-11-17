@@ -49,24 +49,43 @@ class AnaliseFinanceiraLoader:
             print(f"[RECEBIMENTO] [LOADER] Usando caminho específico: {path}")
         else:
             # Procurar primeiro em dados_entrada/, depois na raiz
-            path_entrada = os.path.join("dados_entrada", "Análise Financeira.xlsx")
-            path_raiz = os.path.join(base_path, "Análise Financeira.xlsx")
+            # Usar pathlib.glob para evitar problemas de encoding
+            from pathlib import Path
+            import unicodedata
             
-            print(f"[RECEBIMENTO] [LOADER] Procurando arquivo em: {path_entrada}")
-            print(f"[RECEBIMENTO] [LOADER] Existe? {os.path.exists(path_entrada)}")
-            print(f"[RECEBIMENTO] [LOADER] Procurando arquivo em: {path_raiz}")
-            print(f"[RECEBIMENTO] [LOADER] Existe? {os.path.exists(path_raiz)}")
+            def normalizar_nome(nome):
+                """Remove acentos e converte para minúsculas."""
+                nfkd = unicodedata.normalize('NFKD', nome)
+                sem_acento = ''.join([c for c in nfkd if not unicodedata.combining(c)])
+                return sem_acento.lower()
             
-            if os.path.exists(path_entrada):
-                path = path_entrada
+            path_encontrado = None
+            
+            # Buscar em dados_entrada/
+            path_entrada_dir = Path("dados_entrada")
+            if path_entrada_dir.exists():
+                for arquivo in path_entrada_dir.glob("*.xlsx"):
+                    nome_normalizado = normalizar_nome(arquivo.name)
+                    if "analise" in nome_normalizado and "financeira" in nome_normalizado:
+                        path_encontrado = str(arquivo)
                 print(f"[RECEBIMENTO] [LOADER] Arquivo encontrado em dados_entrada/")
-            elif os.path.exists(path_raiz):
-                path = path_raiz
+                        break
+            
+            # Se não encontrou, buscar na raiz
+            if not path_encontrado:
+                path_raiz_dir = Path(base_path)
+                for arquivo in path_raiz_dir.glob("*.xlsx"):
+                    nome_normalizado = normalizar_nome(arquivo.name)
+                    if "analise" in nome_normalizado and "financeira" in nome_normalizado:
+                        path_encontrado = str(arquivo)
                 print(f"[RECEBIMENTO] [LOADER] Arquivo encontrado na raiz")
-            else:
-                print(f"[RECEBIMENTO] [LOADER] ERRO: Arquivo não encontrado em nenhum local!")
-                # Retornar DataFrame vazio se arquivo não encontrado
+                        break
+            
+            if not path_encontrado:
+                print(f"[RECEBIMENTO] [LOADER] ERRO: Arquivo não encontrado!")
                 return pd.DataFrame(columns=["Documento", "Valor Líquido", "Data de Baixa", "Tipo de Baixa"])
+            
+            path = path_encontrado
         
         # Carregar arquivo Excel
         print(f"[RECEBIMENTO] [LOADER] Carregando arquivo Excel: {path}")
@@ -127,7 +146,6 @@ class AnaliseFinanceiraLoader:
         try:
             df_filtrado["Data de Baixa"] = pd.to_datetime(
                 df_filtrado["Data de Baixa"],
-                dayfirst=True,
                 errors='coerce'
             )
             print(f"[RECEBIMENTO] [LOADER] Conversão bem-sucedida")

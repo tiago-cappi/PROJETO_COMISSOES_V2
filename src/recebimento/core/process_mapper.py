@@ -23,6 +23,10 @@ class ProcessMapper:
         Args:
             df_analise_comercial: DataFrame da Análise Comercial Completa
         """
+        # Limpar BOM (Byte Order Mark) dos nomes das colunas
+        df_analise_comercial.columns = df_analise_comercial.columns.str.replace('\ufeff', '', regex=False)
+        df_analise_comercial.columns = df_analise_comercial.columns.str.strip()
+        
         self.df_comercial = df_analise_comercial
         self.documentos_nao_mapeados = []
         self.cache_mapeamento = {}

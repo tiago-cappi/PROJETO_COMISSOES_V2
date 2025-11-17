@@ -86,7 +86,12 @@ app = FastAPI(
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -119,8 +124,8 @@ class ProgressResponse(BaseModel):
 
 
 def get_regras_path() -> Path:
-    """Retorna caminho do arquivo Regras_Comissoes.xlsx"""
-    path = Path(ROBO_ROOT_PATH) / "Regras_Comissoes.xlsx"
+    """Retorna caminho do arquivo REGRAS_COMISSOES.xlsx"""
+    path = Path(ROBO_ROOT_PATH) / "config" / "REGRAS_COMISSOES.xlsx"
     # Garantir caminho absoluto
     return path.resolve()
 
@@ -670,9 +675,13 @@ async def upload_analise(file: UploadFile = File(...)):
             status_code=400, detail="Formato inválido. Use .xlsx ou .csv"
         )
 
-    # Salvar na raiz do projeto
+    # Criar diretório dados_entrada se não existir
+    dados_entrada_dir = Path(ROBO_ROOT_PATH) / "dados_entrada"
+    dados_entrada_dir.mkdir(exist_ok=True)
+
+    # Salvar em dados_entrada/
     filename = f"Analise_Comercial_Completa{ext}"
-    filepath = Path(ROBO_ROOT_PATH) / filename
+    filepath = dados_entrada_dir / filename
 
     async with aiofiles.open(filepath, "wb") as f:
         content = await file.read()
@@ -719,7 +728,11 @@ async def upload_analise_financeira(file: UploadFile = File(...)):
     if not file.filename.endswith(".xlsx"):
         raise HTTPException(status_code=400, detail="Formato inválido. Use .xlsx")
 
-    filepath = Path(ROBO_ROOT_PATH) / "Análise Financeira.xlsx"
+    # Criar diretório dados_entrada se não existir
+    dados_entrada_dir = Path(ROBO_ROOT_PATH) / "dados_entrada"
+    dados_entrada_dir.mkdir(exist_ok=True)
+    
+    filepath = dados_entrada_dir / "Análise Financeira.xlsx"
     async with aiofiles.open(filepath, "wb") as f:
         content = await file.read()
         await f.write(content)
@@ -953,9 +966,16 @@ async def executar_prescan(payload: ExecPrescanRequest):
             # Verificar se os arquivos já existem e são recentes (últimos 5 minutos)
             # para evitar reexecutar o preparador desnecessariamente
             # IMPORTANTE: Se o CSV não existir mas o XLSX existir, sempre executar o preparador para converter
-            arquivo_csv = Path("Analise_Comercial_Completa.csv")
-            arquivo_xlsx = Path("Analise_Comercial_Completa.xlsx")
-            precisa_converter = not arquivo_csv.exists() and arquivo_xlsx.exists()
+            # Procurar primeiro em dados_entrada/, depois na raiz
+            arquivo_csv_raiz = Path("Analise_Comercial_Completa.csv")
+            arquivo_csv_entrada = Path("dados_entrada/Analise_Comercial_Completa.csv")
+            arquivo_xlsx_raiz = Path("Analise_Comercial_Completa.xlsx")
+            arquivo_xlsx_entrada = Path("dados_entrada/Analise_Comercial_Completa.xlsx")
+            
+            arquivo_csv = arquivo_csv_raiz if arquivo_csv_raiz.exists() else (arquivo_csv_entrada if arquivo_csv_entrada.exists() else None)
+            arquivo_xlsx = arquivo_xlsx_raiz if arquivo_xlsx_raiz.exists() else (arquivo_xlsx_entrada if arquivo_xlsx_entrada.exists() else None)
+            
+            precisa_converter = arquivo_csv is None and arquivo_xlsx is not None
 
             arquivos_necessarios = [
                 Path("Faturados.xlsx"),
@@ -1010,7 +1030,7 @@ async def executar_prescan(payload: ExecPrescanRequest):
                 import glob as _glob
 
                 encontrados = _glob.glob(
-                    str(Path("rentabilidades") / f"*{mm}*{payload.ano}*agrupada*.xlsx")
+                    str(Path("dados_entrada/rentabilidades") / f"*{mm}*{payload.ano}*agrupada*.xlsx")
                 )
                 if encontrados:
                     cc.ARQUIVO_RENTABILIDADE = encontrados[0]
@@ -1019,7 +1039,7 @@ async def executar_prescan(payload: ExecPrescanRequest):
                     )
                 else:
                     padrao = (
-                        Path("rentabilidades")
+                        Path("dados_entrada/rentabilidades")
                         / f"rentabilidade_{mm}_{payload.ano}_agrupada.xlsx"
                     )
                     if padrao.exists():
@@ -1102,13 +1122,13 @@ async def executar_calculo(payload: ExecCalculoRequest):
                 import glob as _glob
 
                 encontrados = _glob.glob(
-                    str(Path("rentabilidades") / f"*{mm}*{payload.ano}*agrupada*.xlsx")
+                    str(Path("dados_entrada/rentabilidades") / f"*{mm}*{payload.ano}*agrupada*.xlsx")
                 )
                 if encontrados:
                     cc.ARQUIVO_RENTABILIDADE = encontrados[0]
                 else:
                     padrao = (
-                        Path("rentabilidades")
+                        Path("dados_entrada/rentabilidades")
                         / f"rentabilidade_{mm}_{payload.ano}_agrupada.xlsx"
                     )
                     if padrao.exists():

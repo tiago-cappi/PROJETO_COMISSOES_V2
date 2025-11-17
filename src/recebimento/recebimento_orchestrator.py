@@ -338,6 +338,9 @@ class RecebimentoOrchestrator:
         )
         metricas_salvas = self.state_manager.obter_metricas(processo)
 
+        # Inicializar mes_faturamento antes do if
+        mes_faturamento = None
+        
         if metricas_salvas:
             print(f"[RECEBIMENTO] [REGULAR] Métricas encontradas no estado")
             tcmp_dict = metricas_salvas["TCMP"]

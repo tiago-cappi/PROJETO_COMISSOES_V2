@@ -16,14 +16,32 @@ Backend adapter que orquestra o robô de comissões sem alterar a lógica existe
 pip install -r requirements.txt
 ```
 
-2. Configurar variável de ambiente:
+2. Configurar variável de ambiente (opcional):
 ```powershell
-$env:ROBO_ROOT_PATH="C:\caminho\para\robo-comissoes"
+$env:ROBO_ROOT_PATH="C:\caminho\para\PROJETO_COMISSOES_V2"
 ```
 
-Ou criar `.env`:
+Ou criar `.env` na pasta `adapter/`:
 ```env
-ROBO_ROOT_PATH=C:\caminho\para\robo-comissoes
+ROBO_ROOT_PATH=C:\caminho\para\PROJETO_COMISSOES_V2
+```
+
+**Nota**: Se não configurar, o adapter usará automaticamente o diretório pai (raiz do projeto).
+
+## Estrutura de Arquivos Esperada
+
+O adapter espera a seguinte estrutura:
+```
+PROJETO_COMISSOES_V2/
+├── config/
+│   └── REGRAS_COMISSOES.xlsx  # Arquivo de regras
+├── dados_entrada/
+│   ├── Analise_Comercial_Completa.xlsx
+│   ├── Análise Financeira.xlsx
+│   └── rentabilidades/
+│       └── rentabilidade_MM_AAAA_agrupada.xlsx
+├── calculo_comissoes.py
+└── preparar_dados_mensais.py
 ```
 
 ## Execução
@@ -43,10 +61,10 @@ Documentação: `http://localhost:8000/docs`
 - `POST /regras/aba/{nome}/apply-bulk` - Aplicação em massa
 
 ### Uploads
-- `POST /upload/analise` - Analise_Comercial_Completa
+- `POST /upload/analise` - Analise_Comercial_Completa (salvo em `dados_entrada/`)
 - `POST /upload/fin_adcli` - fin_adcli_pg_m3.xls
 - `POST /upload/fin_conci` - fin_conci_adcli_m3.xls
-- `POST /upload/analise_financeira` - Análise Financeira.xlsx
+- `POST /upload/analise_financeira` - Análise Financeira.xlsx (salvo em `dados_entrada/`)
 
 ### Execução
 - `POST /calcular?mes=MM&ano=AAAA` - Inicia cálculo

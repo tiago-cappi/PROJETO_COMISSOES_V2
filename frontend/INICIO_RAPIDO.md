@@ -11,11 +11,10 @@ cd frontend\adapter
 # 2. Instalar dependências
 pip install -r requirements.txt
 
-# 3. Criar arquivo .env (copiar do exemplo)
-copy .env.example .env
-
-# 4. Editar .env e configurar o caminho do robô
-# ROBO_ROOT_PATH=C:\caminho\para\robo-comissoes
+# 3. Criar arquivo .env (opcional - se não criar, usará caminho padrão)
+# O adapter detecta automaticamente o caminho do robô se não configurado
+# Para configurar manualmente, crie .env com:
+# ROBO_ROOT_PATH=C:\Users\Meu Computador\Desktop\Clean Trabalho\PROJETO_COMISSOES_V2
 ```
 
 ### Frontend React
@@ -68,16 +67,25 @@ A aplicação abrirá automaticamente em: `http://localhost:3000`
 
 ## 3. Primeiros Passos
 
-1. **Configurar Regras**: Acesse "Regras" e edite `Regras_Comissoes.xlsx`
-2. **Fazer Uploads**: Acesse "Uploads" e envie os arquivos ERP
+1. **Configurar Regras**: Acesse "Regras" e edite `config/REGRAS_COMISSOES.xlsx`
+2. **Fazer Uploads**: Acesse "Uploads" e envie os arquivos:
+   - `Analise_Comercial_Completa.xlsx` → salvo em `dados_entrada/`
+   - `Análise Financeira.xlsx` → salvo em `dados_entrada/`
 3. **Executar Cálculo**: Acesse "Executar Cálculo" e escolha mês/ano
 4. **Ver Resultados**: Acesse "Resultados" após o cálculo concluir
+   - Visualiza todas as abas do arquivo `Comissoes_Calculadas_*.xlsx`
+   - Inclui tabelas hierárquicas e botão "Ver Detalhes" para auditoria
 
 ## 4. Troubleshooting
 
 **Erro: "Arquivo não encontrado"**
-- Verifique se `ROBO_ROOT_PATH` no `.env` está correto
-- Certifique-se de que o caminho aponta para a pasta raiz do robô
+- O adapter detecta automaticamente o caminho do robô (pasta pai do adapter)
+- Se necessário, crie `.env` em `frontend/adapter/` com:
+  ```
+  ROBO_ROOT_PATH=C:\Users\Meu Computador\Desktop\Clean Trabalho\PROJETO_COMISSOES_V2
+  ```
+- Verifique se `config/REGRAS_COMISSOES.xlsx` existe
+- Verifique se os arquivos de entrada estão em `dados_entrada/`
 
 **Erro: "Porta já em uso"**
 - Altere a porta no uvicorn: `--port 8001`

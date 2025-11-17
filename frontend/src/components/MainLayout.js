@@ -6,6 +6,8 @@ import {
   UploadOutlined,
   PlayCircleOutlined,
   BarChartOutlined,
+  DollarOutlined,
+  DollarCircleOutlined,
 } from '@ant-design/icons';
 
 const { Sider, Header } = Layout;
@@ -34,6 +36,16 @@ const MainLayout = ({ children }) => {
       key: '/resultados',
       icon: <BarChartOutlined />,
       label: 'Resultados',
+    },
+    {
+      key: '/recebimentos',
+      icon: <DollarCircleOutlined />,
+      label: 'Recebimentos',
+    },
+    {
+      key: '/cambio',
+      icon: <DollarOutlined />,
+      label: 'Taxas de Câmbio',
     },
   ];
 

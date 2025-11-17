@@ -362,6 +362,8 @@ class RecebimentoOrchestrator:
 
             tcmp_dict = metricas.get("TCMP", {})
             fcmp_dict = metricas.get("FCMP", {})
+            tcmp_detalhes = metricas.get("TCMP_DETALHES", {})
+            fcmp_detalhes = metricas.get("FCMP_DETALHES", {})
 
             print(
                 f"[RECEBIMENTO] [REGULAR] Métricas calculadas: TCMP={len(tcmp_dict)}, FCMP={len(fcmp_dict)}"
@@ -380,7 +382,8 @@ class RecebimentoOrchestrator:
                 f"[RECEBIMENTO] [REGULAR] Salvando métricas no estado (mês faturamento: {mes_faturamento})..."
             )
             self.state_manager.definir_metricas(
-                processo, tcmp_dict, fcmp_dict, mes_faturamento
+                processo, tcmp_dict, fcmp_dict, mes_faturamento,
+                tcmp_detalhes=tcmp_detalhes, fcmp_detalhes=fcmp_detalhes
             )
             print(f"[RECEBIMENTO] [REGULAR] Métricas salvas no estado")
 
@@ -537,6 +540,8 @@ class RecebimentoOrchestrator:
 
             tcmp_dict = metricas.get("TCMP", {})
             fcmp_dict = metricas.get("FCMP", {})
+            tcmp_detalhes = metricas.get("TCMP_DETALHES", {})
+            fcmp_detalhes = metricas.get("FCMP_DETALHES", {})
 
             print(
                 f"[RECEBIMENTO] [MÉTRICAS] Processo {processo}: TCMP={len(tcmp_dict)} colab(s), FCMP={len(fcmp_dict)} colab(s)"
@@ -546,7 +551,8 @@ class RecebimentoOrchestrator:
                 # Salvar no estado
                 mes_faturamento = f"{self.mes:02d}/{self.ano}"
                 self.state_manager.definir_metricas(
-                    processo, tcmp_dict, fcmp_dict, mes_faturamento
+                    processo, tcmp_dict, fcmp_dict, mes_faturamento,
+                    tcmp_detalhes=tcmp_detalhes, fcmp_detalhes=fcmp_detalhes
                 )
                 processos_calculados += 1
                 print(

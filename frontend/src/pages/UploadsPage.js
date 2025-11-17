@@ -12,8 +12,6 @@ const { Title, Text } = Typography;
 const UploadsPage = () => {
   const [uploadStates, setUploadStates] = useState({
     analise: { status: 'idle', filename: null },
-    finAdcli: { status: 'idle', filename: null },
-    finConci: { status: 'idle', filename: null },
     analiseFinanceira: { status: 'idle', filename: null },
   });
 
@@ -28,12 +26,6 @@ const UploadsPage = () => {
       switch (tipo) {
         case 'analise':
           response = await uploadAPI.analiseComercial(file);
-          break;
-        case 'finAdcli':
-          response = await uploadAPI.finAdcli(file);
-          break;
-        case 'finConci':
-          response = await uploadAPI.finConci(file);
           break;
         case 'analiseFinanceira':
           response = await uploadAPI.analiseFinanceira(file);
@@ -76,25 +68,11 @@ const UploadsPage = () => {
       icon: <FileExcelOutlined style={{ fontSize: 48, color: '#1890ff' }} />,
     },
     {
-      key: 'finAdcli',
-      title: 'fin_adcli_pg_m3.xls',
-      descricao: 'Recebimentos - Antecipações',
-      accept: '.xls',
-      icon: <FileExcelOutlined style={{ fontSize: 48, color: '#52c41a' }} />,
-    },
-    {
-      key: 'finConci',
-      title: 'fin_conci_adcli_m3.xls',
-      descricao: 'Status de Pagamentos',
-      accept: '.xls',
-      icon: <FileExcelOutlined style={{ fontSize: 48, color: '#faad14' }} />,
-    },
-    {
       key: 'analiseFinanceira',
       title: 'Análise Financeira.xlsx',
       descricao: 'Pagamentos Regulares do Mês',
       accept: '.xlsx',
-      icon: <FileExcelOutlined style={{ fontSize: 48, color: '#f5222d' }} />,
+      icon: <FileExcelOutlined style={{ fontSize: 48, color: '#52c41a' }} />,
     },
   ];
 

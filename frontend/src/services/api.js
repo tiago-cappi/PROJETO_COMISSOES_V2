@@ -141,22 +141,6 @@ export const uploadAPI = {
     });
   },
 
-  finAdcli: (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    return api.post('/upload/fin_adcli', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-  },
-
-  finConci: (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    return api.post('/upload/fin_conci', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-  },
-
   analiseFinanceira: (file) => {
     const formData = new FormData();
     formData.append('file', file);
@@ -164,6 +148,23 @@ export const uploadAPI = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
+  
+  // DESABILITADO - Não mais necessário no novo robô
+  // finAdcli: (file) => {
+  //   const formData = new FormData();
+  //   formData.append('file', file);
+  //   return api.post('/upload/fin_adcli', formData, {
+  //     headers: { 'Content-Type': 'multipart/form-data' },
+  //   });
+  // },
+  //
+  // finConci: (file) => {
+  //   const formData = new FormData();
+  //   formData.append('file', file);
+  //   return api.post('/upload/fin_conci', formData, {
+  //     headers: { 'Content-Type': 'multipart/form-data' },
+  //   });
+  // },
 };
 
 // ==================== EXECUÇÃO ====================
@@ -228,6 +229,28 @@ export const healthAPI = {
 
 export const debugAPI = {
   getLogs: (lines = 400) => api.get(`/debug/logs?lines=${lines}`, { responseType: 'text' }),
+};
+
+// ==================== TAXAS DE CÂMBIO ====================
+
+export const cambioAPI = {
+  getTaxas: () => api.get('/api/taxas-cambio'),
+};
+
+// ==================== RECEBIMENTO ====================
+
+export const recebimentoAPI = {
+  listarAbas: (mes, ano) => api.get(`/resultado/recebimento/abas?mes=${mes}&ano=${ano}`),
+  
+  lerAba: (nomeAba, mes, ano, params = {}) => {
+    const { page = 1, size = 20 } = params;
+    return api.get(`/resultado/recebimento/aba/${nomeAba}?mes=${mes}&ano=${ano}&page=${page}&size=${size}`);
+  },
+  
+  obterDetalhes: (processo, colaborador, mes, ano) => 
+    api.get(`/resultado/recebimento/detalhes?processo=${processo}&colaborador=${colaborador}&mes=${mes}&ano=${ano}`),
+  
+  baixar: (mes, ano) => api.get(`/baixar/recebimento?mes=${mes}&ano=${ano}`, { responseType: 'blob' }),
 };
 
 export default api;

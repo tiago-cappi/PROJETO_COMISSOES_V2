@@ -240,7 +240,9 @@ class StateManager:
         processo_id: str,
         tcmp_dict: Dict[str, float],
         fcmp_dict: Dict[str, float],
-        mes_faturamento: str
+        mes_faturamento: str,
+        tcmp_detalhes: Optional[Dict] = None,
+        fcmp_detalhes: Optional[Dict] = None
     ):
         """
         Define TCMP e FCMP para um processo (quando faturado).
@@ -250,6 +252,8 @@ class StateManager:
             tcmp_dict: Dict {nome_colaborador: tcmp}
             fcmp_dict: Dict {nome_colaborador: fcmp}
             mes_faturamento: Mês/ano do faturamento (ex: "09/2025")
+            tcmp_detalhes: Dict opcional com detalhes do cálculo de TCMP
+            fcmp_detalhes: Dict opcional com detalhes do cálculo de FCMP
         """
         processo_id = str(processo_id).strip()
         mask = self.estado_df["PROCESSO"] == processo_id
@@ -264,6 +268,12 @@ class StateManager:
         # Converter dicts para JSON
         self.estado_df.at[idx, "TCMP_JSON"] = json.dumps(tcmp_dict, ensure_ascii=False)
         self.estado_df.at[idx, "FCMP_JSON"] = json.dumps(fcmp_dict, ensure_ascii=False)
+        
+        # Armazenar detalhes se fornecidos
+        if tcmp_detalhes:
+            self.estado_df.at[idx, "TCMP_DETALHES_JSON"] = json.dumps(tcmp_detalhes, ensure_ascii=False)
+        if fcmp_detalhes:
+            self.estado_df.at[idx, "FCMP_DETALHES_JSON"] = json.dumps(fcmp_detalhes, ensure_ascii=False)
         
         # Lista de colaboradores envolvidos
         colaboradores = list(tcmp_dict.keys())
@@ -304,6 +314,37 @@ class StateManager:
             return {
                 "TCMP": tcmp_dict,
                 "FCMP": fcmp_dict
+            }
+        except Exception:
+            return None
+    
+    def obter_detalhes_metricas(self, processo_id: str) -> Optional[Dict]:
+        """
+        Retorna os detalhes de cálculo de TCMP e FCMP para um processo.
+        
+        Args:
+            processo_id: ID do processo
+        
+        Returns:
+            Dict com 'TCMP_DETALHES' e 'FCMP_DETALHES' ou None
+        """
+        processo = self.obter_processo(processo_id)
+        if not processo:
+            return None
+        
+        if processo.get("STATUS_CALCULO_MEDIAS") != "CALCULADO":
+            return None
+        
+        try:
+            tcmp_detalhes_json = processo.get("TCMP_DETALHES_JSON", "{}")
+            fcmp_detalhes_json = processo.get("FCMP_DETALHES_JSON", "{}")
+            
+            tcmp_detalhes = json.loads(tcmp_detalhes_json) if tcmp_detalhes_json else {}
+            fcmp_detalhes = json.loads(fcmp_detalhes_json) if fcmp_detalhes_json else {}
+            
+            return {
+                "TCMP_DETALHES": tcmp_detalhes,
+                "FCMP_DETALHES": fcmp_detalhes
             }
         except Exception:
             return None

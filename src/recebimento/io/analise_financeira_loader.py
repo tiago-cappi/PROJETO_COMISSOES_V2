@@ -68,7 +68,7 @@ class AnaliseFinanceiraLoader:
                     nome_normalizado = normalizar_nome(arquivo.name)
                     if "analise" in nome_normalizado and "financeira" in nome_normalizado:
                         path_encontrado = str(arquivo)
-                print(f"[RECEBIMENTO] [LOADER] Arquivo encontrado em dados_entrada/")
+                        print(f"[RECEBIMENTO] [LOADER] Arquivo encontrado em dados_entrada/")
                         break
             
             # Se não encontrou, buscar na raiz
@@ -78,7 +78,7 @@ class AnaliseFinanceiraLoader:
                     nome_normalizado = normalizar_nome(arquivo.name)
                     if "analise" in nome_normalizado and "financeira" in nome_normalizado:
                         path_encontrado = str(arquivo)
-                print(f"[RECEBIMENTO] [LOADER] Arquivo encontrado na raiz")
+                        print(f"[RECEBIMENTO] [LOADER] Arquivo encontrado na raiz")
                         break
             
             if not path_encontrado:

@@ -103,7 +103,8 @@ class MetricasCalculator:
             dados_por_colaborador[nome] = {
                 "valores": [],
                 "taxas": [],
-                "fcs": []
+                "fcs": [],
+                "itens_detalhes": []  # Lista de dicts com detalhes de cada item
             }
         
         # 4. Para cada item do processo
@@ -118,19 +119,24 @@ class MetricasCalculator:
                 nome = colab["nome"]
                 cargo = colab["cargo"]
                 
-                # Calcular FC usando função existente
+                # Calcular FC usando função existente (capturando detalhes para auditoria)
+                fc_detalhes_item = {}
                 try:
-                    fc, _ = self.calc_comissao._calcular_fc_para_item(
+                    fc, fc_detalhes_item = self.calc_comissao._calcular_fc_para_item(
                         nome_colab=nome,
                         cargo_colab=cargo,
                         item_faturado=item.to_dict(),
                         mes_apuracao_override=mes_apuracao,
                         ano_apuracao_override=ano_apuracao
                     )
-                except Exception:
+                except Exception as e:
+                    print(f"[RECEBIMENTO] [MÉTRICAS] [FC] ERRO ao calcular FC: {e}")
                     fc = 0.0
+                    fc_detalhes_item = {}
                 
                 # Obter regra de comissão
+                taxa_rateio_detalhes = 0.0
+                fatia_cargo_detalhes = 0.0
                 try:
                     print(f"[RECEBIMENTO] [MÉTRICAS] [TAXA] Buscando regra para:")
                     print(f"[RECEBIMENTO] [MÉTRICAS] [TAXA]   - Colaborador: {nome}, Cargo: {cargo}")
@@ -153,6 +159,10 @@ class MetricasCalculator:
                     fatia_cargo = float(regra.get("fatia_cargo_pct", 0.0) or 0.0) / 100.0
                     taxa = taxa_rateio * fatia_cargo
                     
+                    # Salvar para usar nos detalhes
+                    taxa_rateio_detalhes = taxa_rateio
+                    fatia_cargo_detalhes = fatia_cargo
+                    
                     print(f"[RECEBIMENTO] [MÉTRICAS] [TAXA]   - taxa_rateio: {taxa_rateio}")
                     print(f"[RECEBIMENTO] [MÉTRICAS] [TAXA]   - fatia_cargo: {fatia_cargo}")
                     print(f"[RECEBIMENTO] [MÉTRICAS] [TAXA]   - taxa final: {taxa}")
@@ -166,10 +176,56 @@ class MetricasCalculator:
                 dados_por_colaborador[nome]["valores"].append(valor_item)
                 dados_por_colaborador[nome]["taxas"].append(taxa)
                 dados_por_colaborador[nome]["fcs"].append(fc)
+                
+                # Processar detalhes do FC para formato legível
+                fc_componentes = []
+                if fc_detalhes_item:
+                    # Mapear nomes legíveis para cada tipo de meta
+                    nomes_metas = {
+                        "rentabilidade": "Rentabilidade",
+                        "faturamento_linha": "Faturamento da Linha",
+                        "conversao_linha": "Conversão da Linha",
+                        "faturamento_individual": "Faturamento Individual",
+                        "conversao_individual": "Conversão Individual",
+                        "retencao_clientes": "Retenção de Clientes",
+                        "meta_fornecedor_1": "Meta Fornecedor 1",
+                        "meta_fornecedor_2": "Meta Fornecedor 2"
+                    }
+                    
+                    for tipo_meta, detalhes in fc_detalhes_item.items():
+                        if isinstance(detalhes, dict):
+                            fc_componentes.append({
+                                "nome_meta": nomes_metas.get(tipo_meta, tipo_meta.replace("_", " ").title()),
+                                "peso": float(detalhes.get("peso", 0.0)),
+                                "realizado": float(detalhes.get("realizado", 0.0)),
+                                "meta": float(detalhes.get("meta", 0.0)) if detalhes.get("meta") is not None else 0.0,
+                                "atingimento": float(detalhes.get("atingimento", 0.0)),
+                                "atingimento_cap": float(detalhes.get("atingimento_cap", 0.0)),
+                                "componente_fc": float(detalhes.get("componente_fc", 0.0))
+                            })
+                
+                # Acumular detalhes do item para auditoria
+                dados_por_colaborador[nome]["itens_detalhes"].append({
+                    "negocio": str(item.get("Negócio", "")).strip(),
+                    "grupo": str(item.get("Grupo", "")).strip(),
+                    "subgrupo": str(item.get("Subgrupo", "")).strip(),
+                    "tipo_mercadoria": str(item.get("Tipo de Mercadoria", "")).strip(),
+                    "valor": float(valor_item),
+                    "taxa": float(taxa),
+                    "fc": float(fc),
+                    "taxa_rateio": float(taxa_rateio_detalhes),
+                    "fatia_cargo": float(fatia_cargo_detalhes),
+                    "fc_detalhes": {
+                        "componentes": fc_componentes,
+                        "fc_total": float(fc)
+                    } if fc_componentes else None
+                })
         
         # 5. Calcular médias ponderadas
         tcmp_dict = {}
         fcmp_dict = {}
+        tcmp_detalhes_dict = {}
+        fcmp_detalhes_dict = {}
         
         for nome, dados in dados_por_colaborador.items():
             valores = np.array(dados["valores"])
@@ -179,6 +235,8 @@ class MetricasCalculator:
             if len(valores) == 0 or valores.sum() == 0:
                 tcmp_dict[nome] = 0.0
                 fcmp_dict[nome] = 0.0
+                tcmp_detalhes_dict[nome] = {"itens": [], "total_valor": 0.0}
+                fcmp_detalhes_dict[nome] = {"itens": [], "total_valor": 0.0}
                 continue
             
             # TCMP = média ponderada das taxas
@@ -186,12 +244,29 @@ class MetricasCalculator:
             
             # FCMP = média ponderada dos FCs
             fcmp_dict[nome] = float((fcs * valores).sum() / valores.sum())
+            
+            # Armazenar detalhes para auditoria
+            tcmp_detalhes_dict[nome] = {
+                "itens": dados["itens_detalhes"],
+                "total_valor": float(valores.sum()),
+                "soma_ponderada": float((taxas * valores).sum()),
+                "tcmp_final": float((taxas * valores).sum() / valores.sum())
+            }
+            
+            fcmp_detalhes_dict[nome] = {
+                "itens": dados["itens_detalhes"],
+                "total_valor": float(valores.sum()),
+                "soma_ponderada": float((fcs * valores).sum()),
+                "fcmp_final": float((fcs * valores).sum() / valores.sum())
+            }
         
         print(f"[RECEBIMENTO] [MÉTRICAS] Resultado: TCMP({len(tcmp_dict)}), FCMP({len(fcmp_dict)})")
         
         return {
             "TCMP": tcmp_dict,
             "FCMP": fcmp_dict,
+            "TCMP_DETALHES": tcmp_detalhes_dict,
+            "FCMP_DETALHES": fcmp_detalhes_dict,
             "colaboradores": list(tcmp_dict.keys())
         }
     

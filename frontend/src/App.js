@@ -6,6 +6,8 @@ import RegrasPage from './pages/RegrasPage';
 import UploadsPage from './pages/UploadsPage';
 import ExecutarPage from './pages/ExecutarPage';
 import ResultadosPage from './pages/ResultadosPage';
+import CambioPage from './pages/CambioPage';
+import RecebimentosPage from './pages/RecebimentosPage';
 
 import 'antd/dist/reset.css';
 import './App.css';
@@ -23,6 +25,8 @@ function App() {
             <Route path="/uploads" element={<UploadsPage />} />
             <Route path="/executar" element={<ExecutarPage />} />
             <Route path="/resultados" element={<ResultadosPage />} />
+            <Route path="/recebimentos" element={<RecebimentosPage />} />
+            <Route path="/cambio" element={<CambioPage />} />
           </Routes>
         </Content>
       </MainLayout>

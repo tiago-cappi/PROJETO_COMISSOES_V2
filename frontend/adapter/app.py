@@ -694,32 +694,33 @@ async def upload_analise(file: UploadFile = File(...)):
     }
 
 
-@app.post("/upload/fin_adcli")
-async def upload_fin_adcli(file: UploadFile = File(...)):
-    """Upload do arquivo fin_adcli_pg_m3.xls"""
-    if not file.filename.endswith(".xls"):
-        raise HTTPException(status_code=400, detail="Formato inválido. Use .xls")
-
-    filepath = Path(ROBO_ROOT_PATH) / "fin_adcli_pg_m3.xls"
-    async with aiofiles.open(filepath, "wb") as f:
-        content = await file.read()
-        await f.write(content)
-
-    return {"success": True, "filename": "fin_adcli_pg_m3.xls"}
-
-
-@app.post("/upload/fin_conci")
-async def upload_fin_conci(file: UploadFile = File(...)):
-    """Upload do arquivo fin_conci_adcli_m3.xls"""
-    if not file.filename.endswith(".xls"):
-        raise HTTPException(status_code=400, detail="Formato inválido. Use .xls")
-
-    filepath = Path(ROBO_ROOT_PATH) / "fin_conci_adcli_m3.xls"
-    async with aiofiles.open(filepath, "wb") as f:
-        content = await file.read()
-        await f.write(content)
-
-    return {"success": True, "filename": "fin_conci_adcli_m3.xls"}
+# ENDPOINTS DESABILITADOS - Arquivos não mais necessários no novo robô
+# @app.post("/upload/fin_adcli")
+# async def upload_fin_adcli(file: UploadFile = File(...)):
+#     """Upload do arquivo fin_adcli_pg_m3.xls"""
+#     if not file.filename.endswith(".xls"):
+#         raise HTTPException(status_code=400, detail="Formato inválido. Use .xls")
+# 
+#     filepath = Path(ROBO_ROOT_PATH) / "fin_adcli_pg_m3.xls"
+#     async with aiofiles.open(filepath, "wb") as f:
+#         content = await file.read()
+#         await f.write(content)
+# 
+#     return {"success": True, "filename": "fin_adcli_pg_m3.xls"}
+# 
+# 
+# @app.post("/upload/fin_conci")
+# async def upload_fin_conci(file: UploadFile = File(...)):
+#     """Upload do arquivo fin_conci_adcli_m3.xls"""
+#     if not file.filename.endswith(".xls"):
+#         raise HTTPException(status_code=400, detail="Formato inválido. Use .xls")
+# 
+#     filepath = Path(ROBO_ROOT_PATH) / "fin_conci_adcli_m3.xls"
+#     async with aiofiles.open(filepath, "wb") as f:
+#         content = await file.read()
+#         await f.write(content)
+# 
+#     return {"success": True, "filename": "fin_conci_adcli_m3.xls"}
 
 
 @app.post("/upload/analise_financeira")
@@ -1176,9 +1177,13 @@ async def obter_logs(lines: int = Query(200, ge=1, le=5000)):
 # ==================== ENDPOINTS - RESULTADOS ====================
 
 
+# Abas visíveis na página de resultados de faturamento
+ABAS_FATURAMENTO_VISIVEIS = ['COMISSOES_CALCULADAS', 'RESUMO_COLABORADOR']
+
+
 @app.get("/resultado/abas")
 async def listar_abas_resultado():
-    """Lista abas do arquivo de resultado mais recente"""
+    """Lista abas do arquivo de resultado mais recente (apenas abas visíveis)"""
     resultado_path = get_resultado_path()
     if not resultado_path:
         print("[adapter] /resultado/abas -> nenhum arquivo de resultado encontrado")
@@ -1186,8 +1191,10 @@ async def listar_abas_resultado():
 
     try:
         wb = load_workbook(resultado_path, read_only=True)
-        abas = wb.sheetnames
-        print(f"[adapter] /resultado/abas -> arquivo={resultado_path.name} abas={abas}")
+        # Filtrar apenas abas visíveis
+        todas_abas = wb.sheetnames
+        abas = [aba for aba in todas_abas if aba in ABAS_FATURAMENTO_VISIVEIS]
+        print(f"[adapter] /resultado/abas -> arquivo={resultado_path.name} abas={abas} (total={len(todas_abas)})")
         return {"abas": abas, "arquivo": resultado_path.name}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao ler resultado: {str(e)}")
@@ -1297,6 +1304,186 @@ async def baixar_resultado():
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         filename=resultado_path.name,
     )
+
+
+# ==================== ENDPOINTS - RECEBIMENTO ====================
+
+
+def get_recebimento_path(mes: int, ano: int) -> Optional[Path]:
+    """Retorna caminho do arquivo de recebimento para o mês/ano especificado"""
+    filename = f"Comissoes_Recebimento_{mes:02d}_{ano}.xlsx"
+    filepath = Path(ROBO_ROOT_PATH) / filename
+    return filepath if filepath.exists() else None
+
+
+@app.get("/resultado/recebimento/abas")
+async def listar_abas_recebimento(mes: int = Query(...), ano: int = Query(...)):
+    """Lista abas do arquivo de recebimento"""
+    recebimento_path = get_recebimento_path(mes, ano)
+    if not recebimento_path:
+        print(f"[adapter] /resultado/recebimento/abas -> arquivo não encontrado para {mes:02d}/{ano}")
+        return {"abas": [], "arquivo": None}
+
+    try:
+        wb = load_workbook(recebimento_path, read_only=True)
+        # Abas visíveis (excluir ESTADO e AVISOS por padrão)
+        abas_visiveis = ['COMISSOES_ADIANTAMENTOS', 'COMISSOES_REGULARES', 'RECONCILIACOES']
+        todas_abas = wb.sheetnames
+        abas = [aba for aba in todas_abas if aba in abas_visiveis]
+        print(f"[adapter] /resultado/recebimento/abas -> mes={mes}, ano={ano}, abas={abas}")
+        return {"abas": abas, "arquivo": recebimento_path.name}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao ler recebimento: {str(e)}")
+
+
+@app.get("/resultado/recebimento/aba/{nome_aba}")
+async def ler_aba_recebimento(
+    nome_aba: str,
+    mes: int = Query(...),
+    ano: int = Query(...),
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
+):
+    """Lê uma aba do arquivo de recebimento com paginação"""
+    recebimento_path = get_recebimento_path(mes, ano)
+    if not recebimento_path:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Arquivo de recebimento não encontrado para {mes:02d}/{ano}"
+        )
+
+    try:
+        df = read_excel_sheet(recebimento_path, nome_aba)
+        
+        # Paginação
+        total = len(df)
+        start = (page - 1) * size
+        end = start + size
+        df_page = df.iloc[start:end]
+        
+        return {
+            "data": df_page.to_dict('records'),
+            "total": total,
+            "page": page,
+            "size": size,
+            "columns": df.columns.tolist()
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao ler aba {nome_aba}: {str(e)}"
+        )
+
+
+@app.get("/baixar/recebimento")
+async def baixar_recebimento(mes: int = Query(...), ano: int = Query(...)):
+    """Download do arquivo de recebimento"""
+    recebimento_path = get_recebimento_path(mes, ano)
+    if not recebimento_path:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Arquivo não encontrado para {mes:02d}/{ano}"
+        )
+
+    return FileResponse(
+        recebimento_path,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename=recebimento_path.name,
+    )
+
+
+@app.get("/resultado/recebimento/detalhes")
+async def obter_detalhes_calculo_recebimento(
+    processo: str = Query(...),
+    colaborador: str = Query(...),
+    mes: int = Query(...),
+    ano: int = Query(...)
+):
+    """Retorna detalhes do cálculo de TCMP e FCMP para auditoria"""
+    recebimento_path = get_recebimento_path(mes, ano)
+    if not recebimento_path:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Arquivo de recebimento não encontrado para {mes:02d}/{ano}"
+        )
+    
+    try:
+        # Ler aba ESTADO
+        df_estado = read_excel_sheet(recebimento_path, "ESTADO")
+        
+        # Filtrar pelo processo
+        df_processo = df_estado[df_estado["PROCESSO"].astype(str).str.strip() == str(processo).strip()]
+        
+        if df_processo.empty:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Processo {processo} não encontrado no estado"
+            )
+        
+        processo_data = df_processo.iloc[0]
+        
+        # Obter detalhes de TCMP e FCMP
+        tcmp_detalhes_json = processo_data.get("TCMP_DETALHES_JSON", "{}")
+        fcmp_detalhes_json = processo_data.get("FCMP_DETALHES_JSON", "{}")
+        
+        tcmp_detalhes = json.loads(tcmp_detalhes_json) if tcmp_detalhes_json and tcmp_detalhes_json != "{}" else {}
+        fcmp_detalhes = json.loads(fcmp_detalhes_json) if fcmp_detalhes_json and fcmp_detalhes_json != "{}" else {}
+        
+        # Filtrar pelo colaborador
+        colab_tcmp = tcmp_detalhes.get(colaborador, {})
+        colab_fcmp = fcmp_detalhes.get(colaborador, {})
+        
+        if not colab_tcmp and not colab_fcmp:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Detalhes não encontrados para colaborador {colaborador} no processo {processo}"
+            )
+        
+        print(f"[adapter] /resultado/recebimento/detalhes -> processo={processo}, colaborador={colaborador}")
+        
+        return {
+            "processo": processo,
+            "colaborador": colaborador,
+            "tcmp_detalhes": colab_tcmp,
+            "fcmp_detalhes": colab_fcmp
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao obter detalhes: {str(e)}"
+        )
+
+
+# ==================== ENDPOINTS - TAXAS DE CÂMBIO ====================
+
+
+@app.get("/api/taxas-cambio")
+async def obter_taxas_cambio():
+    """Retorna dados de taxas de câmbio do JSON"""
+    json_path = Path(ROBO_ROOT_PATH) / "data" / "currency_rates" / "monthly_avg_rates.json"
+    
+    if not json_path.exists():
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Arquivo de taxas não encontrado: {json_path}"
+        )
+    
+    try:
+        with open(json_path, 'r', encoding='utf-8') as f:
+            dados = json.load(f)
+        print(f"[adapter] /api/taxas-cambio -> {len(dados.get('taxas', {}))} anos disponíveis")
+        return dados
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao ler arquivo de taxas: {str(e)}"
+        )
+
+
+# ==================== ENDPOINTS - HEALTH ====================
 
 
 @app.get("/health")

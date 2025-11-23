@@ -51,6 +51,32 @@ def gerar_todos_dados_teste():
     analise_comercial = []
     analise_financeira = []
 
+    # ==================== MAPEAMENTO DE ALIASES ====================
+    # IMPORTANTE: O ERP gera arquivos com ALIASES, não nomes padrão!
+    # Estes aliases serão convertidos para nomes padrão pelo robô usando ALIASES.csv
+
+    # Aliases de Consultores Internos (usar na coluna "Consultor Interno")
+    ALIASES_CONSULTORES_INTERNOS = {
+        "Andrey Andrade": "ANDREY.ANDRADE",
+        "Dener Martins": "DENER.MARTINS",
+        "Samanta": "SAMANTA",
+        "Rosana": "ROSANA.MARTINS",
+        "Juliano": "JULIANO",
+        "Rafaela": "RAFAELA.MEIRELLES",
+        "Rosilene": "ROSILENE",
+    }
+
+    # Aliases de Consultores Externos (usar em "Representante-pedido" ou "Gerente Comercial-Pedido")
+    ALIASES_CONSULTORES_EXTERNOS = {
+        "André Camargo": "ANDRÉ LUIS GONCALVES CAMARGO",
+        "Leonardo Carmo": "LEONARDO DO CARMO",
+        "Mateus Machado": "MATEUS BORRO MACHADO",
+    }
+
+    # Gerentes de Linha (NÃO usar em "Consultor Interno" - eles recebem por recebimento)
+    # Alessandro Cappi -> ALESSANDRO CAPPI (mas só para processos de recebimento, não faturamento)
+    # André Caramello -> não tem alias, mas é Gerente Linha
+
     # ==================== HELPER FUNCTIONS ====================
 
     def criar_item(
@@ -60,7 +86,7 @@ def gerar_todos_dados_teste():
         dt_emissao,
         valor_realizado,
         data_aceite="",
-        consultor="Alessandro Cappi",
+        consultor="",  # Padrão vazio - usar apenas para Consultores Internos
         representante="",
         gerente_comercial="",
         negocio="SSO",
@@ -69,8 +95,17 @@ def gerar_todos_dados_teste():
         tipo_merc="Produto",
         aplicacao="Industrial",
         fabricante="",
+        usar_alias=True,  # Se True, converte nomes padrão para aliases
     ):
-        """Cria um item da Análise Comercial com dados reais da configuração."""
+        """
+        Cria um item da Análise Comercial com dados reais da configuração.
+
+        IMPORTANTE:
+        - consultor: Deve ser um Consultor Interno (não Gerente Linha!)
+        - representante: Consultor Externo com atribuição na linha
+        - gerente_comercial: Consultor Externo fazendo cross-selling
+        - Todos os nomes serão convertidos para ALIASES (como o ERP gera)
+        """
         # Se não forneceu data_aceite, calcular automaticamente
         if not data_aceite and dt_emissao:
             # Para processos FATURADOS: Data Aceite = Dt Emissão - 40 dias
@@ -81,6 +116,23 @@ def gerar_todos_dados_teste():
             # Para processos PENDENTES: Data Aceite = será preenchida depois
             data_aceite = ""
 
+        # Converter nomes padrão para aliases (como o ERP gera)
+        consultor_alias = consultor
+        if usar_alias and consultor:
+            consultor_alias = ALIASES_CONSULTORES_INTERNOS.get(consultor, consultor)
+
+        representante_alias = representante
+        if usar_alias and representante:
+            representante_alias = ALIASES_CONSULTORES_EXTERNOS.get(
+                representante, representante
+            )
+
+        gerente_comercial_alias = gerente_comercial
+        if usar_alias and gerente_comercial:
+            gerente_comercial_alias = ALIASES_CONSULTORES_EXTERNOS.get(
+                gerente_comercial, gerente_comercial
+            )
+
         return {
             "Processo": str(processo),
             "Status Processo": status,
@@ -88,9 +140,9 @@ def gerar_todos_dados_teste():
             "Dt Emissão": dt_emissao if dt_emissao else "",
             "Data Aceite": data_aceite,
             "Valor Realizado": valor_realizado,
-            "Consultor Interno": consultor,
-            "Representante-pedido": representante,
-            "Gerente Comercial-Pedido": gerente_comercial,
+            "Consultor Interno": consultor_alias,
+            "Representante-pedido": representante_alias,
+            "Gerente Comercial-Pedido": gerente_comercial_alias,
             "Negócio": negocio,
             "Grupo": grupo,
             "Subgrupo": subgrupo,
@@ -119,27 +171,33 @@ def gerar_todos_dados_teste():
     # ==================== BLOCO 1: PROCESSOS 100001-100010 (RECEBIMENTO ORIGINAL) ====================
     print("📦 BLOCO 1: Processos de Recebimento 100001-100010 (10 processos)")
 
+    # IMPORTANTE: Processos de recebimento são para Gerente Linha (Alessandro Cappi)
+    # Gerente Linha NÃO aparece na coluna "Consultor Interno" - é identificado via ATRIBUICOES
+    # Por isso, consultor="" para todos os processos de recebimento
+
     # CENÁRIO 1: Adiantamento simples (não faturado)
-    analise_comercial.append(criar_item("100001", "PENDENTE", "", "", 10000.00))
+    analise_comercial.append(
+        criar_item("100001", "PENDENTE", "", "", 10000.00, consultor="")
+    )
     analise_financeira.append(criar_pagamento("COT100001", 5000.00, "2025-08-10"))
 
     # CENÁRIO 2: Adiantamento + Faturamento no mesmo mês
     analise_comercial.append(
-        criar_item("100002", "FATURADO", "048001", "2025-08-25", 15000.00)
+        criar_item("100002", "FATURADO", "048001", "2025-08-25", 15000.00, consultor="")
     )
     analise_financeira.append(criar_pagamento("COT100002", 7500.00, "2025-08-05"))
     analise_financeira.append(criar_pagamento("048001", 7500.00, "2025-08-28"))
 
     # CENÁRIO 3: Adiantamento (Ago) + Faturamento (Set)
     analise_comercial.append(
-        criar_item("100003", "FATURADO", "048002", "2025-09-10", 20000.00)
+        criar_item("100003", "FATURADO", "048002", "2025-09-10", 20000.00, consultor="")
     )
     analise_financeira.append(criar_pagamento("COT100003", 10000.00, "2025-08-12"))
     analise_financeira.append(criar_pagamento("048002", 10000.00, "2025-09-15"))
 
     # CENÁRIO 4: Múltiplos adiantamentos
     analise_comercial.append(
-        criar_item("100004", "FATURADO", "048003", "2025-09-15", 25000.00)
+        criar_item("100004", "FATURADO", "048003", "2025-09-15", 25000.00, consultor="")
     )
     analise_financeira.append(criar_pagamento("COT100004", 8000.00, "2025-08-08"))
     analise_financeira.append(criar_pagamento("COT100004", 7000.00, "2025-08-15"))
@@ -153,7 +211,7 @@ def gerar_todos_dados_teste():
             "048004",
             "2025-08-20",
             12000.00,
-            consultor="André Caramello",
+            consultor="",  # Gerente Linha identificado via ATRIBUICOES
             grupo="Analisador Portátil",
             subgrupo="Acessório",
         )
@@ -169,7 +227,7 @@ def gerar_todos_dados_teste():
             "048006",
             "2025-09-20",
             18000.00,
-            consultor="Alessandro Cappi",
+            consultor="",  # Gerente Linha identificado via ATRIBUICOES
         )
     )
     analise_comercial.append(
@@ -179,7 +237,7 @@ def gerar_todos_dados_teste():
             "048006",
             "2025-09-20",
             12000.00,
-            consultor="André Caramello",
+            consultor="",  # Gerente Linha identificado via ATRIBUICOES
             grupo="Analisador Portátil",
             subgrupo="Acessório",
         )
@@ -195,6 +253,7 @@ def gerar_todos_dados_teste():
             "048007",
             "2025-09-25",
             30000.00,
+            consultor="",  # Gerente Linha identificado via ATRIBUICOES
             grupo="Diversos Diversos",
             subgrupo="Calibração",
             tipo_merc="Serviço",
@@ -205,19 +264,21 @@ def gerar_todos_dados_teste():
 
     # CENÁRIO 8: Múltiplos pagamentos regulares
     analise_comercial.append(
-        criar_item("100008", "FATURADO", "048005", "2025-08-15", 50000.00)
+        criar_item("100008", "FATURADO", "048005", "2025-08-15", 50000.00, consultor="")
     )
     analise_financeira.append(criar_pagamento("048005", 15000.00, "2025-08-18"))
     analise_financeira.append(criar_pagamento("048005", 20000.00, "2025-08-22"))
     analise_financeira.append(criar_pagamento("048005", 15000.00, "2025-08-28"))
 
     # CENÁRIO 9: Processo pendente (nunca faturado)
-    analise_comercial.append(criar_item("100009", "PENDENTE", "", "", 8000.00))
+    analise_comercial.append(
+        criar_item("100009", "PENDENTE", "", "", 8000.00, consultor="")
+    )
     analise_financeira.append(criar_pagamento("COT100009", 4000.00, "2025-08-18"))
 
     # CENÁRIO 10: Pagamento parcial
     analise_comercial.append(
-        criar_item("100010", "FATURADO", "048008", "2025-09-28", 20000.00)
+        criar_item("100010", "FATURADO", "048008", "2025-09-28", 20000.00, consultor="")
     )
     analise_financeira.append(criar_pagamento("048008", 10000.00, "2025-09-30"))
 
@@ -239,6 +300,7 @@ def gerar_todos_dados_teste():
                 f"048{100+i}",
                 f"2025-09-{10+i}",
                 15000.00,
+                consultor="",  # Gerente Linha identificado via ATRIBUICOES
                 negocio="SSO",
             )
         )
@@ -259,6 +321,7 @@ def gerar_todos_dados_teste():
                 f"048{100+i}",
                 f"2025-09-{5+i}",
                 20000.00,
+                consultor="",  # Gerente Linha identificado via ATRIBUICOES
                 negocio="Hidrologia",
                 grupo="Equipamento Amostragem",
                 subgrupo="ISCO",
@@ -286,8 +349,8 @@ def gerar_todos_dados_teste():
                 nf if i % 3 != 0 else "",
                 f"2025-09-{str(dia_emissao).zfill(2)}" if i % 3 != 0 else "",
                 12000.00 + (i * 100),
-                consultor="Alessandro Cappi",
-            )  # Gerente Linha - recebe por recebimento
+                consultor="",  # Gerente Linha identificado via ATRIBUICOES (recebe por recebimento)
+            )
         )
         if i % 3 == 0:
             dia_adiant = (i % 20) + 5
@@ -314,6 +377,10 @@ def gerar_todos_dados_teste():
 
     # Grupo A: Diferentes colaboradores e cargos (10 processos)
     # IMPORTANTE: Usar nomes EXATOS do COLABORADORES.csv
+    # André Camargo (C015) e Leonardo Carmo (C019) tem atribuição em SSO
+    # Mateus Machado (C020) tem atribuição em Hidrologia
+
+    # 300001: Consultor Interno + Consultor Externo em SSO
     analise_comercial.append(
         criar_item(
             "300001",
@@ -322,9 +389,14 @@ def gerar_todos_dados_teste():
             "2025-08-15",
             50000.00,
             consultor="Andrey Andrade",
+            representante="André Camargo",  # Consultor Externo com atribuição em SSO
             negocio="SSO",
+            grupo="Analisador Fixo",
+            subgrupo="Falco",
         )
     )
+
+    # 300002: Consultor Interno em Hidrologia com Consultor Externo
     analise_comercial.append(
         criar_item(
             "300002",
@@ -332,13 +404,15 @@ def gerar_todos_dados_teste():
             "348002",
             "2025-08-18",
             30000.00,
-            consultor="Mateus Machado",
-            representante="André Camargo",
+            consultor="Dener Martins",  # Consultor Interno
+            representante="Mateus Machado",  # Consultor Externo com atribuição em Hidrologia
             negocio="Hidrologia",
             grupo="Equipamento Amostragem",
             subgrupo="ISCO",
         )
     )
+
+    # 300003: Apenas Consultor Externo em SSO
     analise_comercial.append(
         criar_item(
             "300003",
@@ -347,12 +421,14 @@ def gerar_todos_dados_teste():
             "2025-08-20",
             20000.00,
             consultor="",
-            representante="Leonardo Carmo",
-            negocio="Remediação",
-            grupo="Sistema Remediação",
-            subgrupo="QED",
+            representante="Leonardo Carmo",  # Consultor Externo com atribuição em SSO
+            negocio="SSO",
+            grupo="Detector Portátil",
+            subgrupo="MicroClip",
         )
     )
+
+    # 300004: Apenas Consultor Interno em SSO
     analise_comercial.append(
         criar_item(
             "300004",
@@ -361,11 +437,14 @@ def gerar_todos_dados_teste():
             "2025-08-22",
             15000.00,
             consultor="Andrey Andrade",
+            representante="",
             negocio="SSO",
-            grupo="Detector Portátil",
-            subgrupo="MicroClip",
+            grupo="Detector Fixo",
+            subgrupo="E3 Point",
         )
     )
+
+    # 300005: Consultor Interno + Consultor Externo em Hidrologia
     analise_comercial.append(
         criar_item(
             "300005",
@@ -373,15 +452,15 @@ def gerar_todos_dados_teste():
             "348005",
             "2025-08-25",
             25000.00,
-            consultor="Mateus Machado",
-            representante="André Camargo",
+            consultor="Samanta",  # Consultor Interno
+            representante="Mateus Machado",  # Consultor Externo com atribuição em Hidrologia
             negocio="Hidrologia",
             grupo="Sonda Multiparâmetros",
             subgrupo="EXO",
         )
     )
 
-    # Processo com múltiplos itens
+    # 300006: Processo com múltiplos itens - Consultor Interno em SSO
     analise_comercial.append(
         criar_item(
             "300006",
@@ -390,7 +469,10 @@ def gerar_todos_dados_teste():
             "2025-08-28",
             20000.00,
             consultor="Andrey Andrade",
+            representante="André Camargo",
             negocio="SSO",
+            grupo="Analisador Fixo",
+            subgrupo="Falco",
         )
     )
     analise_comercial.append(
@@ -400,13 +482,15 @@ def gerar_todos_dados_teste():
             "348006",
             "2025-08-28",
             20000.00,
-            consultor="Mateus Machado",
+            consultor="Andrey Andrade",
+            representante="André Camargo",
             negocio="SSO",
             grupo="Detector Portátil",
             subgrupo="MicroClip",
         )
     )
 
+    # 300007: Apenas Consultor Externo em Hidrologia
     analise_comercial.append(
         criar_item(
             "300007",
@@ -415,12 +499,14 @@ def gerar_todos_dados_teste():
             "2025-09-05",
             35000.00,
             consultor="",
-            representante="André Camargo",
-            negocio="Remediação",
-            grupo="Sistema Remediação",
-            subgrupo="Thermo",
+            representante="Mateus Machado",
+            negocio="Hidrologia",
+            grupo="Sonda Multiparâmetros",
+            subgrupo="YSI",
         )
     )
+
+    # 300008: Consultor Interno + Consultor Externo em SSO
     analise_comercial.append(
         criar_item(
             "300008",
@@ -428,11 +514,11 @@ def gerar_todos_dados_teste():
             "348008",
             "2025-09-08",
             45000.00,
-            consultor="Andrey Andrade",
-            representante="Leonardo Carmo",
-            negocio="Hidrologia",
-            grupo="Equipamento Amostragem",
-            subgrupo="YSI",
+            consultor="Rosana",  # Consultor Interno
+            representante="Leonardo Carmo",  # Consultor Externo com atribuição em SSO
+            negocio="SSO",
+            grupo="Analisador Portátil",
+            subgrupo="Panther",
         )
     )
     analise_comercial.append(
@@ -442,7 +528,8 @@ def gerar_todos_dados_teste():
             "348009",
             "2025-09-10",
             28000.00,
-            consultor="Mateus Machado",
+            consultor="Andrey Andrade",  # Consultor Interno correto
+            representante="Mateus Machado",  # Consultor Externo (mas não tem atribuição em SSO - seria cross-selling)
             negocio="SSO",
             grupo="Analisador Portátil",
             subgrupo="Innova",
@@ -466,6 +553,15 @@ def gerar_todos_dados_teste():
     # Adicionar mais 40 processos de faturamento variados (simplificado)
     negocios = ["SSO", "Hidrologia", "Remediação"]
     tipos = ["Produto", "Reposição", "Serviço", "Aluguel"]
+    consultores_internos = [
+        "Andrey Andrade",
+        "Dener Martins",
+        "Samanta",
+        "Rosana",
+        "Juliano",
+    ]
+    representantes = ["André Camargo", "Leonardo Carmo", "Mateus Machado", ""]
+
     for i in range(11, 51):
         proc = f"300{str(i).zfill(3)}"
         mes = "08" if i <= 30 else "09"
@@ -474,6 +570,28 @@ def gerar_todos_dados_teste():
         tipo = tipos[i % 4]
         valor = 10000 + (i * 500)
 
+        # Alternar consultores internos e representantes para variedade
+        consultor = consultores_internos[i % 5] if i % 2 == 0 else ""
+        representante = representantes[i % 4]
+
+        # Garantir que representante é compatível com o negócio
+        if negocio == "Hidrologia":
+            representante = "Mateus Machado" if representante != "" else ""
+        elif negocio == "SSO":
+            if representante == "Mateus Machado":
+                representante = "André Camargo"
+
+        # Definir grupo e subgrupo baseado no negócio
+        if negocio == "SSO":
+            grupo = "Analisador Fixo" if i % 2 == 0 else "Detector Portátil"
+            subgrupo = "Falco" if i % 2 == 0 else "MicroClip"
+        elif negocio == "Hidrologia":
+            grupo = "Equipamento Amostragem" if i % 2 == 0 else "Sonda Multiparâmetros"
+            subgrupo = "ISCO" if i % 2 == 0 else "EXO"
+        else:  # Remediação
+            grupo = "Sistema Remediação"
+            subgrupo = "QED"
+
         analise_comercial.append(
             criar_item(
                 proc,
@@ -481,8 +599,11 @@ def gerar_todos_dados_teste():
                 f"348{str(i).zfill(3)}",
                 f"2025-{mes}-{str(dia).zfill(2)}",
                 valor,
-                consultor="Andrey Andrade",
+                consultor=consultor,
+                representante=representante,
                 negocio=negocio,
+                grupo=grupo,
+                subgrupo=subgrupo,
                 tipo_merc=tipo,
             )
         )
@@ -492,7 +613,17 @@ def gerar_todos_dados_teste():
     # ==================== BLOCO 4: PROCESSOS 400001-400010 (CROSS-SELLING) ====================
     print("📦 BLOCO 4: Processos de Cross-Selling 400001-400010 (10 processos)")
 
-    # Processo 400001: SSO + Hidrologia
+    # IMPORTANTE: Cross-selling ocorre quando um CONSULTOR EXTERNO vende itens de linhas
+    # onde ele NÃO tem atribuição. O nome do consultor externo que faz o cross-selling
+    # DEVE aparecer na coluna "Gerente Comercial-Pedido"
+    #
+    # ATRIBUIÇÕES:
+    # - André Camargo (C015): SSO
+    # - Leonardo Carmo (C019): SSO
+    # - Mateus Machado (C020): Hidrologia
+
+    # 400001: André Camargo (SSO) fazendo cross-selling em Hidrologia
+    # Item 1: SSO (linha normal de André Camargo)
     analise_comercial.append(
         criar_item(
             "400001",
@@ -500,11 +631,13 @@ def gerar_todos_dados_teste():
             "448001",
             "2025-08-10",
             10000,
-            consultor="Andrey Andrade",
-            gerente_comercial="André Camargo",
+            representante="André Camargo",  # Na linha que ele TEM atribuição
             negocio="SSO",
+            grupo="Analisador Fixo",
+            subgrupo="Falco",
         )
     )
+    # Item 2: Hidrologia (cross-selling - André NÃO tem atribuição em Hidrologia)
     analise_comercial.append(
         criar_item(
             "400001",
@@ -512,15 +645,15 @@ def gerar_todos_dados_teste():
             "448001",
             "2025-08-10",
             8000,
-            consultor="Andrey Andrade",
-            gerente_comercial="André Camargo",
+            gerente_comercial="André Camargo",  # Cross-selling!
             negocio="Hidrologia",
             grupo="Equipamento Amostragem",
             subgrupo="ISCO",
         )
     )
 
-    # Processo 400002: SSO + Remediação
+    # 400002: Mateus Machado (Hidrologia) fazendo cross-selling em SSO
+    # Item 1: Hidrologia (linha normal de Mateus Machado)
     analise_comercial.append(
         criar_item(
             "400002",
@@ -528,13 +661,13 @@ def gerar_todos_dados_teste():
             "448002",
             "2025-08-15",
             12000,
-            consultor="Mateus Machado",
-            gerente_comercial="Leonardo Carmo",
-            negocio="SSO",
-            grupo="Detector Portátil",
-            subgrupo="MicroClip",
+            representante="Mateus Machado",  # Na linha que ele TEM atribuição
+            negocio="Hidrologia",
+            grupo="Sonda Multiparâmetros",
+            subgrupo="EXO",
         )
     )
+    # Item 2: SSO (cross-selling - Mateus NÃO tem atribuição em SSO)
     analise_comercial.append(
         criar_item(
             "400002",
@@ -542,15 +675,15 @@ def gerar_todos_dados_teste():
             "448002",
             "2025-08-15",
             10000,
-            consultor="Mateus Machado",
-            gerente_comercial="Leonardo Carmo",
-            negocio="Remediação",
-            grupo="Sistema Remediação",
-            subgrupo="QED",
+            gerente_comercial="Mateus Machado",  # Cross-selling!
+            negocio="SSO",
+            grupo="Detector Portátil",
+            subgrupo="MicroClip",
         )
     )
 
-    # Processo 400003: 3 linhas diferentes
+    # 400003: Leonardo Carmo (SSO) fazendo cross-selling em Hidrologia e Remediação
+    # Item 1: SSO (linha normal)
     analise_comercial.append(
         criar_item(
             "400003",
@@ -558,13 +691,13 @@ def gerar_todos_dados_teste():
             "448003",
             "2025-08-20",
             15000,
-            consultor="Andrey Andrade",
-            gerente_comercial="Mateus Machado",
-            negocio="Hidrologia",
-            grupo="Sonda Multiparâmetros",
-            subgrupo="EXO",
+            representante="Leonardo Carmo",
+            negocio="SSO",
+            grupo="Analisador Portátil",
+            subgrupo="Panther",
         )
     )
+    # Item 2: Hidrologia (cross-selling)
     analise_comercial.append(
         criar_item(
             "400003",
@@ -572,11 +705,13 @@ def gerar_todos_dados_teste():
             "448003",
             "2025-08-20",
             5000,
-            consultor="Andrey Andrade",
-            gerente_comercial="Mateus Machado",
-            negocio="SSO",
+            gerente_comercial="Leonardo Carmo",  # Cross-selling!
+            negocio="Hidrologia",
+            grupo="Equipamento Amostragem",
+            subgrupo="YSI",
         )
     )
+    # Item 3: Remediação (cross-selling)
     analise_comercial.append(
         criar_item(
             "400003",
@@ -584,47 +719,163 @@ def gerar_todos_dados_teste():
             "448003",
             "2025-08-20",
             8000,
-            consultor="Andrey Andrade",
-            gerente_comercial="Mateus Machado",
+            gerente_comercial="Leonardo Carmo",  # Cross-selling!
             negocio="Remediação",
             grupo="Sistema Remediação",
-            subgrupo="Thermo",
+            subgrupo="QED",
         )
     )
 
-    # Adicionar mais 7 processos de cross-selling (simplificado)
-    for i in range(4, 11):
-        proc = f"40000{i}"
-        mes = "08" if i <= 3 else "09"
-        dia = ((i * 3) % 20) + 5  # Garantir dia válido (5-25)
+    # 400004: André Camargo fazendo APENAS cross-selling (sem linha normal)
+    # Ambos itens são cross-selling em Hidrologia
+    analise_comercial.append(
+        criar_item(
+            "400004",
+            "FATURADO",
+            "448004",
+            "2025-08-25",
+            18000,
+            gerente_comercial="André Camargo",  # Cross-selling!
+            negocio="Hidrologia",
+            grupo="Sonda Multiparâmetros",
+            subgrupo="EXO",
+        )
+    )
+    analise_comercial.append(
+        criar_item(
+            "400004",
+            "FATURADO",
+            "448004",
+            "2025-08-25",
+            12000,
+            gerente_comercial="André Camargo",  # Cross-selling!
+            negocio="Hidrologia",
+            grupo="Equipamento Amostragem",
+            subgrupo="ISCO",
+        )
+    )
 
-        # Adicionar 2 linhas diferentes por processo
-        analise_comercial.append(
-            criar_item(
-                proc,
-                "FATURADO",
-                f"448{str(i).zfill(3)}",
-                f"2025-{mes}-{str(dia).zfill(2)}",
-                15000,
-                consultor="Mateus Machado",
-                gerente_comercial="André Camargo",
-                negocio="SSO",
-            )
+    # 400005: Mateus Machado com Consultor Interno + cross-selling
+    analise_comercial.append(
+        criar_item(
+            "400005",
+            "FATURADO",
+            "448005",
+            "2025-09-05",
+            20000,
+            consultor="Andrey Andrade",  # Consultor Interno
+            representante="Mateus Machado",  # Linha normal (Hidrologia)
+            negocio="Hidrologia",
+            grupo="Medidor de Vazão Fixo",
+            subgrupo="IQ PLUS",
         )
-        analise_comercial.append(
-            criar_item(
-                proc,
-                "FATURADO",
-                f"448{str(i).zfill(3)}",
-                f"2025-{mes}-{str(dia).zfill(2)}",
-                12000,
-                consultor="Mateus Machado",
-                gerente_comercial="André Camargo",
-                negocio="Hidrologia",
-                grupo="Equipamento Amostragem",
-                subgrupo="YSI",
-            )
+    )
+    analise_comercial.append(
+        criar_item(
+            "400005",
+            "FATURADO",
+            "448005",
+            "2025-09-05",
+            15000,
+            consultor="Andrey Andrade",  # Consultor Interno
+            gerente_comercial="Mateus Machado",  # Cross-selling em SSO!
+            negocio="SSO",
+            grupo="Detector Fixo",
+            subgrupo="E3 Point",
         )
+    )
+
+    # 400006-400010: Mais 5 processos variados de cross-selling
+    for i in range(6, 11):
+        proc = f"40000{i}"
+        mes = "09"
+        dia = ((i * 2) % 20) + 5
+
+        # Alternar entre diferentes consultores externos
+        if i % 3 == 0:
+            # André Camargo fazendo cross-selling em Hidrologia
+            analise_comercial.append(
+                criar_item(
+                    proc,
+                    "FATURADO",
+                    f"448{str(i).zfill(3)}",
+                    f"2025-{mes}-{str(dia).zfill(2)}",
+                    15000,
+                    representante="André Camargo",
+                    negocio="SSO",
+                    grupo="Analisador Fixo",
+                    subgrupo="Falco",
+                )
+            )
+            analise_comercial.append(
+                criar_item(
+                    proc,
+                    "FATURADO",
+                    f"448{str(i).zfill(3)}",
+                    f"2025-{mes}-{str(dia).zfill(2)}",
+                    12000,
+                    gerente_comercial="André Camargo",
+                    negocio="Hidrologia",
+                    grupo="Equipamento Amostragem",
+                    subgrupo="YSI",
+                )
+            )
+        elif i % 3 == 1:
+            # Mateus Machado fazendo cross-selling em SSO
+            analise_comercial.append(
+                criar_item(
+                    proc,
+                    "FATURADO",
+                    f"448{str(i).zfill(3)}",
+                    f"2025-{mes}-{str(dia).zfill(2)}",
+                    14000,
+                    representante="Mateus Machado",
+                    negocio="Hidrologia",
+                    grupo="Sonda Multiparâmetros",
+                    subgrupo="EXO",
+                )
+            )
+            analise_comercial.append(
+                criar_item(
+                    proc,
+                    "FATURADO",
+                    f"448{str(i).zfill(3)}",
+                    f"2025-{mes}-{str(dia).zfill(2)}",
+                    11000,
+                    gerente_comercial="Mateus Machado",
+                    negocio="SSO",
+                    grupo="Detector Portátil",
+                    subgrupo="MicroClip",
+                )
+            )
+        else:
+            # Leonardo Carmo fazendo cross-selling em Hidrologia
+            analise_comercial.append(
+                criar_item(
+                    proc,
+                    "FATURADO",
+                    f"448{str(i).zfill(3)}",
+                    f"2025-{mes}-{str(dia).zfill(2)}",
+                    16000,
+                    representante="Leonardo Carmo",
+                    negocio="SSO",
+                    grupo="Analisador Portátil",
+                    subgrupo="Panther",
+                )
+            )
+            analise_comercial.append(
+                criar_item(
+                    proc,
+                    "FATURADO",
+                    f"448{str(i).zfill(3)}",
+                    f"2025-{mes}-{str(dia).zfill(2)}",
+                    13000,
+                    gerente_comercial="Leonardo Carmo",
+                    negocio="Hidrologia",
+                    grupo="Medidor de Vazão Fixo",
+                    subgrupo="IQ Standard",
+                )
+            )
 
     print(f"   ✅ 10 processos criados")
 
@@ -728,7 +979,7 @@ def gerar_todos_dados_teste():
                 f"548{proc[-3:]}",
                 f"2025-{mes}-{str(dia).zfill(2)}",
                 valor,
-                consultor="Alessandro Cappi",
+                consultor="Andrey Andrade",  # Consultor Interno válido (Gerente Linha identificado via ATRIBUICOES)
                 negocio=neg,
                 grupo=grp,
                 subgrupo=subgrp,
@@ -744,7 +995,7 @@ def gerar_todos_dados_teste():
             "548013",
             "2025-09-20",
             35000,
-            consultor="Alessandro Cappi",
+            consultor="Dener Martins",  # Consultor Interno válido
             negocio="Hidrologia",
             grupo="Equipamento Amostragem",
             subgrupo="YSI",
@@ -758,7 +1009,7 @@ def gerar_todos_dados_teste():
             "548013",
             "2025-09-20",
             35000,
-            consultor="Alessandro Cappi",
+            consultor="Samanta",  # Consultor Interno válido
             negocio="Hidrologia",
             grupo="Equipamento Amostragem",
             subgrupo="ISCO",
@@ -773,7 +1024,7 @@ def gerar_todos_dados_teste():
             "548014",
             "2025-09-22",
             40000,
-            consultor="Alessandro Cappi",
+            consultor="Rosana",  # Consultor Interno válido
             negocio="Remediação",
             grupo="Sistema Remediação",
             subgrupo="QED",
@@ -787,7 +1038,7 @@ def gerar_todos_dados_teste():
             "548014",
             "2025-09-22",
             40000,
-            consultor="Alessandro Cappi",
+            consultor="Juliano",  # Consultor Interno válido
             negocio="Remediação",
             grupo="Sistema Remediação",
             subgrupo="Thermo",
@@ -802,7 +1053,7 @@ def gerar_todos_dados_teste():
             "548015",
             "2025-09-25",
             37500,
-            consultor="Alessandro Cappi",
+            consultor="Rafaela",  # Consultor Interno válido
             negocio="SSO",
             grupo="Analisador Fixo",
             subgrupo="Falco",
@@ -816,7 +1067,7 @@ def gerar_todos_dados_teste():
             "548015",
             "2025-09-25",
             37500,
-            consultor="Alessandro Cappi",
+            consultor="Rosilene",  # Consultor Interno válido
             negocio="SSO",
             grupo="Detector Portátil",
             subgrupo="MicroClip",

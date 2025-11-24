@@ -1,135 +1,154 @@
-# 🤖 Sistema de Cálculo de Comissões
+# 🎯 SISTEMA DE COMISSÕES - PROJETO COMPLETO
 
-Sistema automatizado para cálculo de comissões por **faturamento** e por **recebimento**, com reconciliações e geração de relatórios em Excel e PDF.
-
-## 📚 Documentação
-
-Toda a documentação do projeto está organizada na pasta **[`documentacoes/`](./documentacoes/)**
-
-### 📖 Acesso Rápido
-
-- **[📚 Índice Completo de Documentação](./documentacoes/README.md)** - Comece aqui!
-- **[🎯 Visão Geral do Sistema](./documentacoes/DOCUMENTACAO_ROBO_COMISSOES.md)** - Funcionamento geral
-- **[💰 Comissões por Recebimento (Detalhado)](./documentacoes/COMISSOES_POR_RECEBIMENTO_DETALHADO.md)** - Guia completo com exemplos
-- **[🏗️ Estrutura do Projeto](./documentacoes/README_ESTRUTURA.md)** - Organização do código
-
-## 🚀 Início Rápido
-
-### Pré-requisitos
-- Python 3.x
-- Bibliotecas: `pandas`, `openpyxl`, `requests`, `reportlab`
-
-### Instalação
-```bash
-pip install -r requirements.txt
-```
-
-### Execução
-```bash
-python calculo_comissoes.py
-```
-
-O sistema solicitará:
-1. **Ano de apuração** (ex: 2025)
-2. **Mês de apuração** (1-12)
-
-### Arquivos de Entrada Necessários
-
-| Arquivo | Localização | Descrição |
-|---------|-------------|-----------|
-| `Regras_Comissoes.xlsx` | raiz | Regras, metas, pesos e colaboradores |
-| `Analise_Comercial_Completa.xlsx` | `dados_entrada/` | Processos comerciais (gerado pelo preparador) |
-| `Análise Financeira.xlsx` | `dados_entrada/` | Pagamentos recebidos dos clientes |
-| `Rentabilidade_*.xlsx` | `dados_entrada/rentabilidades/` | Rentabilidade realizada por contexto |
-
-### Arquivos de Saída
-
-| Arquivo | Descrição |
-|---------|-----------|
-| `Comissoes_Calculadas_*.xlsx` | Comissões por **faturamento** (item a item) |
-| `Comissoes_Recebimento_*.xlsx` | Comissões por **recebimento** (a nível de processo) |
-| `Detalhamento_Comissoes_*.pdf` | Relatório detalhado em PDF (opcional) |
-
-## 📊 Tipos de Comissão
-
-### 💼 Comissões por Faturamento
-- Calculadas **item a item** no momento do faturamento
-- Para todos os colaboradores
-- Baseadas em taxa por item e FC por item
-
-### 💰 Comissões por Recebimento (Nova Lógica)
-- Calculadas **a nível de processo** quando o cliente paga
-- Apenas para **Gerentes de Linha**
-- Baseadas em TCMP e FCMP (médias ponderadas)
-- Inclui adiantamentos (COT) e pagamentos regulares
-
-## 🔍 Recursos Principais
-
-- ✅ Cálculo automático de Fator de Correção (FC) baseado em múltiplas metas
-- ✅ Identificação de colaboradores via ATRIBUICOES (gestão)
-- ✅ Suporte a cross-selling
-- ✅ Reconciliações no mês do faturamento
-- ✅ Estado persistente de processos
-- ✅ Logs detalhados para debugging
-- ✅ Validações e avisos automáticos
-
-## 📁 Estrutura do Projeto
+## 📌 ESTRUTURA DO PROJETO
 
 ```
 PROJETO_COMISSOES_V2/
-├── calculo_comissoes.py          # Script principal
-├── preparador_dados.py           # Preparação de arquivos de entrada
-├── data_loader.py               # Carregamento de dados
-├── documentacoes/               # 📚 Toda a documentação
-│   ├── README.md               # Índice de documentação
-│   ├── DOCUMENTACAO_ROBO_COMISSOES.md
-│   ├── COMISSOES_POR_RECEBIMENTO_DETALHADO.md
-│   └── ...
-├── src/
-│   └── recebimento/            # Módulos de comissão por recebimento
-│       ├── recebimento_orchestrator.py
-│       ├── core/              # Lógica de cálculo
-│       ├── estado/            # Gerenciamento de estado
-│       ├── io/                # Entrada/Saída
-│       └── utils/             # Utilitários
-├── config/                     # Arquivos de configuração (do Excel)
-├── dados_entrada/             # Dados de entrada
-│   └── rentabilidades/       # Histórico de rentabilidade
-└── tests/                     # Testes automatizados
+├── src/                          # Código fonte do sistema
+├── config/                       # Arquivos de configuração (regras, metas, etc.)
+├── dados_entrada/                # Arquivos de entrada do robô
+├── tests/                        # Testes e geradores de dados
+│   └── geradores_dados/          # Scripts para gerar dados de teste
+├── documentacoes/                # Documentação organizada
+│   ├── testes/                   # Docs de testes
+│   ├── sistema/                  # Docs técnicas do sistema
+│   ├── guias/                    # Guias de uso e execução
+│   └── historico/                # Histórico de atualizações e correções
+├── frontend/                     # Interface web (opcional)
+└── data/                         # Dados auxiliares (taxas de câmbio, etc.)
 ```
-
-## 🛠️ Desenvolvimento
-
-### Executar Testes
-```bash
-cd tests
-python test_calculo_comissoes.py
-```
-
-### Debugging
-- Ative logs detalhados em `PARAMS.csv`:
-  - `debug_terminal_fornecedores`: Debug de fornecedores
-  - `debug_show_missing_fornecedores`: Avisos de fornecedores faltantes
-- Consulte a aba `VALIDACAO` no Excel de saída para avisos e erros
-
-## 📞 Suporte
-
-Para dúvidas sobre:
-- **Conceitos e lógica**: Consulte [`documentacoes/COMISSOES_POR_RECEBIMENTO_DETALHADO.md`](./documentacoes/COMISSOES_POR_RECEBIMENTO_DETALHADO.md)
-- **Estrutura do código**: Consulte [`documentacoes/README_ESTRUTURA.md`](./documentacoes/README_ESTRUTURA.md)
-- **FAQ e problemas comuns**: Veja seção FAQ em cada documento
-
-## 📝 Notas de Versão
-
-### Versão Atual: 2.0
-- ✅ Implementado cálculo de comissões por recebimento
-- ✅ Aba ESTADO para gerenciamento persistente de processos
-- ✅ Separação completa entre faturamento e recebimento
-- ✅ Logs detalhados com prefixo `[RECEBIMENTO]`
-- ✅ Documentação completa e organizada
-- 🔄 Reconciliações (em desenvolvimento)
 
 ---
 
-**📚 Para informações completas, acesse a [documentação](./documentacoes/README.md)**
+## 🚀 INÍCIO RÁPIDO
 
+### Para Executar o Sistema em Produção:
+
+1. Coloque os arquivos de entrada em `dados_entrada/`:
+   - `Analise_Comercial_Completa.xlsx`
+   - `Análise Financeira.xlsx`
+
+2. Execute o robô:
+```bash
+python calculo_comissoes.py --mes MM --ano AAAA
+```
+
+3. Resultados estarão em:
+   - `Comissoes_MM_AAAA.xlsx` (faturamento)
+   - `Comissoes_Recebimento_MM_AAAA.xlsx` (recebimento)
+
+---
+
+### Para Executar Testes Completos:
+
+1. **Gerar dados de teste**:
+```bash
+python tests/geradores_dados/gerar_todos_dados_teste.py
+python tests/geradores_dados/gerar_rentabilidade_teste.py
+```
+
+2. **Executar testes**:
+```bash
+python calculo_comissoes.py --mes 8 --ano 2025
+python calculo_comissoes.py --mes 9 --ano 2025
+```
+
+3. **Validar resultados**:
+   - Ver `documentacoes/guias/COMO_EXECUTAR_TESTES_EXPANDIDOS.md`
+
+---
+
+## 📚 DOCUMENTAÇÃO
+
+### 🎯 Comece por Aqui
+- **Visão Geral**: [`documentacoes/sistema/DOCUMENTACAO_ROBO_COMISSOES.md`](documentacoes/sistema/DOCUMENTACAO_ROBO_COMISSOES.md)
+- **Índice Completo**: [`documentacoes/INDEX.md`](documentacoes/INDEX.md)
+
+### 🧪 Para Testes
+- **Guia de Testes**: [`documentacoes/guias/COMO_EXECUTAR_TESTES_EXPANDIDOS.md`](documentacoes/guias/COMO_EXECUTAR_TESTES_EXPANDIDOS.md)
+- **Cenários de Teste**: [`documentacoes/testes/CENARIOS_TESTE_EXPANDIDOS.md`](documentacoes/testes/CENARIOS_TESTE_EXPANDIDOS.md)
+
+### 🔧 Para Desenvolvimento
+- **Comissões por Recebimento**: [`documentacoes/sistema/COMISSOES_POR_RECEBIMENTO_DETALHADO.md`](documentacoes/sistema/COMISSOES_POR_RECEBIMENTO_DETALHADO.md)
+- **Estrutura do Código**: [`documentacoes/sistema/README_ESTRUTURA.md`](documentacoes/sistema/README_ESTRUTURA.md)
+
+---
+
+## 🔄 FLUXO DE EXECUÇÃO
+
+### 1. Entrada
+- `Analise_Comercial_Completa.xlsx` - Dados comerciais completos
+- `Análise Financeira.xlsx` - Dados de pagamentos (para recebimento)
+
+### 2. Preparação Automática
+O robô executa `preparar_dados_mensais.py` que gera:
+- `Faturados.xlsx` - Processos faturados do mês
+- `Conversões.xlsx` - Conversões do mês (baseado em Data Aceite)
+- `Faturados_YTD.xlsx` - Faturamento acumulado do ano
+- `Retencao_Clientes.xlsx` - Dados de retenção de clientes
+
+### 3. Processamento
+- Comissões por Faturamento (item a item)
+- Comissões por Recebimento (por processo, com TCMP/FCMP)
+- Cálculo de FC (Factor de Correção baseado em metas)
+- Cross-Selling (quando aplicável)
+- Reconciliações (ajustes de adiantamentos)
+
+### 4. Saída
+- `Comissoes_MM_AAAA.xlsx` - Comissões por faturamento
+- `Comissoes_Recebimento_MM_AAAA.xlsx` - Comissões por recebimento
+
+---
+
+## 🎓 CONCEITOS-CHAVE
+
+| Conceito | Descrição |
+|----------|-----------|
+| **Comissões por Faturamento** | Calculadas item a item no momento do faturamento |
+| **Comissões por Recebimento** | Calculadas por processo quando o cliente paga (apenas para Gerente Linha) |
+| **TCMP** | Taxa de Comissão Média Ponderada (para recebimento) |
+| **FCMP** | Fator de Correção Médio Ponderado (para recebimento) |
+| **FC** | Fator de Correção (multiplicador baseado em metas, 0.0 a 1.0) |
+| **Cross-Selling** | Comissão especial para vendas com múltiplas linhas de negócio |
+| **Reconciliação** | Ajuste no mês de faturamento para corrigir adiantamentos |
+| **Adiantamento (COT)** | Pagamento antes do faturamento (FC = 1.0) |
+
+---
+
+## 🧪 TESTES IMPLEMENTADOS
+
+**Total: 132 processos de teste**
+
+- 57 processos para Comissões por Recebimento
+- 50 processos para Comissões por Faturamento
+- 10 processos para Cross-Selling
+- 15 processos para FC de Fornecedores
+
+Ver detalhes em: `documentacoes/testes/CENARIOS_TESTE_EXPANDIDOS.md`
+
+---
+
+## ⚙️ REQUISITOS
+
+- Python 3.8+
+- pandas
+- openpyxl
+- numpy
+
+```bash
+pip install pandas openpyxl numpy
+```
+
+---
+
+## 📞 SUPORTE
+
+Para problemas ou dúvidas:
+1. Consulte `documentacoes/INDEX.md` para encontrar a documentação relevante
+2. Verifique `documentacoes/guias/COMO_EXECUTAR_TESTES_EXPANDIDOS.md` (seção Troubleshooting)
+
+---
+
+**Versão**: 2.0  
+**Data**: 18/11/2025  
+**Status**: ✅ Pronto para Produção (após validação dos testes)

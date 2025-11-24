@@ -14,6 +14,8 @@ Documentações relacionadas aos testes do sistema:
 - **`CENARIOS_TESTE_EXPANDIDOS.md`** - Detalhamento completo de TODOS os 132 processos de teste (recebimento + faturamento + cross-selling + fornecedores)
 - **`GUIA_TESTES_RECONCILIACAO.md`** - Guia original dos 10 cenários de teste para reconciliações
 - **`RESUMO_TESTES_RAPIDO.md`** - Resumo rápido dos testes de reconciliação
+- **`DADOS_TESTE_ATUALIZADOS.md`** - Detalhes sobre a atualização dos dados de teste com valores reais
+- **`VERIFICACAO_CROSS_SELLING.md`** - Análise e verificação dos testes de cross-selling
 
 ---
 
@@ -39,6 +41,17 @@ Guias práticos para executar e validar os testes:
 - **`COMO_EXECUTAR_TESTES_EXPANDIDOS.md`** - Guia passo a passo completo de execução dos testes
 - **`RESUMO_IMPLEMENTACAO_EXPANDIDA.md`** - Resumo técnico da implementação dos testes expandidos
 - **`RESUMO_IMPLEMENTACAO_COMPLETA.md`** - Resumo da implementação completa dos testes
+- **`COMO_EXECUTAR_TESTES_COMPLETOS.md`** - Guia específico para execução dos testes completos
+- **`INICIO_RAPIDO.md`** - Guia de início rápido para execução e validação
+
+---
+
+## 📂 `/historico` - Histórico de Atualizações
+Documentos que registram o histórico de mudanças, correções e reorganizações do projeto:
+
+- **`RESUMO_REORGANIZACAO.md`** - Resumo da reorganização do projeto (Nov 2025)
+- **`SUMARIO_FINAL_CORRECOES.md`** - Sumário executivo das correções nos dados de teste
+- **`RESUMO_CORRECOES_DADOS_TESTE.md`** - Detalhamento técnico das correções nos dados de teste
 
 ---
 

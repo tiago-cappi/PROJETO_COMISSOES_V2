@@ -116,6 +116,21 @@ def gerar_todos_dados_teste():
             # Para processos PENDENTES: Data Aceite = será preenchida depois
             data_aceite = ""
 
+        # Mapeamento de Consultores Externos por Linha (Padrão)
+        ATRIBUICOES_PADRAO = {
+            "SSO": "André Camargo",  # Ou Leonardo Carmo, mas André é o principal para testes
+            "Hidrologia": "Mateus Machado",
+            "Remediação": "Leonardo Carmo",
+            "Diversos": "André Camargo",
+            "Locação": "André Camargo",
+            "Saneamento": "André Camargo",
+        }
+
+        # Se não forneceu representante e NÃO é cross-selling (gerente_comercial vazio),
+        # preencher com o padrão da linha
+        if not representante and not gerente_comercial:
+            representante = ATRIBUICOES_PADRAO.get(negocio, "")
+
         # Converter nomes padrão para aliases (como o ERP gera)
         consultor_alias = consultor
         if usar_alias and consultor:

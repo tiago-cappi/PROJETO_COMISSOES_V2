@@ -3201,6 +3201,16 @@ class CalculoComissao:
         prompt += "    - O Consultor Externo será REMOVIDO do cálculo de comissão normal para este processo.\n\n"
         prompt += "Digite sua escolha (A ou B) e pressione Enter: "
 
+        # 1. Verificar se já temos uma decisão passada via API/CLI
+        proc_str = str(processo).strip()
+        for d in self.decisoes_passadas:
+            if str(d.get('processo')).strip() == proc_str:
+                decisao = d.get('decision', '').upper()
+                if decisao in ('A', 'B'):
+                    if getattr(self, "_logger", None):
+                        self._logger.info(f"Usando decisão pré-definida para processo {processo}: {decisao}")
+                    return decisao
+
         # Se rodando em ambiente não-interativo, usar default
         try:
             # Se stdin não for interativo, retornar o default
@@ -4661,6 +4671,102 @@ class CalculoComissao:
             else:
                 _info(f"\nOcorreu um erro ao gerar o PDF de detalhamento: {e}")
 
+    def _detectar_cross_selling(self):
+        """
+        Detecta casos de cross-selling antes do cálculo detalhado para permitir decisão em lote.
+        Popula self.casos_cross_selling_detectados.
+        """
+        self.casos_cross_selling_detectados = []
+        try:
+            # Construir mapa de aliases para colaboradores (case-insensitive)
+            alias_map = {}
+            if "ALIASES" in self.data and not self.data["ALIASES"].empty:
+                aliases_df = self.data["ALIASES"][
+                    self.data["ALIASES"]["entidade"] == "colaborador"
+                ][["alias", "padrao"]].dropna()
+                for _, row in aliases_df.iterrows():
+                    alias_map[str(row["alias"]).strip().lower()] = str(row["padrao"]).strip()
+
+            # Função auxiliar para aplicar alias
+            def get_alias(nome):
+                if not isinstance(nome, str): return str(nome)
+                return alias_map.get(nome.strip().lower(), nome.strip())
+
+            # Iterar sobre os itens faturados (FATURADOS) para encontrar cross-selling
+            df_faturados = self.data.get("FATURADOS", pd.DataFrame())
+            if not df_faturados.empty and "Gerente Comercial-Pedido" in df_faturados.columns:
+                # Filtrar itens com Gerente Comercial preenchido (indicativo de cross-selling)
+                mask_gerente_comercial = df_faturados["Gerente Comercial-Pedido"].notna() & \
+                                       (df_faturados["Gerente Comercial-Pedido"] != "")
+                df_faturados_cs = df_faturados[mask_gerente_comercial].copy()
+
+                if df_faturados_cs.empty:
+                    return
+
+                df_faturados_cs["Gerente Comercial-Pedido_Alias"] = df_faturados_cs["Gerente Comercial-Pedido"].apply(get_alias)
+
+                # Obter atribuições para verificar se o cross-selling é real
+                df_atribuicoes = self.data.get("ATRIBUICOES", pd.DataFrame())
+                atribuicoes_map = {}
+                if not df_atribuicoes.empty:
+                    # Criar um mapeamento de (linha, grupo, subgrupo) -> lista de consultores
+                    for _, row in df_atribuicoes.iterrows():
+                        chave = (row["linha"], row["grupo"], row["subgrupo"])
+                        if chave not in atribuicoes_map:
+                            atribuicoes_map[chave] = []
+                        atribuicoes_map[chave].append(str(row["colaborador"]).strip())
+
+                # Verificar cada caso de cross-selling
+                casos_unicos = {}
+
+                for _, row_cs in df_faturados_cs.iterrows():
+                    processo = row_cs["Processo"]
+                    gerente_comercial_alias = row_cs["Gerente Comercial-Pedido_Alias"]
+                    linha_venda = row_cs["Negócio"]
+                    grupo_venda = row_cs["Grupo"]
+                    subgrupo_venda = row_cs["Subgrupo"]
+                    
+                    # Verificar se o gerente comercial tem atribuição nessa linha/grupo/subgrupo
+                    tem_atribuicao = False
+                    chave_atribuicao = (linha_venda, grupo_venda, subgrupo_venda)
+                    
+                    if chave_atribuicao in atribuicoes_map:
+                        if gerente_comercial_alias in atribuicoes_map[chave_atribuicao]:
+                            tem_atribuicao = True
+                    
+                    # Se não tem atribuição, é Cross-Selling
+                    if not tem_atribuicao:
+                        chave_caso = (processo, gerente_comercial_alias)
+                        
+                        if chave_caso not in casos_unicos:
+                            # Tentar obter a taxa (simplificado)
+                            taxa = 0.0
+                            # Tentar buscar taxa na tabela de regras se possível
+                            try:
+                                df_regras = self.data.get("CONFIG_COMISSAO", pd.DataFrame())
+                                if not df_regras.empty:
+                                    # Filtro aproximado
+                                    mask_cs = (df_regras["linha"] == linha_venda) & \
+                                              (df_regras["tipo_mercadoria"] == row_cs["Tipo de Mercadoria"])
+                                    # Se possível filtrar por cargo do gerente comercial original
+                                    # Mas o cargo na regra pode ser genérico.
+                                    # Vamos assumir 0.0 por enquanto se não for trivial.
+                                    pass
+                            except Exception:
+                                pass
+                            
+                            casos_unicos[chave_caso] = {
+                                "processo": processo,
+                                "consultor": gerente_comercial_alias,
+                                "linha": linha_venda,
+                                "taxa": taxa
+                            }
+                
+                self.casos_cross_selling_detectados = list(casos_unicos.values())
+
+        except Exception as e:
+            self._log_validacao("ERRO", f"Erro ao detectar cross-selling: {e}", {"erro": str(e)})
+
     def executar(self, decisoes_cross_selling=None):
         """Executa o fluxo completo de cálculo de comissões."""
         # Decisões passadas via API/UI (lista de dicts com 'processo' e 'decision')
@@ -4678,6 +4784,46 @@ class CalculoComissao:
         _phase("4. Calculando valores realizados agregados...")
         with _timer_ctx("Calcular valores realizados", _safe_percent("realizado")):
             self._calcular_realizado()
+
+        # -------------------------------------------------------------------------
+        # NOVO: Detecção antecipada de Cross-Selling para suporte a decisão em lote
+        # -------------------------------------------------------------------------
+        self._detectar_cross_selling()
+        print(f"DEBUG: Detectados {len(self.casos_cross_selling_detectados)} casos de cross-selling.")
+        
+        # Filtrar casos que ainda não têm decisão
+        decisoes_map = {d['processo']: d['decision'] for d in self.decisoes_passadas}
+        casos_pendentes = []
+        for caso in self.casos_cross_selling_detectados:
+            # Converter para string para garantir match
+            proc_str = str(caso['processo']).strip()
+            if proc_str not in decisoes_map:
+                casos_pendentes.append(caso)
+        
+        if casos_pendentes:
+            import json
+            # Se houver casos pendentes, emitir JSON para o frontend e encerrar/pausar
+            # O frontend deve capturar este bloco, exibir o modal, e re-executar com --decisions
+            
+            # Verificar se estamos em modo não-interativo (frontend)
+            if not sys.stdin.isatty() or self.params.get("force_batch_cross_selling"):
+                _info(f"Detectados {len(casos_pendentes)} casos de cross-selling pendentes de decisão.")
+                
+                # Estrutura esperada pelo frontend
+                msg = {
+                    "type": "CROSS_SELLING_REQUEST",
+                    "cases": casos_pendentes
+                }
+                
+                # Imprimir marcadores para fácil parsing
+                print("\n__CROSS_SELLING_JSON_START__")
+                print(json.dumps(msg, indent=2, default=str))
+                print("__CROSS_SELLING_JSON_END__\n")
+                
+                _info("Aguardando decisões via re-execução com --decisions...")
+                # Encerrar execução com código específico (opcional, mas 0 é seguro)
+                sys.exit(0)
+
         # Carregar estado antes das métricas/reconciliação
         _phase("5. Carregando estado de processos...")
         with _timer_ctx("Carregar estado", _safe_percent("estado_adiant")):
@@ -5073,11 +5219,32 @@ if __name__ == "__main__":
                     f"Procurados em: dados_entrada/rentabilidades/ e rentabilidades/"
                 )
 
+        # Parsear argumento --decisions (JSON string)
+        import argparse
+        import json
+        
+        parser = argparse.ArgumentParser(add_help=False)
+        parser.add_argument("--mes", type=int)
+        parser.add_argument("--ano", type=int)
+        parser.add_argument("--decisions", type=str, help="JSON string com decisões de cross-selling")
+        args, _ = parser.parse_known_args()
+        
+        decisoes_cli = []
+        if args.decisions:
+            try:
+                decisoes_cli = json.loads(args.decisions)
+                print(f"Recebidas {len(decisoes_cli)} decisões via CLI.")
+            except Exception as e:
+                print(f"Erro ao parsear --decisions: {e}")
+
         calculadora = CalculoComissao()
         # Definir mes/ano de apuração nos params para uso em todo o fluxo
         calculadora.params["mes_apuracao"] = mes
         calculadora.params["ano_apuracao"] = ano
-        calculadora.executar()
+        
+        # Executar passando as decisões
+        calculadora.executar(decisoes_cross_selling=decisoes_cli)
+        
         _tracker_finish(True, f"Arquivo gerado: {NOME_ARQUIVO_SAIDA}")
     except Exception as e:
         _tracker_finish(False, str(e))

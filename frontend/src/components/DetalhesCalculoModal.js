@@ -182,11 +182,15 @@ const DetalhesCalculoModal = ({ rowData, isHistorico = false }) => {
                                     <div className="valores">
                                         <div>
                                             <Text type="secondary">Realizado</Text>
-                                            <div className="valor">{formatCurrencyBR(realizado)}</div>
+                                            <div className="valor">
+                                                {cfg.key === 'rentab' ? formatPercentNoScale(realizado) : formatCurrencyBR(realizado)}
+                                            </div>
                                         </div>
                                         <div>
                                             <Text type="secondary">Meta</Text>
-                                            <div className="valor">{formatCurrencyBR(meta)}</div>
+                                            <div className="valor">
+                                                {cfg.key === 'rentab' ? formatPercentNoScale(meta) : formatCurrencyBR(meta)}
+                                            </div>
                                         </div>
                                     </div>
 

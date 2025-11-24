@@ -86,7 +86,7 @@ def gerar_todos_dados_teste():
         dt_emissao,
         valor_realizado,
         data_aceite="",
-        consultor="",  # Padrão vazio - usar apenas para Consultores Internos
+        consultor="",  # Padrão vazio - será preenchido automaticamente se não fornecido
         representante="",
         gerente_comercial="",
         negocio="SSO",
@@ -96,6 +96,7 @@ def gerar_todos_dados_teste():
         aplicacao="Industrial",
         fabricante="",
         usar_alias=True,  # Se True, converte nomes padrão para aliases
+        valor_orcado=None,  # Se None, será calculado como valor_realizado * 1.1
     ):
         """
         Cria um item da Análise Comercial com dados reais da configuração.
@@ -105,6 +106,7 @@ def gerar_todos_dados_teste():
         - representante: Consultor Externo com atribuição na linha
         - gerente_comercial: Consultor Externo fazendo cross-selling
         - Todos os nomes serão convertidos para ALIASES (como o ERP gera)
+        - valor_orcado: Valor orçado/budgetado. Se None, usa valor_realizado * 1.1
         """
         # Se não forneceu data_aceite, calcular automaticamente
         if not data_aceite and dt_emissao:
@@ -115,6 +117,21 @@ def gerar_todos_dados_teste():
         elif not data_aceite and not dt_emissao:
             # Para processos PENDENTES: Data Aceite = será preenchida depois
             data_aceite = ""
+        
+        # Se não forneceu valor_orcado, usar valor_realizado * 1.1 (orçamento 10% maior)
+        if valor_orcado is None:
+            valor_orcado = valor_realizado * 1.1
+
+        # Mapeamento de Consultores Internos por Linha (baseado em COLABORADORES)
+        # Estes são os consultores que SEMPRE devem aparecer na coluna "Consultor Interno"
+        CONSULTORES_INTERNOS_POR_LINHA = {
+            "SSO": ["Andrey Andrade", "Rosana", "Juliano"],
+            "Hidrologia": ["Dener Martins", "Samanta"],
+            "Remediação": ["Rafaela", "Rosilene"],
+            "Diversos": ["Andrey Andrade", "Juliano"],
+            "Locação": ["Andrey Andrade"],
+            "Saneamento": ["Samanta"],
+        }
 
         # Mapeamento de Consultores Externos por Linha (Padrão)
         ATRIBUICOES_PADRAO = {
@@ -125,6 +142,13 @@ def gerar_todos_dados_teste():
             "Locação": "André Camargo",
             "Saneamento": "André Camargo",
         }
+
+        # Se não forneceu consultor interno, atribuir automaticamente baseado na linha
+        if not consultor:
+            consultores_linha = CONSULTORES_INTERNOS_POR_LINHA.get(negocio, ["Andrey Andrade"])
+            # Usar hash do processo para distribuir consistentemente entre consultores
+            idx = int(processo) % len(consultores_linha)
+            consultor = consultores_linha[idx]
 
         # Se não forneceu representante e NÃO é cross-selling (gerente_comercial vazio),
         # preencher com o padrão da linha
@@ -155,6 +179,7 @@ def gerar_todos_dados_teste():
             "Dt Emissão": dt_emissao if dt_emissao else "",
             "Data Aceite": data_aceite,
             "Valor Realizado": valor_realizado,
+            "Valor Orçado": valor_orcado,  # Nova coluna adicionada
             "Consultor Interno": consultor_alias,
             "Representante-pedido": representante_alias,
             "Gerente Comercial-Pedido": gerente_comercial_alias,
@@ -187,63 +212,68 @@ def gerar_todos_dados_teste():
     print("📦 BLOCO 1: Processos de Recebimento 100001-100010 (10 processos)")
 
     # IMPORTANTE: Processos de recebimento são para Gerente Linha (Alessandro Cappi)
-    # Gerente Linha NÃO aparece na coluna "Consultor Interno" - é identificado via ATRIBUICOES
-    # Por isso, consultor="" para todos os processos de recebimento
+    # Gerente Linha é identificado via ATRIBUICOES (não aparece explicitamente aqui)
+    # MAS agora TODOS os processos incluem um Consultor Interno na coluna "Consultor Interno"
+    # O Consultor Interno é atribuído automaticamente baseado na linha de negócio
 
     # CENÁRIO 1: Adiantamento simples (não faturado)
+    # Valor ajustado para 40K (meta mensal ~100K, este é um de vários processos)
     analise_comercial.append(
-        criar_item("100001", "PENDENTE", "", "", 10000.00, consultor="")
+        criar_item("100001", "PENDENTE", "", "", 40000.00)  # Consultor Interno será atribuído automaticamente
     )
-    analise_financeira.append(criar_pagamento("COT100001", 5000.00, "2025-08-10"))
+    analise_financeira.append(criar_pagamento("COT100001", 20000.00, "2025-08-10"))
 
     # CENÁRIO 2: Adiantamento + Faturamento no mesmo mês
+    # Valor ajustado para 60K (testar FCMP < 1.0 com reconciliação)
     analise_comercial.append(
-        criar_item("100002", "FATURADO", "048001", "2025-08-25", 15000.00, consultor="")
+        criar_item("100002", "FATURADO", "048001", "2025-08-25", 60000.00)  # Consultor Interno será atribuído automaticamente
     )
-    analise_financeira.append(criar_pagamento("COT100002", 7500.00, "2025-08-05"))
-    analise_financeira.append(criar_pagamento("048001", 7500.00, "2025-08-28"))
+    analise_financeira.append(criar_pagamento("COT100002", 30000.00, "2025-08-05"))
+    analise_financeira.append(criar_pagamento("048001", 30000.00, "2025-08-28"))
 
     # CENÁRIO 3: Adiantamento (Ago) + Faturamento (Set)
+    # Valor ajustado para 80K (reconciliação em Setembro)
     analise_comercial.append(
-        criar_item("100003", "FATURADO", "048002", "2025-09-10", 20000.00, consultor="")
+        criar_item("100003", "FATURADO", "048002", "2025-09-10", 80000.00)  # Consultor Interno será atribuído automaticamente
     )
-    analise_financeira.append(criar_pagamento("COT100003", 10000.00, "2025-08-12"))
-    analise_financeira.append(criar_pagamento("048002", 10000.00, "2025-09-15"))
+    analise_financeira.append(criar_pagamento("COT100003", 40000.00, "2025-08-12"))
+    analise_financeira.append(criar_pagamento("048002", 40000.00, "2025-09-15"))
 
     # CENÁRIO 4: Múltiplos adiantamentos
+    # Valor ajustado para 100K (testar múltiplos COTs)
     analise_comercial.append(
-        criar_item("100004", "FATURADO", "048003", "2025-09-15", 25000.00, consultor="")
+        criar_item("100004", "FATURADO", "048003", "2025-09-15", 100000.00)  # Consultor Interno será atribuído automaticamente
     )
-    analise_financeira.append(criar_pagamento("COT100004", 8000.00, "2025-08-08"))
-    analise_financeira.append(criar_pagamento("COT100004", 7000.00, "2025-08-15"))
-    analise_financeira.append(criar_pagamento("048003", 10000.00, "2025-09-20"))
+    analise_financeira.append(criar_pagamento("COT100004", 32000.00, "2025-08-08"))
+    analise_financeira.append(criar_pagamento("COT100004", 28000.00, "2025-08-15"))
+    analise_financeira.append(criar_pagamento("048003", 40000.00, "2025-09-20"))
 
     # CENÁRIO 5: Pagamento regular direto
+    # Valor ajustado para 48K (sem adiantamento, apenas pagamentos regulares)
     analise_comercial.append(
         criar_item(
             "100005",
             "FATURADO",
             "048004",
             "2025-08-20",
-            12000.00,
-            consultor="",  # Gerente Linha identificado via ATRIBUICOES
+            48000.00,
             grupo="Analisador Portátil",
             subgrupo="Acessório",
-        )
+        )  # Consultor Interno será atribuído automaticamente
     )
-    analise_financeira.append(criar_pagamento("048004", 6000.00, "2025-08-22"))
-    analise_financeira.append(criar_pagamento("048004", 6000.00, "2025-08-29"))
+    analise_financeira.append(criar_pagamento("048004", 24000.00, "2025-08-22"))
+    analise_financeira.append(criar_pagamento("048004", 24000.00, "2025-08-29"))
 
     # CENÁRIO 6: Múltiplos colaboradores
+    # Valor ajustado para 120K total (2 itens, testar reconciliação por colaborador)
     analise_comercial.append(
         criar_item(
             "100006",
             "FATURADO",
             "048006",
             "2025-09-20",
-            18000.00,
-            consultor="",  # Gerente Linha identificado via ATRIBUICOES
-        )
+            72000.00,
+        )  # Consultor Interno será atribuído automaticamente
     )
     analise_comercial.append(
         criar_item(
@@ -251,51 +281,53 @@ def gerar_todos_dados_teste():
             "FATURADO",
             "048006",
             "2025-09-20",
-            12000.00,
-            consultor="",  # Gerente Linha identificado via ATRIBUICOES
+            48000.00,
             grupo="Analisador Portátil",
             subgrupo="Acessório",
-        )
+        )  # Consultor Interno será atribuído automaticamente
     )
-    analise_financeira.append(criar_pagamento("COT100006", 15000.00, "2025-08-20"))
-    analise_financeira.append(criar_pagamento("048006", 15000.00, "2025-09-25"))
+    analise_financeira.append(criar_pagamento("COT100006", 60000.00, "2025-08-20"))
+    analise_financeira.append(criar_pagamento("048006", 60000.00, "2025-09-25"))
 
     # CENÁRIO 7: FC = 1.0 (sem reconciliação)
+    # Valor ajustado para 120K (Serviço, rentabilidade alta ~50% para FC=1.0)
     analise_comercial.append(
         criar_item(
             "100007",
             "FATURADO",
             "048007",
             "2025-09-25",
-            30000.00,
-            consultor="",  # Gerente Linha identificado via ATRIBUICOES
+            120000.00,
             grupo="Diversos Diversos",
             subgrupo="Calibração",
             tipo_merc="Serviço",
-        )
+        )  # Consultor Interno será atribuído automaticamente
     )
-    analise_financeira.append(criar_pagamento("COT100007", 15000.00, "2025-08-25"))
-    analise_financeira.append(criar_pagamento("048007", 15000.00, "2025-09-28"))
+    analise_financeira.append(criar_pagamento("COT100007", 60000.00, "2025-08-25"))
+    analise_financeira.append(criar_pagamento("048007", 60000.00, "2025-09-28"))
 
     # CENÁRIO 8: Múltiplos pagamentos regulares
+    # Valor ajustado para 150K (3 parcelas, testar pagamentos fracionados)
     analise_comercial.append(
-        criar_item("100008", "FATURADO", "048005", "2025-08-15", 50000.00, consultor="")
+        criar_item("100008", "FATURADO", "048005", "2025-08-15", 150000.00)  # Consultor Interno será atribuído automaticamente
     )
-    analise_financeira.append(criar_pagamento("048005", 15000.00, "2025-08-18"))
-    analise_financeira.append(criar_pagamento("048005", 20000.00, "2025-08-22"))
-    analise_financeira.append(criar_pagamento("048005", 15000.00, "2025-08-28"))
+    analise_financeira.append(criar_pagamento("048005", 45000.00, "2025-08-18"))
+    analise_financeira.append(criar_pagamento("048005", 60000.00, "2025-08-22"))
+    analise_financeira.append(criar_pagamento("048005", 45000.00, "2025-08-28"))
 
     # CENÁRIO 9: Processo pendente (nunca faturado)
+    # Valor ajustado para 32K (pendente, só adiantamento)
     analise_comercial.append(
-        criar_item("100009", "PENDENTE", "", "", 8000.00, consultor="")
+        criar_item("100009", "PENDENTE", "", "", 32000.00)  # Consultor Interno será atribuído automaticamente
     )
-    analise_financeira.append(criar_pagamento("COT100009", 4000.00, "2025-08-18"))
+    analise_financeira.append(criar_pagamento("COT100009", 16000.00, "2025-08-18"))
 
     # CENÁRIO 10: Pagamento parcial
+    # Valor ajustado para 80K (pagamento parcial de 50%)
     analise_comercial.append(
-        criar_item("100010", "FATURADO", "048008", "2025-09-28", 20000.00, consultor="")
+        criar_item("100010", "FATURADO", "048008", "2025-09-28", 80000.00)  # Consultor Interno será atribuído automaticamente
     )
-    analise_financeira.append(criar_pagamento("048008", 10000.00, "2025-09-30"))
+    analise_financeira.append(criar_pagamento("048008", 40000.00, "2025-09-30"))
 
     print(f"   ✅ 10 processos criados")
 
@@ -305,45 +337,45 @@ def gerar_todos_dados_teste():
     # (Adicionar aqui os 50 processos do script original - omitindo por brevidade, mas devem ser incluídos)
     # Por enquanto vou adicionar uma versão resumida de alguns processos
 
-    # Linha SSO
+    # Linha SSO - valores escalonados de 60K a 90K
     for i in range(1, 7):
         proc = f"20000{i}"
+        valor = 60000.00 + (i * 5000)  # 65K, 70K, 75K, 80K, 85K, 90K
         analise_comercial.append(
             criar_item(
                 proc,
                 "FATURADO",
                 f"048{100+i}",
                 f"2025-09-{10+i}",
-                15000.00,
-                consultor="",  # Gerente Linha identificado via ATRIBUICOES
+                valor,
                 negocio="SSO",
             )
         )
         analise_financeira.append(
-            criar_pagamento(f"COT{proc}", 7500.00, f"2025-08-{5+i}")
+            criar_pagamento(f"COT{proc}", valor * 0.5, f"2025-08-{5+i}")
         )
         analise_financeira.append(
-            criar_pagamento(f"048{100+i}", 7500.00, f"2025-09-{15+i}")
+            criar_pagamento(f"048{100+i}", valor * 0.5, f"2025-09-{15+i}")
         )
 
-    # Linha Hidrologia
+    # Linha Hidrologia - valores de 80K a 130K
     for i in range(7, 13):
         proc = f"20000{i}"
+        valor = 80000.00 + ((i-7) * 10000)  # 80K, 90K, 100K, 110K, 120K, 130K
         analise_comercial.append(
             criar_item(
                 proc,
                 "FATURADO",
                 f"048{100+i}",
                 f"2025-09-{5+i}",
-                20000.00,
-                consultor="",  # Gerente Linha identificado via ATRIBUICOES
+                valor,
                 negocio="Hidrologia",
                 grupo="Equipamento Amostragem",
                 subgrupo="ISCO",
             )
         )
         analise_financeira.append(
-            criar_pagamento(f"048{100+i}", 20000.00, f"2025-09-{10+i}")
+            criar_pagamento(f"048{100+i}", valor, f"2025-09-{10+i}")
         )
 
     # Adicionar mais 38 processos variados (simplificado - todos com Gerente Linha para recebimento)
@@ -356,6 +388,9 @@ def gerar_todos_dados_teste():
             dia_emissao = 25
         if dia_pag > 28:
             dia_pag = 28
+        
+        # Valor escalonado: 25K a 62K dependendo do processo
+        valor_item = 25000.00 + (i * 1000)
 
         analise_comercial.append(
             criar_item(
@@ -363,8 +398,8 @@ def gerar_todos_dados_teste():
                 "FATURADO" if i % 3 != 0 else "PENDENTE",
                 nf if i % 3 != 0 else "",
                 f"2025-09-{str(dia_emissao).zfill(2)}" if i % 3 != 0 else "",
-                12000.00 + (i * 100),
-                consultor="",  # Gerente Linha identificado via ATRIBUICOES (recebe por recebimento)
+                valor_item,
+                # Consultor Interno será atribuído automaticamente
             )
         )
         if i % 3 == 0:
@@ -374,14 +409,14 @@ def gerar_todos_dados_teste():
             analise_financeira.append(
                 criar_pagamento(
                     f"COT{proc}",
-                    6000.00 + (i * 50),
+                    valor_item * 0.5,  # 50% de adiantamento
                     f"2025-08-{str(dia_adiant).zfill(2)}",
                 )
             )
         else:
             analise_financeira.append(
                 criar_pagamento(
-                    nf, 12000.00 + (i * 100), f"2025-09-{str(dia_pag).zfill(2)}"
+                    nf, valor_item, f"2025-09-{str(dia_pag).zfill(2)}"
                 )
             )
 
@@ -583,7 +618,9 @@ def gerar_todos_dados_teste():
         dia = (i % 25) + 5
         negocio = negocios[i % 3]
         tipo = tipos[i % 4]
-        valor = 10000 + (i * 500)
+        # Valor escalonado: 15.5K a 30K (total mensal ~900K / 50 processos / 2 meses ~ 9K cada)
+        # Mas como alguns são Agosto e outros Setembro, mantenho variação maior
+        valor = 15000 + (i * 500)  # De 15.5K a 30K
 
         # Alternar consultores internos e representantes para variedade
         consultor = consultores_internos[i % 5] if i % 2 == 0 else ""

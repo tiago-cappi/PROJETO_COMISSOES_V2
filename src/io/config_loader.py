@@ -28,8 +28,7 @@ class ConfigLoader:
         """
         Carrega todas as planilhas de configuração.
         
-        Tenta carregar de REGRAS_COMISSOES.xlsx primeiro. Se não existir,
-        tenta carregar arquivos CSV individuais da pasta config/.
+        Carrega EXCLUSIVAMENTE do arquivo REGRAS_COMISSOES.xlsx.
         
         Args:
             config_path: Caminho para o arquivo REGRAS_COMISSOES.xlsx
@@ -45,89 +44,22 @@ class ConfigLoader:
                 regras_data = pd.read_excel(config_path, sheet_name=None)
                 data.update(regras_data)
             except Exception as e:
+                msg = f"Falha crítica ao carregar {config_path}: {e}"
                 if self.validation_logger:
-                    self.validation_logger.aviso(
-                        f"Falha ao carregar {config_path}: {e}. Tentando CSVs individuais.",
-                        {"path": config_path}
-                    )
-                # Fallback: tentar carregar CSVs individuais
-                data = self._load_from_csvs()
+                    self.validation_logger.erro(msg, {"path": config_path})
+                raise RuntimeError(msg)
         else:
-            # Se não existe Excel, tentar CSVs
+            # Erro se não existe Excel
+            msg = f"Arquivo de configuração obrigatório não encontrado: {config_path}"
             if self.validation_logger:
-                self.validation_logger.aviso(
-                    f"Arquivo {config_path} não encontrado. Tentando CSVs individuais.",
-                    {"path": config_path}
-                )
-            data = self._load_from_csvs()
-        
-        # Carregar CROSS_SELLING separadamente (pode estar no Excel ou ser CSV)
-        if "CROSS_SELLING" not in data:
-            try:
-                if os.path.exists(config_path):
-                    data["CROSS_SELLING"] = pd.read_excel(config_path, sheet_name="CROSS_SELLING")
-                else:
-                    csv_path = os.path.join("config", "CROSS_SELLING.csv")
-                    if os.path.exists(csv_path):
-                        data["CROSS_SELLING"] = pd.read_csv(csv_path)
-                    else:
-                        data["CROSS_SELLING"] = pd.DataFrame(
-                            columns=["colaborador", "taxa_cross_selling_pct"]
-                        )
-            except Exception:
-                data["CROSS_SELLING"] = pd.DataFrame(
-                    columns=["colaborador", "taxa_cross_selling_pct"]
-                )
+                self.validation_logger.erro(msg, {"path": config_path})
+            raise FileNotFoundError(msg)
         
         # Normalizar colunas e strings
         data = self.normalize_config_dataframes(data)
         
         # Normalizar colunas especiais
         data = self._normalize_special_columns(data)
-        
-        return data
-    
-    def _load_from_csvs(self) -> Dict[str, pd.DataFrame]:
-        """
-        Carrega configurações de arquivos CSV individuais na pasta config/.
-        
-        Returns:
-            Dicionário com DataFrames carregados dos CSVs
-        """
-        data = {}
-        config_dir = "config"
-        
-        # Lista de arquivos CSV esperados
-        csv_files = [
-            "PARAMS.csv",
-            "CONFIG_COMISSAO.csv",
-            "PESOS_METAS.csv",
-            "METAS_APLICACAO.csv",
-            "METAS_INDIVIDUAIS.csv",
-            "META_RENTABILIDADE.csv",
-            "METAS_FORNECEDORES.csv",
-            "ATRIBUICOES.csv",
-            "COLABORADORES.csv",
-            "CARGOS.csv",
-            "ALIASES.csv",
-            "HIERARQUIA.csv",
-            "ENUM_TIPO_META.csv",
-        ]
-        
-        for csv_file in csv_files:
-            csv_path = os.path.join(config_dir, csv_file)
-            sheet_name = csv_file.replace(".csv", "")
-            try:
-                if os.path.exists(csv_path):
-                    data[sheet_name] = pd.read_csv(csv_path)
-            except Exception as e:
-                if self.validation_logger:
-                    self.validation_logger.aviso(
-                        f"Falha ao carregar {csv_path}: {e}",
-                        {"path": csv_path}
-                    )
-                # Criar DataFrame vazio com estrutura esperada
-                data[sheet_name] = pd.DataFrame()
         
         return data
     

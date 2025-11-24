@@ -34,14 +34,14 @@ const formatCurrencyBR = (value) => {
 };
 
 const RecebimentosPage = () => {
-  const [mesAno, setMesAno] = useState({ mes: new Date().getMonth() || 1, ano: new Date().getFullYear() });
+  const [mesAno, setMesAno] = useState({ mes: new Date().getMonth() + 1, ano: new Date().getFullYear() });
   const [abas, setAbas] = useState([]);
   const [abaAtual, setAbaAtual] = useState(null);
   const [dadosAba, setDadosAba] = useState([]);
   const [colunas, setColunas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 20, total: 0 });
-  
+
   // Estado para o modal de detalhes
   const [modalVisible, setModalVisible] = useState(false);
   const [detalhesRecord, setDetalhesRecord] = useState(null);
@@ -61,7 +61,7 @@ const RecebimentosPage = () => {
       setLoading(true);
       const response = await recebimentoAPI.listarAbas(mesAno.mes, mesAno.ano);
       setAbas(response.data.abas || []);
-      
+
       if (response.data.abas && response.data.abas.length > 0) {
         setAbaAtual(response.data.abas[0]);
       } else {

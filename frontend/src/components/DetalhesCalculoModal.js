@@ -99,6 +99,39 @@ const DetalhesCalculoModal = ({ rowData, isHistorico = false }) => {
                     <p style={{ margin: 0 }}>Os "Valores Realizados" usados aqui são do período histórico do processo, e não do mês atual.</p>
                 </div>
             )}
+
+            {/* Special Cross-Selling Section */}
+            {rowData?.observacao === 'CROSS_SELLING' && (
+                <div style={{ padding: '12px', background: '#fff7e6', border: '2px solid #ffa940', borderRadius: '8px', marginBottom: '20px' }}>
+                    <Title level={4} style={{ marginBottom: 8, color: '#d46b08' }}>🎯 COMISSÃO POR CROSS-SELLING</Title>
+                    <div style={{ marginBottom: 12 }}>
+                        <Text><b>Tipo:</b> Comissão Especial de Cross-Selling (Consultor Externo)</Text><br />
+                        <Text type="secondary">Você recebeu comissão por vender um produto/serviço fora da sua linha de negócio atribuída.</Text>
+                    </div>
+                    <div className="cards-line">
+                        <Card className="mini-card" style={{ background: '#fffbe6' }}>
+                            <Text strong>Valor do Item</Text>
+                            <div className="mini-card-value">{formatCurrencyBR(rowData?.faturamento_item)}</div>
+                        </Card>
+                        <Card className="mini-card" style={{ background: '#fffbe6' }}>
+                            <Text strong>Taxa de Cross-Selling</Text>
+                            <div className="mini-card-value">{formatPercent(Number(rowData?.taxa_rateio_aplicada || 0))}</div>
+                            <Text type="secondary">Configurada para esta linha</Text>
+                        </Card>
+                        <Card className="mini-card" style={{ background: '#fff1b8' }}>
+                            <Text strong>Comissão Calculada</Text>
+                            <div className="mini-card-value" style={{ color: '#d46b08' }}>{formatCurrencyBR(rowData?.comissao_calculada)}</div>
+                        </Card>
+                    </div>
+                    <div style={{ marginTop: 12, padding: '8px', background: '#fff', borderRadius: '4px', border: '1px solid #d9d9d9' }}>
+                        <Text><b>Cálculo:</b> {formatCurrencyBR(rowData?.faturamento_item)} × {formatPercent(Number(rowData?.taxa_rateio_aplicada || 0))} = {formatCurrencyBR(rowData?.comissao_calculada)}</Text><br />
+                        <Text type="secondary" style={{ fontSize: '12px' }}>
+                            ⚠️ Comissões de cross-selling não usam FC (Fator de Correção). O valor é fixo com base na taxa configurada.
+                        </Text>
+                    </div>
+                </div>
+            )}
+
             <div className="passo">
                 <Title level={4} style={{ marginBottom: 8 }}>Detalhes do Cálculo da Comissão</Title>
                 <div className="detalhes-contexto">

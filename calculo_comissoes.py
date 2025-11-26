@@ -2582,91 +2582,95 @@ class CalculoComissao:
 
             if "Processo" in df_faturados.columns:
                 for processo, grupo in df_faturados.groupby("Processo"):
-                    primeira = grupo.iloc[0]
-                    gerente_comercial_raw = None
-                    if "Gerente Comercial-Pedido" in primeira.index:
-                        gerente_comercial_raw = primeira.get("Gerente Comercial-Pedido")
-                    if (
-                        gerente_comercial_raw is None
-                        or pd.isna(gerente_comercial_raw)
-                        or str(gerente_comercial_raw).strip() == ""
-                    ):
-                        continue
+                    # IMPORTANTE: Verificar TODAS as linhas do processo, não apenas a primeira
+                    # Cada item pode ter um Gerente Comercial diferente
+                    for _, item in grupo.iterrows():
+                        gerente_comercial_raw = None
+                        if "Gerente Comercial-Pedido" in item.index:
+                            gerente_comercial_raw = item.get("Gerente Comercial-Pedido")
+                        if (
+                            gerente_comercial_raw is None
+                            or pd.isna(gerente_comercial_raw)
+                            or str(gerente_comercial_raw).strip() == ""
+                        ):
+                            continue
 
-                    raw_norm = str(gerente_comercial_raw).strip()
-                    gerente_padrao = alias_map.get(raw_norm)
-                    if gerente_padrao is None:
-                        gerente_padrao = alias_map_lower.get(raw_norm.lower(), raw_norm)
+                        raw_norm = str(gerente_comercial_raw).strip()
+                        gerente_padrao = alias_map.get(raw_norm)
+                        if gerente_padrao is None:
+                            gerente_padrao = alias_map_lower.get(raw_norm.lower(), raw_norm)
 
-                    # Verificar se é Consultor Externo
-                    try:
-                        mask_col = (
-                            df_colabs_com_cargos["nome_colaborador"]
-                            .astype(str)
-                            .str.strip()
-                            .str.lower()
-                            == str(gerente_padrao).strip().lower()
-                        )
-                        row_colab = df_colabs_com_cargos[mask_col]
-                    except Exception:
-                        row_colab = df_colabs_com_cargos[
-                            df_colabs_com_cargos["nome_colaborador"] == gerente_padrao
-                        ]
-                    if row_colab.empty:
-                        continue
-                    cargo_do_consultor = row_colab.iloc[0].get("cargo", "")
-                    tipo_cargo = row_colab.iloc[0].get("tipo_cargo", "")
-                    is_consultor_externo = (
-                        str(cargo_do_consultor).strip().lower() == "consultor externo"
-                    ) or (str(tipo_cargo).strip().lower() == "externo")
-                    if not is_consultor_externo:
-                        continue
-
-                    # Determinar a linha do processo (usar a primeira linha encontrada)
-                    linhas_no_processo = grupo["Negócio"].dropna().unique().tolist()
-                    if not linhas_no_processo:
-                        continue
-                    linha_do_processo = linhas_no_processo[0]
-
-                    # Verificar se o consultor possui atribuições para esta linha
-                    possui_atr = False
-                    if not df_atribuicoes.empty:
-                        possui_atr = not df_atribuicoes[
-                            (df_atribuicoes["colaborador"] == gerente_padrao)
-                            & (df_atribuicoes["linha"] == linha_do_processo)
-                        ].empty
-
-                    if not possui_atr:
-                        # Consultor externo não possui atribuição para esta linha -> cross-selling detectado
-                        taxa = 0.0
+                        # Verificar se é Consultor Externo
                         try:
-                            if not cross_df.empty:
-                                # case-insensitive match
-                                mask_cs = (
-                                    cross_df["colaborador"]
-                                    .astype(str)
-                                    .str.strip()
-                                    .str.lower()
-                                    == str(gerente_padrao).strip().lower()
-                                )
-                                row_cs = cross_df[mask_cs]
-                                if not row_cs.empty:
-                                    taxa = float(
-                                        row_cs.iloc[0].get(
-                                            "taxa_cross_selling_pct", 0.0
-                                        )
-                                    )
+                            mask_col = (
+                                df_colabs_com_cargos["nome_colaborador"]
+                                .astype(str)
+                                .str.strip()
+                                .str.lower()
+                                == str(gerente_padrao).strip().lower()
+                            )
+                            row_colab = df_colabs_com_cargos[mask_col]
                         except Exception:
-                            taxa = 0.0
+                            row_colab = df_colabs_com_cargos[
+                                df_colabs_com_cargos["nome_colaborador"] == gerente_padrao
+                            ]
+                        if row_colab.empty:
+                            continue
+                        cargo_do_consultor = row_colab.iloc[0].get("cargo", "")
+                        tipo_cargo = row_colab.iloc[0].get("tipo_cargo", "")
+                        is_consultor_externo = (
+                            str(cargo_do_consultor).strip().lower() == "consultor externo"
+                        ) or (str(tipo_cargo).strip().lower() == "externo")
+                        if not is_consultor_externo:
+                            continue
 
-                        self.casos_cross_selling_detectados.append(
-                            {
-                                "processo": processo,
-                                "consultor": gerente_padrao,
-                                "linha": linha_do_processo,
-                                "taxa": float(taxa),
-                            }
-                        )
+                        # Determinar a linha do ITEM (não do processo)
+                        linha_do_item = item.get("Negócio")
+                        if not linha_do_item or pd.isna(linha_do_item):
+                            continue
+
+                        # Verificar se o consultor possui atribuições para esta linha
+                        possui_atr = False
+                        if not df_atribuicoes.empty:
+                            possui_atr = not df_atribuicoes[
+                                (df_atribuicoes["colaborador"] == gerente_padrao)
+                                & (df_atribuicoes["linha"] == linha_do_item)
+                            ].empty
+
+                        if not possui_atr:
+                            # Consultor externo não possui atribuição para esta linha -> cross-selling detectado
+                            # Evitar duplicatas: verificar se já detectamos este processo
+                            if processo not in [c.get("processo") for c in self.casos_cross_selling_detectados]:
+                                taxa = 0.0
+                                try:
+                                    if not cross_df.empty:
+                                        # case-insensitive match
+                                        mask_cs = (
+                                            cross_df["colaborador"]
+                                            .astype(str)
+                                            .str.strip()
+                                            .str.lower()
+                                            == str(gerente_padrao).strip().lower()
+                                        )
+                                        row_cs = cross_df[mask_cs]
+                                        if not row_cs.empty:
+                                            taxa = float(
+                                                row_cs.iloc[0].get(
+                                                    "taxa_cross_selling_pct", 0.0
+                                                )
+                                            )
+                                except Exception:
+                                    taxa = 0.0
+
+                                self.casos_cross_selling_detectados.append(
+                                    {
+                                        "processo": processo,
+                                        "consultor": gerente_padrao,
+                                        "linha": linha_do_item,
+                                        "taxa": float(taxa),
+                                    }
+                                )
+                                print(f"[DEBUG CS DETECTED] Processo {processo}: {gerente_padrao} vendeu em {linha_do_item} (sem atribuição) - Taxa: {taxa}%")
         except Exception as e:
             self._log_validacao("AVISO", f"Erro na detecção de cross-selling: {e}", {})
 

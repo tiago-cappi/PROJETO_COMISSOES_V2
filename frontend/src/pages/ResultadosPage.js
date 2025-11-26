@@ -613,6 +613,14 @@ const ResultadosPage = () => {
         dataIndex: 'nome_colaborador',
         key: 'nome_colaborador',
         width: 220,
+        render: (text, record) => (
+          <span>
+            {text}
+            {record.observacao === 'CROSS_SELLING' && (
+              <Tag color="orange" style={{ marginLeft: 8 }}>CS</Tag>
+            )}
+          </span>
+        ),
       },
       {
         title: 'Cargo',

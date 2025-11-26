@@ -1142,6 +1142,9 @@ async def executar_calculo(payload: ExecCalculoRequest):
                 cc.ARQUIVO_RENTABILIDADE = None
 
             calc = CalculoComissao()
+            # FIX: Set the month and year parameters explicitly to avoid defaulting to current date
+            calc.params['mes_apuracao'] = payload.mes
+            calc.params['ano_apuracao'] = payload.ano
             calc.executar(decisoes_cross_selling=payload.decisoes_cross_selling or [])
         return {"success": True, "message": "Cálculo concluído"}
     except HTTPException:

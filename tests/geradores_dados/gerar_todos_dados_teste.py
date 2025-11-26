@@ -217,63 +217,63 @@ def gerar_todos_dados_teste():
     # O Consultor Interno é atribuído automaticamente baseado na linha de negócio
 
     # CENÁRIO 1: Adiantamento simples (não faturado)
-    # Valor ajustado para 40K (meta mensal ~100K, este é um de vários processos)
+    # Valor ajustado para 8K (meta mensal ~100K, este é um de vários processos)
     analise_comercial.append(
-        criar_item("100001", "PENDENTE", "", "", 40000.00)  # Consultor Interno será atribuído automaticamente
+        criar_item("100001", "PENDENTE", "", "", 8000.00)
     )
-    analise_financeira.append(criar_pagamento("COT100001", 20000.00, "2025-08-10"))
+    analise_financeira.append(criar_pagamento("COT100001", 4000.00, "2025-08-10"))
 
-    # CENÁRIO 2: Adiantamento + Faturamento no mesmo mês
-    # Valor ajustado para 60K (testar FCMP < 1.0 com reconciliação)
+    # CENÁRIO 2: Adiantamento + Faturamento no mesmo mês  
+    # Valor ajustado para 12K (testar FCMP < 1.0 com reconciliação)
     analise_comercial.append(
-        criar_item("100002", "FATURADO", "048001", "2025-08-25", 60000.00)  # Consultor Interno será atribuído automaticamente
+        criar_item("100002", "FATURADO", "048001", "2025-08-25", 12000.00)
     )
-    analise_financeira.append(criar_pagamento("COT100002", 30000.00, "2025-08-05"))
-    analise_financeira.append(criar_pagamento("048001", 30000.00, "2025-08-28"))
+    analise_financeira.append(criar_pagamento("COT100002", 6000.00, "2025-08-05"))
+    analise_financeira.append(criar_pagamento("048001", 6000.00, "2025-08-28"))
 
     # CENÁRIO 3: Adiantamento (Ago) + Faturamento (Set)
-    # Valor ajustado para 80K (reconciliação em Setembro)
+    # Valor ajustado para 15K (reconciliação em Setembro)
     analise_comercial.append(
-        criar_item("100003", "FATURADO", "048002", "2025-09-10", 80000.00)  # Consultor Interno será atribuído automaticamente
+        criar_item("100003", "FATURADO", "048002", "2025-09-10", 15000.00)
     )
-    analise_financeira.append(criar_pagamento("COT100003", 40000.00, "2025-08-12"))
-    analise_financeira.append(criar_pagamento("048002", 40000.00, "2025-09-15"))
+    analise_financeira.append(criar_pagamento("COT100003", 7500.00, "2025-08-12"))
+    analise_financeira.append(criar_pagamento("048002", 7500.00, "2025-09-15"))
 
     # CENÁRIO 4: Múltiplos adiantamentos
-    # Valor ajustado para 100K (testar múltiplos COTs)
+    # Valor ajustado para 18K (testar múltiplos COTs)
     analise_comercial.append(
-        criar_item("100004", "FATURADO", "048003", "2025-09-15", 100000.00)  # Consultor Interno será atribuído automaticamente
+        criar_item("100004", "FATURADO", "048003", "2025-09-15", 18000.00)
     )
-    analise_financeira.append(criar_pagamento("COT100004", 32000.00, "2025-08-08"))
-    analise_financeira.append(criar_pagamento("COT100004", 28000.00, "2025-08-15"))
-    analise_financeira.append(criar_pagamento("048003", 40000.00, "2025-09-20"))
+    analise_financeira.append(criar_pagamento("COT100004", 6000.00, "2025-08-08"))
+    analise_financeira.append(criar_pagamento("COT100004", 5000.00, "2025-08-15"))
+    analise_financeira.append(criar_pagamento("048003", 7000.00, "2025-09-20"))
 
     # CENÁRIO 5: Pagamento regular direto
-    # Valor ajustado para 48K (sem adiantamento, apenas pagamentos regulares)
+    # Valor ajustado para 10K (sem adiantamento, apenas pagamentos regulares)
     analise_comercial.append(
         criar_item(
             "100005",
             "FATURADO",
             "048004",
             "2025-08-20",
-            48000.00,
+            10000.00,
             grupo="Analisador Portátil",
             subgrupo="Acessório",
-        )  # Consultor Interno será atribuído automaticamente
+        )
     )
-    analise_financeira.append(criar_pagamento("048004", 24000.00, "2025-08-22"))
-    analise_financeira.append(criar_pagamento("048004", 24000.00, "2025-08-29"))
+    analise_financeira.append(criar_pagamento("048004", 5000.00, "2025-08-22"))
+    analise_financeira.append(criar_pagamento("048004", 5000.00, "2025-08-29"))
 
     # CENÁRIO 6: Múltiplos colaboradores
-    # Valor ajustado para 120K total (2 itens, testar reconciliação por colaborador)
+    # Valor ajustado para 22K total (2 itens, testar reconciliação por colaborador)
     analise_comercial.append(
         criar_item(
             "100006",
             "FATURADO",
             "048006",
             "2025-09-20",
-            72000.00,
-        )  # Consultor Interno será atribuído automaticamente
+            13000.00,
+        )
     )
     analise_comercial.append(
         criar_item(
@@ -281,53 +281,53 @@ def gerar_todos_dados_teste():
             "FATURADO",
             "048006",
             "2025-09-20",
-            48000.00,
+            9000.00,
             grupo="Analisador Portátil",
             subgrupo="Acessório",
-        )  # Consultor Interno será atribuído automaticamente
+        )
     )
-    analise_financeira.append(criar_pagamento("COT100006", 60000.00, "2025-08-20"))
-    analise_financeira.append(criar_pagamento("048006", 60000.00, "2025-09-25"))
+    analise_financeira.append(criar_pagamento("COT100006", 11000.00, "2025-08-20"))
+    analise_financeira.append(criar_pagamento("048006", 11000.00, "2025-09-25"))
 
-    # CENÁRIO 7: FC = 1.0 (sem reconciliação)
-    # Valor ajustado para 120K (Serviço, rentabilidade alta ~50% para FC=1.0)
+    # CENÁRIO 7: FC = 1.0 (sem reconciliação) - ACIMA DA META para testar CAP
+    # Valor ajustado para 105K (Serviço, rentabilidade alta ~50% para FC=1.0)
     analise_comercial.append(
         criar_item(
             "100007",
             "FATURADO",
             "048007",
             "2025-09-25",
-            120000.00,
+            105000.00,
             grupo="Diversos Diversos",
             subgrupo="Calibração",
             tipo_merc="Serviço",
-        )  # Consultor Interno será atribuído automaticamente
+        )
     )
-    analise_financeira.append(criar_pagamento("COT100007", 60000.00, "2025-08-25"))
-    analise_financeira.append(criar_pagamento("048007", 60000.00, "2025-09-28"))
+    analise_financeira.append(criar_pagamento("COT100007", 52500.00, "2025-08-25"))
+    analise_financeira.append(criar_pagamento("048007", 52500.00, "2025-09-28"))
 
     # CENÁRIO 8: Múltiplos pagamentos regulares
-    # Valor ajustado para 150K (3 parcelas, testar pagamentos fracionados)
+    # Valor ajustado para 16K (3 parcelas, testar pagamentos fracionados)
     analise_comercial.append(
-        criar_item("100008", "FATURADO", "048005", "2025-08-15", 150000.00)  # Consultor Interno será atribuído automaticamente
+        criar_item("100008", "FATURADO", "048005", "2025-08-15", 16000.00)
     )
-    analise_financeira.append(criar_pagamento("048005", 45000.00, "2025-08-18"))
-    analise_financeira.append(criar_pagamento("048005", 60000.00, "2025-08-22"))
-    analise_financeira.append(criar_pagamento("048005", 45000.00, "2025-08-28"))
+    analise_financeira.append(criar_pagamento("048005", 5000.00, "2025-08-18"))
+    analise_financeira.append(criar_pagamento("048005", 6000.00, "2025-08-22"))
+    analise_financeira.append(criar_pagamento("048005", 5000.00, "2025-08-28"))
 
     # CENÁRIO 9: Processo pendente (nunca faturado)
-    # Valor ajustado para 32K (pendente, só adiantamento)
+    # Valor ajustado para 6K (pendente, só adiantamento)
     analise_comercial.append(
-        criar_item("100009", "PENDENTE", "", "", 32000.00)  # Consultor Interno será atribuído automaticamente
+        criar_item("100009", "PENDENTE", "", "", 6000.00)
     )
-    analise_financeira.append(criar_pagamento("COT100009", 16000.00, "2025-08-18"))
+    analise_financeira.append(criar_pagamento("COT100009", 3000.00, "2025-08-18"))
 
     # CENÁRIO 10: Pagamento parcial
-    # Valor ajustado para 80K (pagamento parcial de 50%)
+    # Valor ajustado para 14K (pagamento parcial de 50%)
     analise_comercial.append(
-        criar_item("100010", "FATURADO", "048008", "2025-09-28", 80000.00)  # Consultor Interno será atribuído automaticamente
+        criar_item("100010", "FATURADO", "048008", "2025-09-28", 14000.00)
     )
-    analise_financeira.append(criar_pagamento("048008", 40000.00, "2025-09-30"))
+    analise_financeira.append(criar_pagamento("048008", 7000.00, "2025-09-30"))
 
     print(f"   ✅ 10 processos criados")
 
@@ -337,10 +337,10 @@ def gerar_todos_dados_teste():
     # (Adicionar aqui os 50 processos do script original - omitindo por brevidade, mas devem ser incluídos)
     # Por enquanto vou adicionar uma versão resumida de alguns processos
 
-    # Linha SSO - valores escalonados de 60K a 90K
+    # Linha SSO - valores escalonados de 12K a 22K
     for i in range(1, 7):
         proc = f"20000{i}"
-        valor = 60000.00 + (i * 5000)  # 65K, 70K, 75K, 80K, 85K, 90K
+        valor = 12000.00 + (i * 2000)  # 14K, 16K, 18K, 20K, 22K, 24K
         analise_comercial.append(
             criar_item(
                 proc,
@@ -358,10 +358,14 @@ def gerar_todos_dados_teste():
             criar_pagamento(f"048{100+i}", valor * 0.5, f"2025-09-{15+i}")
         )
 
-    # Linha Hidrologia - valores de 80K a 130K
+    # Linha Hidrologia - valores de 14K a 24K (um processo acima da meta para testar cap)
     for i in range(7, 13):
         proc = f"20000{i}"
-        valor = 80000.00 + ((i-7) * 10000)  # 80K, 90K, 100K, 110K, 120K, 130K
+        # 14K, 16K, 18K, 20K, 22K, 105K (ultimo acima da meta para testar cap)
+        if i == 12:
+            valor = 105000.00  # Acima da meta para testar FC cap
+        else:
+            valor = 14000.00 + ((i-7) * 2000)
         analise_comercial.append(
             criar_item(
                 proc,
@@ -389,8 +393,8 @@ def gerar_todos_dados_teste():
         if dia_pag > 28:
             dia_pag = 28
         
-        # Valor escalonado: 25K a 62K dependendo do processo
-        valor_item = 25000.00 + (i * 1000)
+        # Valor escalonado: 5K a 15K dependendo do processo  
+        valor_item = 5000.00 + ((i - 13) * 300)
 
         analise_comercial.append(
             criar_item(
@@ -399,7 +403,6 @@ def gerar_todos_dados_teste():
                 nf if i % 3 != 0 else "",
                 f"2025-09-{str(dia_emissao).zfill(2)}" if i % 3 != 0 else "",
                 valor_item,
-                # Consultor Interno será atribuído automaticamente
             )
         )
         if i % 3 == 0:
@@ -618,9 +621,9 @@ def gerar_todos_dados_teste():
         dia = (i % 25) + 5
         negocio = negocios[i % 3]
         tipo = tipos[i % 4]
-        # Valor escalonado: 15.5K a 30K (total mensal ~900K / 50 processos / 2 meses ~ 9K cada)
-        # Mas como alguns são Agosto e outros Setembro, mantenho variação maior
-        valor = 15000 + (i * 500)  # De 15.5K a 30K
+        # Valor escalonado: 3K a 18K (distribuído ao longo de 2 meses)
+        # Total mensal por consultor deve ficar ~90-95K
+        valor = 3000 + (i * 400)  # De 3K a 19K
 
         # Alternar consultores internos e representantes para variedade
         consultor = consultores_internos[i % 5] if i % 2 == 0 else ""

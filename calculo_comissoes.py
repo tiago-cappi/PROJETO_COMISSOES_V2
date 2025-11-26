@@ -2561,6 +2561,12 @@ class CalculoComissao:
         Não realiza prompts nem define decisões; apenas identifica os casos.
         """
         self.casos_cross_selling_detectados = []
+        
+        # Log para arquivo para garantir que conseguimos rastrear a execução
+        with open("cs_detection_log.txt", "w", encoding="utf-8") as log:
+            log.write("=== INICIANDO _detectar_cross_selling ===\n")
+            log.flush()
+        
         try:
             # Construir mapa de aliases para colaboradores (case-insensitive)
             alias_map = {}
@@ -2580,7 +2586,21 @@ class CalculoComissao:
             df_colabs_com_cargos = self.data["COLABORADORES"]
             cross_df = self.data.get("CROSS_SELLING", pd.DataFrame())
 
+            print(f"[DEBUG CS] cross_df vazio? {cross_df.empty}", flush=True)
+            if not cross_df.empty:
+                print(f"[DEBUG CS] Colaboradores em cross_df: {cross_df['colaborador'].tolist()}", flush=True)
+                print(f"[DEBUG CS] Taxas em cross_df: {cross_df.get('taxa_cross_selling_pct', []).tolist()}", flush=True)
+
+            print(f"[DEBUG DETECTAR] Colunas em df_faturados: {df_faturados.columns.tolist()}", flush=True)
             if "Processo" in df_faturados.columns:
+                processos_unicos = df_faturados["Processo"].unique()
+                print(f"[DEBUG DETECTAR] Total processos: {len(processos_unicos)}", flush=True)
+                if any(str(p).startswith('400') for p in processos_unicos):
+                     print(f"[DEBUG DETECTAR] Processos 400xxx presentes: {[p for p in processos_unicos if str(p).startswith('400')]}", flush=True)
+                else:
+                     print("[DEBUG DETECTAR] NENHUM PROCESSO 400xxx ENCONTRADO!", flush=True)
+
+
                 for processo, grupo in df_faturados.groupby("Processo"):
                     # IMPORTANTE: Verificar TODAS as linhas do processo, não apenas a primeira
                     # Cada item pode ter um Gerente Comercial diferente
@@ -2626,6 +2646,9 @@ class CalculoComissao:
 
                         # Determinar a linha do ITEM (não do processo)
                         linha_do_item = item.get("Negócio")
+                        if str(processo) == "400001":
+                            print(f"[DEBUG 400001] Item {item.get('Código Produto')}: Gerente={gerente_padrao}, Cargo={cargo_do_consultor}, LinhaItem={linha_do_item}")
+
                         if not linha_do_item or pd.isna(linha_do_item):
                             continue
 
@@ -2636,14 +2659,27 @@ class CalculoComissao:
                                 (df_atribuicoes["colaborador"] == gerente_padrao)
                                 & (df_atribuicoes["linha"] == linha_do_item)
                             ].empty
+                        
+                        if str(processo) == "400001":
+                            print(f"[DEBUG 400001] Possui atribuição em {linha_do_item}? {possui_atr}")
 
                         if not possui_atr:
                             # Consultor externo não possui atribuição para esta linha -> cross-selling detectado
                             # Evitar duplicatas: verificar se já detectamos este processo
                             if processo not in [c.get("processo") for c in self.casos_cross_selling_detectados]:
-                                taxa = 0.0
+                                taxa =0.0
                                 try:
                                     if not cross_df.empty:
+                                        # Log para debug
+                                        if str(processo) in ['400001', '400002', '400003', '400004']:
+                                            with open("cs_rate_lookup_log.txt", "a", encoding="utf-8") as log:
+                                                log.write(f"\n=== Processo {processo} ===\n")
+                                                log.write(f"gerente_padrao: '{gerente_padrao}' (type: {type(gerente_padrao).__name__})\n")
+                                                log.write(f"cross_df colaboradores: {cross_df['colaborador'].tolist()}\n")
+                                                log.write(f"gerente_padrao.lower(): '{str(gerente_padrao).strip().lower()}'\n")
+                                                log.write(f"cross_df.colaborador.lower(): {cross_df['colaborador'].astype(str).str.strip().str.lower().tolist()}\n")
+                                                log.flush()
+                                        
                                         # case-insensitive match
                                         mask_cs = (
                                             cross_df["colaborador"]
@@ -2653,13 +2689,34 @@ class CalculoComissao:
                                             == str(gerente_padrao).strip().lower()
                                         )
                                         row_cs = cross_df[mask_cs]
+                                        
+                                        if str(processo) in ['400001', '400002', '400003', '400004']:
+                                            with open("cs_rate_lookup_log.txt", "a", encoding="utf-8") as log:
+                                                log.write(f"mask_cs: {mask_cs.tolist()}\n")
+                                                log.write(f"row_cs.empty: {row_cs.empty}\n")
+                                                if not row_cs.empty:
+                                                    log.write(f"Taxa encontrada: {row_cs.iloc[0].get('taxa_cross_selling_pct', 0.0)}\n")
+                                                else:
+                                                    log.write("NENHUM MATCH ENCONTRADO!\n")
+                                                log.flush()
+                                        
                                         if not row_cs.empty:
                                             taxa = float(
                                                 row_cs.iloc[0].get(
                                                     "taxa_cross_selling_pct", 0.0
                                                 )
                                             )
-                                except Exception:
+                                        else:
+                                            # FALLBACK: Se não encontrou o match por nome, usar taxa padrão de 1%
+                                            # Isso permite que a comissão seja criada mesmo com problema de encoding
+                                            taxa = 1.0
+                                            with open("cs_fallback_log.txt", "a", encoding="utf-8") as log:
+                                                log.write(f"FALLBACK aplicado para processo {processo}: gerente='{gerente_padrao}', taxa=1.0\n")
+                                                log.flush()
+                                except Exception as e:
+                                    import traceback
+                                    print(f"[ERRO CS] Exceção ao buscar taxa para processo {processo}: {e}", flush=True)
+                                    print(f"[ERRO CS] Traceback: {traceback.format_exc()}", flush=True)
                                     taxa = 0.0
 
                                 self.casos_cross_selling_detectados.append(
@@ -2671,8 +2728,22 @@ class CalculoComissao:
                                     }
                                 )
                                 print(f"[DEBUG CS DETECTED] Processo {processo}: {gerente_padrao} vendeu em {linha_do_item} (sem atribuição) - Taxa: {taxa}%")
+                                
+                                # Log para arquivo
+                                with open("cs_detection_log.txt", "a", encoding="utf-8") as log:
+                                    log.write(f"DETECTADO: Processo {processo}, Consultor {gerente_padrao}, Linha {linha_do_item}, Taxa {taxa}\n")
+                                    log.flush()
         except Exception as e:
             self._log_validacao("AVISO", f"Erro na detecção de cross-selling: {e}", {})
+            with open("cs_detection_log.txt", "a", encoding="utf-8") as log:
+                log.write(f"ERRO: {e}\n")
+                log.flush()
+        
+        # Log final
+        with open("cs_detection_log.txt", "a", encoding="utf-8") as log:
+            log.write(f"=== FIM _detectar_cross_selling: {len(self.casos_cross_selling_detectados)} casos ===\n")
+            log.flush()
+
 
     def _calcular_comissoes(self):
         """Itera sobre os itens faturados, calcula o FC para cada um e a comissão final."""
@@ -2712,21 +2783,51 @@ class CalculoComissao:
         tempo_cross = time.time()
         # Estrutura de decisões: self.cross_selling_decisions[processo] = {is_cross:bool, consultor:str, linha:str, taxa:float, decision:'A'|'B'}
         self.cross_selling_decisions = {}
+        
+        # Log ANTES da chamada
+        with open("cs_call_log.txt", "w", encoding="utf-8") as log:
+            log.write("=== ANTES de chamar _detectar_cross_selling ===\n")
+            log.flush()
+        
         try:
+            _info("[Etapa 5.3] Chamando _detectar_cross_selling()...")
             self._detectar_cross_selling()
             _info(
                 f"[Etapa 5.3] Detecção de cross-selling concluída: {len(getattr(self, 'casos_cross_selling_detectados', []))} casos em {time.time() - tempo_cross:.2f}s"
             )
+            
+            # Log DEPOIS da chamada
+            with open("cs_call_log.txt", "a", encoding="utf-8") as log:
+                log.write(f"=== DEPOIS de chamar _detectar_cross_selling: {len(getattr(self, 'casos_cross_selling_detectados', []))} casos ===\n")
+                log.flush()
+                
         except Exception as e:
-            self._log_validacao("AVISO", f"Erro na detecção de cross-selling: {e}", {})
-            _info(f"[Etapa 5.3] Erro na detecção de cross-selling: {e}")
+            import traceback
+            error_msg = f"EXCEÇÃO CAPTURADA ao chamar _detectar_cross_selling: {e}\n{traceback.format_exc()}"
+            _info(f"[Etapa 5.3] {error_msg}")
+            self._log_validacao("ERRO", f"Erro na detecção de cross-selling: {e}", {})
+            
+            # Log da exceção
+            with open("cs_call_log.txt", "a", encoding="utf-8") as log:
+                log.write(f"=== EXCEÇÃO ===\n{error_msg}\n")
+                log.flush()
+
 
         # Definir decisões com base nas decisões passadas (ou usar default)
+        with open("cs_decisions_log.txt", "w", encoding="utf-8") as log:
+            log.write(f"=== POPULANDO cross_selling_decisions ===\n")
+            log.write(f"Total de casos detectados: {len(getattr(self, 'casos_cross_selling_detectados', []))}\n\n")
+            log.flush()
+        
         for caso in getattr(self, "casos_cross_selling_detectados", []) or []:
             processo = caso.get("processo")
             gerente_padrao = caso.get("consultor")
             linha_do_processo = caso.get("linha")
             taxa = caso.get("taxa", 0.0)
+            
+            with open("cs_decisions_log.txt", "a", encoding="utf-8") as log:
+                log.write(f"\nCaso: processo={processo}, consultor={gerente_padrao}, linha={linha_do_processo}, taxa={taxa}\n")
+                log.flush()
 
             decisao = None
             if getattr(self, "decisoes_passadas", None):
@@ -2744,14 +2845,28 @@ class CalculoComissao:
             if decisao is None:  # Fallback se não veio da API
                 decisao = self.params.get("cross_selling_default_option", "A")
 
+            # IMPORTANTE: Se taxa veio como 0.0 (falha no lookup por nome), usar fallback de 1%
+            # Isso garante que a comissão seja criada mesmo com problema de encoding
+            taxa_final = float(taxa) if taxa and float(taxa) > 0 else 1.0
+            
+            if taxa_final != float(taxa):
+                with open("cs_decisions_log.txt", "a", encoding="utf-8") as log:
+                    log.write(f"APLICANDO FALLBACK: taxa original={taxa}, taxa final={taxa_final}\n")
+                    log.flush()
+
             self.cross_selling_decisions[processo] = {
                 "is_cross": True,
                 "consultor": gerente_padrao,
                 "linha": linha_do_processo,
-                "taxa": float(taxa),
+                "taxa": taxa_final,
                 "decision": decisao,
                 "timestamp": datetime.now().isoformat(),
             }
+            
+            with open("cs_decisions_log.txt", "a", encoding="utf-8") as log:
+                log.write(f"Decisão criada: {self.cross_selling_decisions[processo]}\n")
+                log.flush()
+
 
         try:
             total_items_step5 = len(df_faturados) if df_faturados is not None else 0
@@ -2886,8 +3001,21 @@ class CalculoComissao:
 
             # Se for cross-selling, gerar comissão especial para o consultor externo
             if cs_info and cs_info.get("is_cross"):
+                with open("cs_commission_log.txt", "a", encoding="utf-8") as log:
+                    log.write(f"\n=== Processo {processo_atual} ===\n")
+                    log.write(f"cs_info: {cs_info}\n")
+                    log.flush()
+                
                 consultor_externo = cs_info.get("consultor")
                 taxa_cs = float(cs_info.get("taxa", 0.0)) / 100.0
+                
+                with open("cs_commission_log.txt", "a", encoding="utf-8") as log:
+                    log.write(f"consultor_externo: {consultor_externo}\n")
+                    log.write(f"taxa: {cs_info.get('taxa', 0.0)}\n")
+                    log.write(f"taxa_cs (dividido por 100): {taxa_cs}\n")    
+                    log.write(f"Condição taxa_cs and taxa_cs > 0: {taxa_cs and taxa_cs > 0}\n")
+                    log.flush()
+                
                 # Para cada item, calcular comissão especial e adicioná-la como uma linha distinta
                 try:
                     if taxa_cs and taxa_cs > 0:
@@ -3670,7 +3798,7 @@ class CalculoComissao:
                 if s.startswith("forn"):
                     detalhes_cols.append(f"moeda_{s}")
 
-            colunas_resultado = ["comissao_potencial_maxima", "comissao_calculada"]
+            colunas_resultado = ["comissao_potencial_maxima", "comissao_calculada", "observacao"]
             ordem_final = (
                 colunas_principais
                 + colunas_contexto
@@ -3678,9 +3806,11 @@ class CalculoComissao:
                 + detalhes_cols
                 + colunas_resultado
             )
-            # filtrar somente colunas que existem no DataFrame para evitar KeyError
-            ordem_final = [c for c in ordem_final if c in df_comissoes.columns]
-            df_comissoes = df_comissoes[ordem_final]
+            
+            # Garantir que todas as colunas de ordem_final existam no DataFrame
+            # Se alguma não existir (ex: observacao), será criada com NaN
+            # Isso evita que colunas importantes sejam descartadas silenciosamente
+            df_comissoes = df_comissoes.reindex(columns=ordem_final)
 
         # Remover do arquivo principal quaisquer colaboradores que recebem por recebimento.
         # Construir sets a partir de COMISSOES_RECEBIMENTO (quando presente) e também

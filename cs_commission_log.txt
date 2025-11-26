@@ -1,0 +1,316 @@
+=== LOG DE CRIA��O DE COMISS�ES CS ===
+
+=== Processo 400001 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:44:19.333132'}
+consultor_externo: André Camargo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400001 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:44:19.333132'}
+consultor_externo: André Camargo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400002 ===
+cs_info: {'is_cross': True, 'consultor': 'Mateus Machado', 'linha': 'SSO', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:44:19.333150'}
+consultor_externo: Mateus Machado
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400002 ===
+cs_info: {'is_cross': True, 'consultor': 'Mateus Machado', 'linha': 'SSO', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:44:19.333150'}
+consultor_externo: Mateus Machado
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400003 ===
+cs_info: {'is_cross': True, 'consultor': 'Leonardo Carmo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:44:19.333154'}
+consultor_externo: Leonardo Carmo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400003 ===
+cs_info: {'is_cross': True, 'consultor': 'Leonardo Carmo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:44:19.333154'}
+consultor_externo: Leonardo Carmo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400003 ===
+cs_info: {'is_cross': True, 'consultor': 'Leonardo Carmo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:44:19.333154'}
+consultor_externo: Leonardo Carmo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400004 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:44:19.333156'}
+consultor_externo: André Camargo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400004 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:44:19.333156'}
+consultor_externo: André Camargo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400001 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:46:20.602256'}
+consultor_externo: André Camargo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400001 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:46:20.602256'}
+consultor_externo: André Camargo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400002 ===
+cs_info: {'is_cross': True, 'consultor': 'Mateus Machado', 'linha': 'SSO', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:46:20.602267'}
+consultor_externo: Mateus Machado
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400002 ===
+cs_info: {'is_cross': True, 'consultor': 'Mateus Machado', 'linha': 'SSO', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:46:20.602267'}
+consultor_externo: Mateus Machado
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400003 ===
+cs_info: {'is_cross': True, 'consultor': 'Leonardo Carmo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:46:20.602270'}
+consultor_externo: Leonardo Carmo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400003 ===
+cs_info: {'is_cross': True, 'consultor': 'Leonardo Carmo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:46:20.602270'}
+consultor_externo: Leonardo Carmo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400003 ===
+cs_info: {'is_cross': True, 'consultor': 'Leonardo Carmo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:46:20.602270'}
+consultor_externo: Leonardo Carmo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400004 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:46:20.602271'}
+consultor_externo: André Camargo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400004 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:46:20.602271'}
+consultor_externo: André Camargo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400001 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:47:46.553922'}
+consultor_externo: André Camargo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400001 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:47:46.553922'}
+consultor_externo: André Camargo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400002 ===
+cs_info: {'is_cross': True, 'consultor': 'Mateus Machado', 'linha': 'SSO', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:47:46.553939'}
+consultor_externo: Mateus Machado
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400002 ===
+cs_info: {'is_cross': True, 'consultor': 'Mateus Machado', 'linha': 'SSO', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:47:46.553939'}
+consultor_externo: Mateus Machado
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400003 ===
+cs_info: {'is_cross': True, 'consultor': 'Leonardo Carmo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:47:46.553941'}
+consultor_externo: Leonardo Carmo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400003 ===
+cs_info: {'is_cross': True, 'consultor': 'Leonardo Carmo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:47:46.553941'}
+consultor_externo: Leonardo Carmo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400003 ===
+cs_info: {'is_cross': True, 'consultor': 'Leonardo Carmo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:47:46.553941'}
+consultor_externo: Leonardo Carmo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400004 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:47:46.553943'}
+consultor_externo: André Camargo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400004 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:47:46.553943'}
+consultor_externo: André Camargo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400001 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:51:08.217789'}
+consultor_externo: André Camargo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400001 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:51:08.217789'}
+consultor_externo: André Camargo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400002 ===
+cs_info: {'is_cross': True, 'consultor': 'Mateus Machado', 'linha': 'SSO', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:51:08.218521'}
+consultor_externo: Mateus Machado
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400002 ===
+cs_info: {'is_cross': True, 'consultor': 'Mateus Machado', 'linha': 'SSO', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:51:08.218521'}
+consultor_externo: Mateus Machado
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400003 ===
+cs_info: {'is_cross': True, 'consultor': 'Leonardo Carmo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:51:08.221429'}
+consultor_externo: Leonardo Carmo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400003 ===
+cs_info: {'is_cross': True, 'consultor': 'Leonardo Carmo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:51:08.221429'}
+consultor_externo: Leonardo Carmo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400003 ===
+cs_info: {'is_cross': True, 'consultor': 'Leonardo Carmo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:51:08.221429'}
+consultor_externo: Leonardo Carmo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400004 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:51:08.222404'}
+consultor_externo: André Camargo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400004 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 0.0, 'decision': 'B', 'timestamp': '2025-11-26T17:51:08.222404'}
+consultor_externo: André Camargo
+taxa: 0.0
+taxa_cs (dividido por 100): 0.0
+Condição taxa_cs and taxa_cs > 0: 0.0
+
+=== Processo 400001 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'B', 'timestamp': '2025-11-26T17:52:59.088296'}
+consultor_externo: André Camargo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo 400001 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'B', 'timestamp': '2025-11-26T17:52:59.088296'}
+consultor_externo: André Camargo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo 400002 ===
+cs_info: {'is_cross': True, 'consultor': 'Mateus Machado', 'linha': 'SSO', 'taxa': 1.0, 'decision': 'B', 'timestamp': '2025-11-26T17:52:59.091709'}
+consultor_externo: Mateus Machado
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo 400002 ===
+cs_info: {'is_cross': True, 'consultor': 'Mateus Machado', 'linha': 'SSO', 'taxa': 1.0, 'decision': 'B', 'timestamp': '2025-11-26T17:52:59.091709'}
+consultor_externo: Mateus Machado
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo 400003 ===
+cs_info: {'is_cross': True, 'consultor': 'Leonardo Carmo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'B', 'timestamp': '2025-11-26T17:52:59.093041'}
+consultor_externo: Leonardo Carmo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo 400003 ===
+cs_info: {'is_cross': True, 'consultor': 'Leonardo Carmo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'B', 'timestamp': '2025-11-26T17:52:59.093041'}
+consultor_externo: Leonardo Carmo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo 400003 ===
+cs_info: {'is_cross': True, 'consultor': 'Leonardo Carmo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'B', 'timestamp': '2025-11-26T17:52:59.093041'}
+consultor_externo: Leonardo Carmo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo 400004 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'B', 'timestamp': '2025-11-26T17:52:59.094151'}
+consultor_externo: André Camargo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo 400004 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'B', 'timestamp': '2025-11-26T17:52:59.094151'}
+consultor_externo: André Camargo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True

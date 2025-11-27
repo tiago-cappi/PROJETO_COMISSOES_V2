@@ -611,6 +611,16 @@ class CalculoComissao:
             self.data["CARGOS"], left_on="cargo", right_on="nome_cargo", how="left"
         )
 
+    def _encontrar_coluna(self, df, candidatos):
+        """Busca a primeira coluna encontrada na lista de candidatos (case-insensitive)."""
+        if df is None or df.empty:
+            return None
+        colunas_lower = {str(c).lower(): c for c in df.columns}
+        for cand in candidatos:
+            if str(cand).lower() in colunas_lower:
+                return colunas_lower[str(cand).lower()]
+        return None
+
     def _calcular_realizado(self):
         """Calcula os valores realizados para faturamento, conversão e rentabilidade."""
         self.realizado = {}
@@ -627,11 +637,23 @@ class CalculoComissao:
             if not df_fat.empty
             else pd.Series(dtype=float)
         )
-        self.realizado["faturamento_individual"] = (
-            df_fat.groupby("Consultor Interno")["Valor Realizado"].sum()
-            if not df_fat.empty
-            else pd.Series(dtype=float)
-        )
+        # BUG FIX: Incluir tanto Consultor Interno quanto Representante-pedido
+        # no cálculo de faturamento individual (consultores externos aparecem em Representante-pedido)
+        if not df_fat.empty:
+            # Garantir que Representante-pedido existe
+            if "Representante-pedido" not in df_fat.columns:
+                df_fat["Representante-pedido"] = ""
+            
+            # Agrupar por Consultor Interno
+            fat_interno = df_fat.groupby("Consultor Interno")["Valor Realizado"].sum()
+            
+            # Agrupar por Representante-pedido
+            fat_externo = df_fat.groupby("Representante-pedido")["Valor Realizado"].sum()
+            
+            # Combinar ambos (somar valores quando o mesmo nome aparece em ambas)
+            self.realizado["faturamento_individual"] = fat_interno.add(fat_externo, fill_value=0)
+        else:
+            self.realizado["faturamento_individual"] = pd.Series(dtype=float)
 
         # CONVERSOES: garantir colunas esperadas e agregar com segurança
         df_conv = self.data.get("CONVERSOES", pd.DataFrame()).copy()
@@ -649,11 +671,24 @@ class CalculoComissao:
             if not df_conv.empty
             else pd.Series(dtype=float)
         )
-        self.realizado["conversao_individual"] = (
-            df_conv.groupby("Consultor Interno")["Valor Orçado"].sum()
-            if not df_conv.empty
-            else pd.Series(dtype=float)
-        )
+        
+        # BUG FIX: Incluir tanto Consultor Interno quanto Representante-pedido
+        # no cálculo de conversão individual (consultores externos aparecem em Representante-pedido)
+        if not df_conv.empty:
+            # Garantir que Representante-pedido existe
+            if "Representante-pedido" not in df_conv.columns:
+                df_conv["Representante-pedido"] = ""
+            
+            # Agrupar por Consultor Interno
+            conv_interno = df_conv.groupby("Consultor Interno")["Valor Orçado"].sum()
+            
+            # Agrupar por Representante-pedido
+            conv_externo = df_conv.groupby("Representante-pedido")["Valor Orçado"].sum()
+            
+            # Combinar ambos (somar valores quando o mesmo nome aparece em ambas)
+            self.realizado["conversao_individual"] = conv_interno.add(conv_externo, fill_value=0)
+        else:
+            self.realizado["conversao_individual"] = pd.Series(dtype=float)
         rent_realizada = self.data["RENTABILIDADE_REALIZADA"].rename(
             columns={"Negócio": "linha"}
         )
@@ -1734,14 +1769,12 @@ class CalculoComissao:
             except Exception:
                 mes_param, ano_param = None, None
 
-            from utils.column_finder import ColumnFinder
-
-            finder = ColumnFinder(df_anal)
-            proc_col = finder.find_column(["processo", "id processo"])
-            dt_col = finder.find_column(
-                ["dt emissão", "dt emissao", "data emissão", "data emissao"]
+            # Substituição de ColumnFinder por método local
+            proc_col = self._encontrar_coluna(df_anal, ["processo", "id processo"])
+            dt_col = self._encontrar_coluna(
+                df_anal, ["dt emissão", "dt emissao", "data emissão", "data emissao"]
             )
-            status_col = finder.find_column(["status processo", "status"])
+            status_col = self._encontrar_coluna(df_anal, ["status processo", "status"])
 
             df_mes = df_anal.copy()
             if dt_col and mes_param and ano_param:
@@ -1823,14 +1856,12 @@ class CalculoComissao:
                     valor_total_itens = 0.0
 
                     if not itens_processo.empty:
-                        from utils.column_finder import ColumnFinder
-
-                        finder_item = ColumnFinder(itens_processo)
-                        cod_prod_col = finder_item.find_column(
-                            ["cod produto", "cod_produto", "produto"]
+                        # Substituição de ColumnFinder por método local
+                        cod_prod_col = self._encontrar_coluna(
+                            itens_processo, ["cod produto", "cod_produto", "produto"]
                         )
-                        valor_col = finder_item.find_column(
-                            ["valor realizado", "valor_realizado", "faturamento"]
+                        valor_col = self._encontrar_coluna(
+                            itens_processo, ["valor realizado", "valor_realizado", "faturamento"]
                         )
 
                         for _, item in itens_processo.iterrows():
@@ -2167,19 +2198,9 @@ class CalculoComissao:
             atribuicoes_df = self.data.get("ATRIBUICOES", pd.DataFrame())
 
             # Auxiliares
-            from utils.column_finder import ColumnFinder
-
-            anal_finder = ColumnFinder(df_anal) if not df_anal.empty else None
-            nf_col = (
-                anal_finder.find_column(["numero nf", "número nf", "num nf"])
-                if anal_finder
-                else None
-            )
-            proc_col = (
-                anal_finder.find_column(["processo", "id processo"])
-                if anal_finder
-                else None
-            )
+            # Substituição de ColumnFinder por método local
+            nf_col = self._encontrar_coluna(df_anal, ["numero nf", "número nf", "num nf"])
+            proc_col = self._encontrar_coluna(df_anal, ["processo", "id processo"])
 
             def get_cargo(nome: str) -> Optional[str]:
                 if colaboradores_df is None or colaboradores_df.empty or not nome:
@@ -3739,11 +3760,36 @@ class CalculoComissao:
 
     def _gerar_saida_impl(self):
         """Implementação da geração do arquivo Excel (com try/except externo)."""
-        # Gerar nome do arquivo com timestamp atual
+        # Gerar nome do arquivo padronizado com Mês e Ano de apuração
         global NOME_ARQUIVO_SAIDA
-        NOME_ARQUIVO_SAIDA = "Comissoes_Calculadas_{}.xlsx".format(
-            datetime.now().strftime("%Y%m%d_%H%M%S")
-        )
+        
+        mes = self.params.get("mes_apuracao")
+        ano = self.params.get("ano_apuracao")
+        
+        # Tentar converter para int de forma robusta
+        try:
+            if mes is not None:
+                mes = int(float(str(mes).strip()))
+            if ano is not None:
+                ano = int(float(str(ano).strip()))
+        except Exception as e:
+            _info(f"AVISO: Falha ao converter mês/ano para nome do arquivo: {e}")
+            mes = None
+            ano = None
+        
+        if mes and ano:
+            try:
+                NOME_ARQUIVO_SAIDA = f"Calculo_Comissoes_{mes:02d}_{ano}.xlsx"
+            except Exception:
+                # Fallback caso conversão falhe
+                NOME_ARQUIVO_SAIDA = "Comissoes_Calculadas_{}.xlsx".format(
+                    datetime.now().strftime("%Y%m%d_%H%M%S")
+                )
+        else:
+            # Fallback para timestamp se não houver mês/ano definidos
+            NOME_ARQUIVO_SAIDA = "Comissoes_Calculadas_{}.xlsx".format(
+                datetime.now().strftime("%Y%m%d_%H%M%S")
+            )
 
         if not hasattr(self, "comissoes_df") or self.comissoes_df.empty:
             _info("Nenhuma comissão foi calculada. O arquivo de saída não será gerado.")

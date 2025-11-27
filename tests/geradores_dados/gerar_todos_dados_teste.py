@@ -90,8 +90,8 @@ def gerar_todos_dados_teste():
         representante="",
         gerente_comercial="",
         negocio="SSO",
-        grupo="Analisador Fixo",
-        subgrupo="Falco",
+        grupo="Detector Portátil",
+            subgrupo="MicroClip",
         tipo_merc="Produto",
         aplicacao="Industrial",
         fabricante="",
@@ -257,8 +257,8 @@ def gerar_todos_dados_teste():
             "048004",
             "2025-08-20",
             10000.00,
-            grupo="Analisador Portátil",
-            subgrupo="Acessório",
+            grupo="Detector Portátil",
+            subgrupo="Sensor",
         )
     )
     analise_financeira.append(criar_pagamento("048004", 5000.00, "2025-08-22"))
@@ -282,8 +282,9 @@ def gerar_todos_dados_teste():
             "048006",
             "2025-09-20",
             9000.00,
-            grupo="Analisador Portátil",
-            subgrupo="Acessório",
+            grupo="Detector Portátil",
+            subgrupo="Sensor",
+            tipo_merc="Reposição",
         )
     )
     analise_financeira.append(criar_pagamento("COT100006", 11000.00, "2025-08-20"))
@@ -298,9 +299,10 @@ def gerar_todos_dados_teste():
             "048007",
             "2025-09-25",
             105000.00,
-            grupo="Diversos Diversos",
-            subgrupo="Calibração",
-            tipo_merc="Serviço",
+            negocio="Remediação",
+            grupo="Analisador Portátil",
+            subgrupo="GEM",
+            tipo_merc="Produto",
         )
     )
     analise_financeira.append(criar_pagamento("COT100007", 52500.00, "2025-08-25"))
@@ -374,8 +376,8 @@ def gerar_todos_dados_teste():
                 f"2025-09-{5+i}",
                 valor,
                 negocio="Hidrologia",
-                grupo="Equipamento Amostragem",
-                subgrupo="ISCO",
+                grupo="Medidor de Vazão Fixo",
+            subgrupo="ADP",
             )
         )
         analise_financeira.append(
@@ -444,8 +446,8 @@ def gerar_todos_dados_teste():
             consultor="Andrey Andrade",
             representante="André Camargo",  # Consultor Externo com atribuição em SSO
             negocio="SSO",
-            grupo="Analisador Fixo",
-            subgrupo="Falco",
+            grupo="Detector Portátil",
+            subgrupo="MicroClip",
         )
     )
 
@@ -460,8 +462,8 @@ def gerar_todos_dados_teste():
             consultor="Dener Martins",  # Consultor Interno
             representante="Mateus Machado",  # Consultor Externo com atribuição em Hidrologia
             negocio="Hidrologia",
-            grupo="Equipamento Amostragem",
-            subgrupo="ISCO",
+            grupo="Medidor de Vazão Fixo",
+            subgrupo="ADP",
         )
     )
 
@@ -492,8 +494,8 @@ def gerar_todos_dados_teste():
             consultor="Andrey Andrade",
             representante="",
             negocio="SSO",
-            grupo="Detector Fixo",
-            subgrupo="E3 Point",
+            grupo="Detector Portátil",
+            subgrupo="MicroClip",
         )
     )
 
@@ -508,8 +510,8 @@ def gerar_todos_dados_teste():
             consultor="Samanta",  # Consultor Interno
             representante="Mateus Machado",  # Consultor Externo com atribuição em Hidrologia
             negocio="Hidrologia",
-            grupo="Sonda Multiparâmetros",
-            subgrupo="EXO",
+            grupo="Amostrador Diversos",
+            subgrupo="Acessório",
         )
     )
 
@@ -524,8 +526,8 @@ def gerar_todos_dados_teste():
             consultor="Andrey Andrade",
             representante="André Camargo",
             negocio="SSO",
-            grupo="Analisador Fixo",
-            subgrupo="Falco",
+            grupo="Detector Portátil",
+            subgrupo="MicroClip",
         )
     )
     analise_comercial.append(
@@ -554,8 +556,8 @@ def gerar_todos_dados_teste():
             consultor="",
             representante="Mateus Machado",
             negocio="Hidrologia",
-            grupo="Sonda Multiparâmetros",
-            subgrupo="YSI",
+            grupo="Amostrador Diversos",
+            subgrupo="Acessório",
         )
     )
 
@@ -598,8 +600,8 @@ def gerar_todos_dados_teste():
             consultor="Andrey Andrade",
             representante="André Camargo",
             negocio="Remediação",
-            grupo="Sistema Remediação",
-            subgrupo="QED",
+            grupo="Analisador Portátil",
+            subgrupo="GEM",
         )
     )
 
@@ -688,8 +690,8 @@ def gerar_todos_dados_teste():
             10000,
             representante="André Camargo",  # Na linha que ele TEM atribuição
             negocio="SSO",
-            grupo="Analisador Fixo",
-            subgrupo="Falco",
+            grupo="Detector Portátil",
+            subgrupo="MicroClip",
         )
     )
     # Item 2: Hidrologia (cross-selling - André NÃO tem atribuição em Hidrologia)
@@ -702,8 +704,8 @@ def gerar_todos_dados_teste():
             8000,
             gerente_comercial="André Camargo",  # Cross-selling!
             negocio="Hidrologia",
-            grupo="Equipamento Amostragem",
-            subgrupo="ISCO",
+            grupo="Medidor de Vazão Fixo",
+            subgrupo="ADP",
         )
     )
 
@@ -718,8 +720,8 @@ def gerar_todos_dados_teste():
             12000,
             representante="Mateus Machado",  # Na linha que ele TEM atribuição
             negocio="Hidrologia",
-            grupo="Sonda Multiparâmetros",
-            subgrupo="EXO",
+            grupo="Amostrador Diversos",
+            subgrupo="Acessório",
         )
     )
     # Item 2: SSO (cross-selling - Mateus NÃO tem atribuição em SSO)
@@ -776,8 +778,8 @@ def gerar_todos_dados_teste():
             8000,
             gerente_comercial="Leonardo Carmo",  # Cross-selling!
             negocio="Remediação",
-            grupo="Sistema Remediação",
-            subgrupo="QED",
+            grupo="Analisador Portátil",
+            subgrupo="GEM",
         )
     )
 
@@ -792,8 +794,8 @@ def gerar_todos_dados_teste():
             18000,
             gerente_comercial="André Camargo",  # Cross-selling!
             negocio="Hidrologia",
-            grupo="Sonda Multiparâmetros",
-            subgrupo="EXO",
+            grupo="Amostrador Diversos",
+            subgrupo="Acessório",
         )
     )
     analise_comercial.append(
@@ -805,8 +807,8 @@ def gerar_todos_dados_teste():
             12000,
             gerente_comercial="André Camargo",  # Cross-selling!
             negocio="Hidrologia",
-            grupo="Equipamento Amostragem",
-            subgrupo="ISCO",
+            grupo="Medidor de Vazão Fixo",
+            subgrupo="ADP",
         )
     )
 
@@ -835,8 +837,8 @@ def gerar_todos_dados_teste():
             consultor="Andrey Andrade",  # Consultor Interno
             gerente_comercial="Mateus Machado",  # Cross-selling em SSO!
             negocio="SSO",
-            grupo="Detector Fixo",
-            subgrupo="E3 Point",
+            grupo="Detector Portátil",
+            subgrupo="MicroClip",
         )
     )
 
@@ -858,8 +860,8 @@ def gerar_todos_dados_teste():
                     15000,
                     representante="André Camargo",
                     negocio="SSO",
-                    grupo="Analisador Fixo",
-                    subgrupo="Falco",
+                    grupo="Detector Portátil",
+            subgrupo="MicroClip",
                 )
             )
             analise_comercial.append(
@@ -886,8 +888,8 @@ def gerar_todos_dados_teste():
                     14000,
                     representante="Mateus Machado",
                     negocio="Hidrologia",
-                    grupo="Sonda Multiparâmetros",
-                    subgrupo="EXO",
+                    grupo="Amostrador Diversos",
+            subgrupo="Acessório",
                 )
             )
             analise_comercial.append(
@@ -1066,8 +1068,8 @@ def gerar_todos_dados_teste():
             35000,
             consultor="Samanta",  # Consultor Interno válido
             negocio="Hidrologia",
-            grupo="Equipamento Amostragem",
-            subgrupo="ISCO",
+            grupo="Medidor de Vazão Fixo",
+            subgrupo="ADP",
             fabricante="ISCO",
         )
     )
@@ -1081,8 +1083,8 @@ def gerar_todos_dados_teste():
             40000,
             consultor="Rosana",  # Consultor Interno válido
             negocio="Remediação",
-            grupo="Sistema Remediação",
-            subgrupo="QED",
+            grupo="Analisador Portátil",
+            subgrupo="GEM",
             fabricante="QED",
         )
     )
@@ -1095,8 +1097,8 @@ def gerar_todos_dados_teste():
             40000,
             consultor="Juliano",  # Consultor Interno válido
             negocio="Remediação",
-            grupo="Sistema Remediação",
-            subgrupo="Thermo",
+            grupo="Analisador Diversos",
+            subgrupo="Acessório",
             fabricante="Thermo",
         )
     )
@@ -1110,8 +1112,8 @@ def gerar_todos_dados_teste():
             37500,
             consultor="Rafaela",  # Consultor Interno válido
             negocio="SSO",
-            grupo="Analisador Fixo",
-            subgrupo="Falco",
+            grupo="Detector Portátil",
+            subgrupo="MicroClip",
             fabricante="HON",
         )
     )

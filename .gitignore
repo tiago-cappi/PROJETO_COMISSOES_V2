@@ -16,7 +16,6 @@ ENV/
 cache_taxas_cambio.json
 
 # Arquivos de saída gerados
-Comissoes_Calculadas_*.xlsx
 Detalhamento_Comissoes_*.pdf
 
 # Arquivos de sistema

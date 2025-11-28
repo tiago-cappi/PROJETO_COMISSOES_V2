@@ -2,6 +2,7 @@
 import numpy as np
 import os
 import preparar_dados_mensais
+from preparar_dados_mensais import _parse_dates_smart, _parse_single_date
 from datetime import datetime
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
@@ -1305,7 +1306,8 @@ class CalculoComissao:
                                 if isinstance(dt_emissao, (pd.Timestamp, datetime)):
                                     mes_apuracao = dt_emissao.month
                                 else:
-                                    mes_apuracao = pd.to_datetime(dt_emissao).month
+                                    parsed_dt = _parse_single_date(dt_emissao)
+                                    mes_apuracao = parsed_dt.month if pd.notna(parsed_dt) else None
                             except Exception:
                                 mes_apuracao = None
 
@@ -1327,7 +1329,8 @@ class CalculoComissao:
                                 if isinstance(dt_emissao, (pd.Timestamp, datetime)):
                                     ano_corrente = dt_emissao.year
                                 else:
-                                    ano_corrente = pd.to_datetime(dt_emissao).year
+                                    parsed_dt = _parse_single_date(dt_emissao)
+                                    ano_corrente = parsed_dt.year if pd.notna(parsed_dt) else datetime.now().year
                             except Exception:
                                 ano_corrente = datetime.now().year
                         else:
@@ -1467,8 +1470,8 @@ class CalculoComissao:
                                     )
                                 ].copy()
                                 if dt_col_local and dt_col_local in filt_disk.columns:
-                                    filt_disk["mes"] = pd.to_datetime(
-                                        filt_disk[dt_col_local], errors="coerce"
+                                    filt_disk["mes"] = _parse_dates_smart(
+                                        filt_disk[dt_col_local]
                                     ).dt.month
                                 else:
                                     filt_disk["mes"] = mes_apuracao
@@ -1779,7 +1782,7 @@ class CalculoComissao:
             df_mes = df_anal.copy()
             if dt_col and mes_param and ano_param:
                 try:
-                    datas = pd.to_datetime(df_mes[dt_col], errors="coerce")
+                    datas = _parse_dates_smart(df_mes[dt_col])
                     mask = (datas.dt.month == mes_param) & (datas.dt.year == ano_param)
                     df_mes = df_mes[mask].copy()
                 except Exception:
@@ -2607,6 +2610,19 @@ class CalculoComissao:
             df_colabs_com_cargos = self.data["COLABORADORES"]
             cross_df = self.data.get("CROSS_SELLING", pd.DataFrame())
 
+            # Normalizar nomes e taxa na aba CROSS_SELLING para evitar problemas de espaços/formatos
+            if not cross_df.empty:
+                # garantir colunas esperadas
+                if "colaborador" in cross_df.columns:
+                    cross_df["colaborador"] = (
+                        cross_df["colaborador"].astype(str).str.strip()
+                    )
+                # converter taxa para float de forma robusta
+                if "taxa_cross_selling_pct" in cross_df.columns:
+                    cross_df["taxa_cross_selling_pct"] = pd.to_numeric(
+                        cross_df["taxa_cross_selling_pct"], errors="coerce"
+                    ).fillna(0.0)
+
             print(f"[DEBUG CS] cross_df vazio? {cross_df.empty}", flush=True)
             if not cross_df.empty:
                 print(f"[DEBUG CS] Colaboradores em cross_df: {cross_df['colaborador'].tolist()}", flush=True)
@@ -2685,22 +2701,16 @@ class CalculoComissao:
                             print(f"[DEBUG 400001] Possui atribuição em {linha_do_item}? {possui_atr}")
 
                         if not possui_atr:
-                            # Consultor externo não possui atribuição para esta linha -> cross-selling detectado
+                            # Consultor externo não possui atribuição para esta linha -> potencial cross-selling
                             # Evitar duplicatas: verificar se já detectamos este processo
                             if processo not in [c.get("processo") for c in self.casos_cross_selling_detectados]:
-                                taxa =0.0
+                                # VERIFICAR SE O COLABORADOR ESTÁ EXPLICITAMENTE NA ABA CROSS_SELLING
+                                # Somente processar cross-selling se o consultor estiver cadastrado
+                                taxa = 0.0
+                                colaborador_elegivel = False
+                                
                                 try:
                                     if not cross_df.empty:
-                                        # Log para debug
-                                        if str(processo) in ['400001', '400002', '400003', '400004']:
-                                            with open("cs_rate_lookup_log.txt", "a", encoding="utf-8") as log:
-                                                log.write(f"\n=== Processo {processo} ===\n")
-                                                log.write(f"gerente_padrao: '{gerente_padrao}' (type: {type(gerente_padrao).__name__})\n")
-                                                log.write(f"cross_df colaboradores: {cross_df['colaborador'].tolist()}\n")
-                                                log.write(f"gerente_padrao.lower(): '{str(gerente_padrao).strip().lower()}'\n")
-                                                log.write(f"cross_df.colaborador.lower(): {cross_df['colaborador'].astype(str).str.strip().str.lower().tolist()}\n")
-                                                log.flush()
-                                        
                                         # case-insensitive match
                                         mask_cs = (
                                             cross_df["colaborador"]
@@ -2710,50 +2720,74 @@ class CalculoComissao:
                                             == str(gerente_padrao).strip().lower()
                                         )
                                         row_cs = cross_df[mask_cs]
-                                        
-                                        if str(processo) in ['400001', '400002', '400003', '400004']:
-                                            with open("cs_rate_lookup_log.txt", "a", encoding="utf-8") as log:
-                                                log.write(f"mask_cs: {mask_cs.tolist()}\n")
-                                                log.write(f"row_cs.empty: {row_cs.empty}\n")
+
+                                        # Logar sempre que tivermos um potencial match, especialmente para o processo 400001
+                                        if str(processo) == "400001":
+                                            with open("cs_match_debug_400001.txt", "a", encoding="utf-8") as dbg:
+                                                dbg.write(f"PROCESSO {processo} - gerente_padrao='{gerente_padrao}' (lower='{str(gerente_padrao).strip().lower()}')\n")
+                                                dbg.write(f"CROSS_SELLING.colaborador: {cross_df['colaborador'].tolist()}\n")
+                                                dbg.write(f"CROSS_SELLING.taxa_cross_selling_pct: {cross_df.get('taxa_cross_selling_pct', []).tolist()}\n")
+                                                dbg.write(f"mask_cs: {mask_cs.tolist()}\n")
+                                                dbg.write(f"row_cs shape: {row_cs.shape}\n")
                                                 if not row_cs.empty:
-                                                    log.write(f"Taxa encontrada: {row_cs.iloc[0].get('taxa_cross_selling_pct', 0.0)}\n")
-                                                else:
-                                                    log.write("NENHUM MATCH ENCONTRADO!\n")
-                                                log.flush()
-                                        
+                                                    dbg.write(f"row_cs.iloc[0]: {row_cs.iloc[0].to_dict()}\n")
+                                                dbg.write("---\n")
+                                                dbg.flush()
+
                                         if not row_cs.empty:
+                                            # Colaborador encontrado na aba CROSS_SELLING - é elegível
+                                            colaborador_elegivel = True
                                             taxa = float(
                                                 row_cs.iloc[0].get(
                                                     "taxa_cross_selling_pct", 0.0
                                                 )
                                             )
                                         else:
-                                            # FALLBACK: Se não encontrou o match por nome, usar taxa padrão de 1%
-                                            # Isso permite que a comissão seja criada mesmo com problema de encoding
-                                            taxa = 1.0
-                                            with open("cs_fallback_log.txt", "a", encoding="utf-8") as log:
-                                                log.write(f"FALLBACK aplicado para processo {processo}: gerente='{gerente_padrao}', taxa=1.0\n")
+                                            # Colaborador NÃO está na aba CROSS_SELLING - gerar aviso e NÃO processar
+                                            self._log_validacao(
+                                                "AVISO",
+                                                f"Consultor Externo '{gerente_padrao}' em 'Gerente Comercial-Pedido' não está cadastrado na aba CROSS_SELLING. Cross-selling não será processado para o processo {processo}.",
+                                                {
+                                                    "processo": processo,
+                                                    "consultor": gerente_padrao,
+                                                    "linha": linha_do_item,
+                                                },
+                                            )
+                                            with open("cs_not_eligible_log.txt", "a", encoding="utf-8") as log:
+                                                log.write(f"NÃO ELEGÍVEL: Processo {processo}, Consultor '{gerente_padrao}' não está na aba CROSS_SELLING\n")
                                                 log.flush()
+                                    else:
+                                        # Aba CROSS_SELLING está vazia - gerar aviso
+                                        self._log_validacao(
+                                            "AVISO",
+                                            f"Aba CROSS_SELLING está vazia. Cross-selling não será processado para o processo {processo}.",
+                                            {"processo": processo, "consultor": gerente_padrao},
+                                        )
                                 except Exception as e:
                                     import traceback
                                     print(f"[ERRO CS] Exceção ao buscar taxa para processo {processo}: {e}", flush=True)
                                     print(f"[ERRO CS] Traceback: {traceback.format_exc()}", flush=True)
                                     taxa = 0.0
 
-                                self.casos_cross_selling_detectados.append(
-                                    {
+                                # Somente adicionar caso de cross-selling se o colaborador for elegível
+                                print(f"[DEBUG CS PRE-ADD] Processo {processo}: elegivel={colaborador_elegivel}, taxa={taxa}, gerente={gerente_padrao}", flush=True)
+                                if colaborador_elegivel and taxa > 0:
+                                    caso_cs = {
                                         "processo": processo,
                                         "consultor": gerente_padrao,
                                         "linha": linha_do_item,
                                         "taxa": float(taxa),
                                     }
-                                )
-                                print(f"[DEBUG CS DETECTED] Processo {processo}: {gerente_padrao} vendeu em {linha_do_item} (sem atribuição) - Taxa: {taxa}%")
-                                
-                                # Log para arquivo
-                                with open("cs_detection_log.txt", "a", encoding="utf-8") as log:
-                                    log.write(f"DETECTADO: Processo {processo}, Consultor {gerente_padrao}, Linha {linha_do_item}, Taxa {taxa}\n")
-                                    log.flush()
+                                    self.casos_cross_selling_detectados.append(caso_cs)
+                                    print(f"[DEBUG CS DETECTED] Processo {processo}: {gerente_padrao} vendeu em {linha_do_item} (sem atribuição) - Taxa: {taxa}%", flush=True)
+                                    print(f"[DEBUG CS POST-ADD] Caso adicionado: {caso_cs}", flush=True)
+                                else:
+                                    print(f"[DEBUG CS SKIP] Processo {processo} SKIP: elegivel={colaborador_elegivel}, taxa={taxa}", flush=True)
+                                    
+                                    # Log para arquivo
+                                    with open("cs_detection_log.txt", "a", encoding="utf-8") as log:
+                                        log.write(f"DETECTADO: Processo {processo}, Consultor {gerente_padrao}, Linha {linha_do_item}, Taxa {taxa}\n")
+                                        log.flush()
         except Exception as e:
             self._log_validacao("AVISO", f"Erro na detecção de cross-selling: {e}", {})
             with open("cs_detection_log.txt", "a", encoding="utf-8") as log:
@@ -2866,14 +2900,12 @@ class CalculoComissao:
             if decisao is None:  # Fallback se não veio da API
                 decisao = self.params.get("cross_selling_default_option", "A")
 
-            # IMPORTANTE: Se taxa veio como 0.0 (falha no lookup por nome), usar fallback de 1%
-            # Isso garante que a comissão seja criada mesmo com problema de encoding
-            taxa_final = float(taxa) if taxa and float(taxa) > 0 else 1.0
+            # Usar a taxa que veio da detecção (já foi validada como > 0)
+            taxa_final = float(taxa)
             
-            if taxa_final != float(taxa):
-                with open("cs_decisions_log.txt", "a", encoding="utf-8") as log:
-                    log.write(f"APLICANDO FALLBACK: taxa original={taxa}, taxa final={taxa_final}\n")
-                    log.flush()
+            with open("cs_decisions_log.txt", "a", encoding="utf-8") as log:
+                log.write(f"Taxa final aplicada: {taxa_final}, Decisão: {decisao}\n")
+                log.flush()
 
             self.cross_selling_decisions[processo] = {
                 "is_cross": True,
@@ -3038,8 +3070,9 @@ class CalculoComissao:
                     log.flush()
                 
                 # Para cada item, calcular comissão especial e adicioná-la como uma linha distinta
-                try:
-                    if taxa_cs and taxa_cs > 0:
+                # Se der erro, queremos logar; não engolir silenciosamente
+                if taxa_cs and taxa_cs > 0:
+                    try:
                         comissao_cs = item_faturado["Valor Realizado"] * taxa_cs
                         # identificar id_colaborador se existir
                         id_col = None
@@ -3069,16 +3102,22 @@ class CalculoComissao:
                                 "faturamento_item": item_faturado.get(
                                     "Valor Realizado"
                                 ),
-                                "taxa_rateio_aplicada": None,
+                                "taxa_rateio_aplicada": taxa_cs,  # Taxa de cross-selling (já em decimal)
                                 "fator_correcao_fc": 1.0,
-                                "percentual_elegibilidade_pe": None,
-                                "comissao_potencial_maxima": None,
+                                "percentual_elegibilidade_pe": 1.0,  # 100% para cross-selling
+                                "comissao_potencial_maxima": comissao_cs,  # Igual à calculada (sem FC)
                                 "comissao_calculada": comissao_cs,
                                 "observacao": "CROSS_SELLING",
+                                "cross_selling_decision": cs_info.get("decision", "A"),  # Guardar a decisão
                             }
                         )
-                except Exception:
-                    pass
+                    except Exception as e:
+                        # Registrar erro mas não interromper o cálculo principal
+                        self._log_validacao(
+                            "AVISO",
+                            f"Falha ao gerar linha de CROSS_SELLING para processo {processo_atual}: {e}",
+                            {"processo": processo_atual, "consultor_externo": consultor_externo},
+                        )
             if colaboradores_para_comissionar.empty:
                 self._log_validacao(
                     "AVISO",
@@ -3208,6 +3247,8 @@ class CalculoComissao:
                     "percentual_elegibilidade_pe": pe,
                     "comissao_potencial_maxima": comissao_potencial,
                     "comissao_calculada": comissao_item,
+                    # Adicionar decisão de cross-selling se aplicável (para o frontend identificar)
+                    "cross_selling_decision": cs_info.get("decision") if cs_info and cs_info.get("is_cross") else None,
                 }
 
                 # helper para extrair valores seguros do detalhes_fc_item
@@ -3429,8 +3470,8 @@ class CalculoComissao:
                     ano_param = None
 
                 if mes_param and ano_param:
-                    df_dates = pd.to_datetime(
-                        df_faturados["Dt Emissão"], errors="coerce"
+                    df_dates = _parse_dates_smart(
+                        df_faturados["Dt Emissão"]
                     )
                     df_faturados_mes = df_faturados[
                         (df_dates.dt.month == mes_param)
@@ -4919,28 +4960,42 @@ class CalculoComissao:
                         chave_caso = (processo, gerente_comercial_alias)
                         
                         if chave_caso not in casos_unicos:
-                            # Tentar obter a taxa (simplificado)
+                            # Buscar taxa na aba CROSS_SELLING
                             taxa = 0.0
-                            # Tentar buscar taxa na tabela de regras se possível
-                            try:
-                                df_regras = self.data.get("CONFIG_COMISSAO", pd.DataFrame())
-                                if not df_regras.empty:
-                                    # Filtro aproximado
-                                    mask_cs = (df_regras["linha"] == linha_venda) & \
-                                              (df_regras["tipo_mercadoria"] == row_cs["Tipo de Mercadoria"])
-                                    # Se possível filtrar por cargo do gerente comercial original
-                                    # Mas o cargo na regra pode ser genérico.
-                                    # Vamos assumir 0.0 por enquanto se não for trivial.
-                                    pass
-                            except Exception:
-                                pass
+                            colaborador_elegivel = False
                             
-                            casos_unicos[chave_caso] = {
-                                "processo": processo,
-                                "consultor": gerente_comercial_alias,
-                                "linha": linha_venda,
-                                "taxa": taxa
-                            }
+                            try:
+                                cross_df = self.data.get("CROSS_SELLING", pd.DataFrame())
+                                if not cross_df.empty and "colaborador" in cross_df.columns:
+                                    # Normalizar colaboradores e taxa
+                                    cross_df_norm = cross_df.copy()
+                                    cross_df_norm["colaborador"] = cross_df_norm["colaborador"].astype(str).str.strip()
+                                    if "taxa_cross_selling_pct" in cross_df_norm.columns:
+                                        cross_df_norm["taxa_cross_selling_pct"] = pd.to_numeric(
+                                            cross_df_norm["taxa_cross_selling_pct"], errors="coerce"
+                                        ).fillna(0.0)
+                                    
+                                    # Match case-insensitive
+                                    mask_cs = (
+                                        cross_df_norm["colaborador"].str.lower() 
+                                        == str(gerente_comercial_alias).strip().lower()
+                                    )
+                                    row_cs = cross_df_norm[mask_cs]
+                                    
+                                    if not row_cs.empty:
+                                        colaborador_elegivel = True
+                                        taxa = float(row_cs.iloc[0].get("taxa_cross_selling_pct", 0.0))
+                            except Exception as e:
+                                self._log_validacao("AVISO", f"Erro ao buscar taxa CROSS_SELLING: {e}", {})
+                            
+                            # Só adicionar se for elegível e tiver taxa > 0
+                            if colaborador_elegivel and taxa > 0:
+                                casos_unicos[chave_caso] = {
+                                    "processo": processo,
+                                    "consultor": gerente_comercial_alias,
+                                    "linha": linha_venda,
+                                    "taxa": taxa
+                                }
                 
                 self.casos_cross_selling_detectados = list(casos_unicos.values())
 

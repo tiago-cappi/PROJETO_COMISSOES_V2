@@ -14,7 +14,7 @@
   - `COLABORADORES`: colaboradores, cargos e atributos (inclui `TIPO_COMISSAO` quando aplicável);
   - `CARGOS`: metadados dos cargos (inclui `TIPO_COMISSAO` ou heurística pelo nome).
   - `ALIASES`: mapeia nomes alternativos de colaboradores para formas canônicas (entidade=colaborador).
-  - `CROSS_SELLING` (opcional): taxa padrão (%) para consultor externo sem atribuição na linha.
+  - `CROSS_SELLING`: lista de consultores externos elegíveis para cross-selling com suas respectivas taxas fixas (%).
 - `Faturados*.xlsx|csv` (opcional): itens faturados (precisa de colunas como `Processo`, `Cód(igo) Produto`, `Descrição Produto`, `Negócio`, `Grupo`, `Subgrupo`, `Tipo de Mercadoria`, `Valor Realizado`, `Consultor Interno`, `Representante-pedido`).
 - `Conversões*.xlsx|csv` (opcional): orçamentos, usados nos componentes de conversão.
 - `Rentabilidade_Realizada_*.xlsx` (obrigatório para rentabilidade): rentabilidade efetiva por (linha, Grupo, Subgrupo, Tipo de Mercadoria). Alternativamente, arquivos históricos em `rentabilidades/rentabilidade_{MM}_{AAAA}_agrupada.(xlsx|csv)` para reconciliação.
@@ -62,10 +62,12 @@
 - `fc_final = min(soma_componentes, cap_fc_max)` (PARAMS). Colunas de auditoria por componente são gravadas (peso_, realizado_, meta_, ating_, ating_cap_, comp_fc_ e, para fornecedor, moeda_).
 
 **Cross‑Selling**
-- Caso “Gerente Comercial-Pedido” seja um “Consultor Externo” sem atribuições para a linha do processo:
-  - Opção A (SUBTRAIR): aplica uma redução na `taxa_rateio_aplicada` dos demais na taxa do cross-selling.
-  - Opção B (PAGAR SEPARADAMENTE): remove o consultor externo do cálculo normal e paga linha separada com a taxa cs.
-- Decisão pode vir de `PARAMS.cross_selling_default_option` quando sem interação.
+- Detecta quando um Consultor Externo cadastrado na aba `CROSS_SELLING` realiza venda em linha sem atribuição.
+- Consultor recebe taxa fixa configurada (sem aplicação de FC).
+- Decisões (Opção A ou B):
+  - Opção A (SUBTRAIR): reduz `taxa_rateio_aplicada` dos demais colaboradores pela taxa do cross-selling.
+  - Opção B (ADICIONAL): mantém taxa dos demais intacta; comissão de cross-selling é adicional.
+- Detalhes completos: ver [`LOGICA_CROSS_SELLING.md`](LOGICA_CROSS_SELLING.md).
 
 **Cálculo Por Faturamento (COMISSOES_CALCULADAS)**
 - Para cada item de `FATURADOS`:

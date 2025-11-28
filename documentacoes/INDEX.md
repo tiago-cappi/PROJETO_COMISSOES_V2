@@ -15,7 +15,6 @@ Documentações relacionadas aos testes do sistema:
 - **`GUIA_TESTES_RECONCILIACAO.md`** - Guia original dos 10 cenários de teste para reconciliações
 - **`RESUMO_TESTES_RAPIDO.md`** - Resumo rápido dos testes de reconciliação
 - **`DADOS_TESTE_ATUALIZADOS.md`** - Detalhes sobre a atualização dos dados de teste com valores reais
-- **`VERIFICACAO_CROSS_SELLING.md`** - Análise e verificação dos testes de cross-selling
 
 ---
 
@@ -25,6 +24,7 @@ Documentações técnicas sobre o funcionamento interno do sistema:
 
 - **`DOCUMENTACAO_ROBO_COMISSOES.md`** - Documentação completa do robô de comissões (visão geral)
 - **`COMISSOES_POR_RECEBIMENTO_DETALHADO.md`** - Documentação detalhada da lógica de comissões por recebimento (TCMP, FCMP, reconciliações)
+- **`LOGICA_CROSS_SELLING.md`** - Documentação completa da lógica de cross-selling
 - **`README_ESTRUTURA.md`** - Estrutura de arquivos e pastas do projeto
 - **`PLANO_REFATORACAO.txt`** - Histórico de planejamento de refatorações
 - **`REFATORACAO_TAXAS_CAMBIO.md`** - Documentação da refatoração do sistema de taxas de câmbio
@@ -88,7 +88,7 @@ Documentos que registram o histórico de mudanças, correções e reorganizaçõ
 - [`testes/GUIA_TESTES_RECONCILIACAO.md`](testes/GUIA_TESTES_RECONCILIACAO.md)
 
 ### Cross-Selling
-- [`sistema/DOCUMENTACAO_ROBO_COMISSOES.md`](sistema/DOCUMENTACAO_ROBO_COMISSOES.md) (seção "Cross-Selling")
+- [`sistema/LOGICA_CROSS_SELLING.md`](sistema/LOGICA_CROSS_SELLING.md) - **Documentação completa da lógica de cross-selling**
 - [`testes/CENARIOS_TESTE_EXPANDIDOS.md`](testes/CENARIOS_TESTE_EXPANDIDOS.md) (Bloco 3)
 
 ### FC de Fornecedores

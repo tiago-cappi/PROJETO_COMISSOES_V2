@@ -117,11 +117,20 @@ const groupFaturamentoData = (rawData = []) => {
         comissao_total_processo: 0,
         linhas_envolvidas: new Set(),
         itemMap: new Map(),
+        has_cross_selling: false,
+        cross_selling_decision: null,
       });
     }
     const processoEntry = processMap.get(processoKey);
 
-    const itemKey = normalize(row.cod_produto) || `ITEM_${normalize(row.descricao_produto)}`;
+    // Verificar se este processo tem cross-selling
+    if (row.observacao === 'CROSS_SELLING') {
+      processoEntry.has_cross_selling = true;
+      processoEntry.cross_selling_decision = row.cross_selling_decision || 'A';
+    }
+
+    // Chave composta para diferenciar itens com mesmo código mas características diferentes (ex: subgrupo, valor)
+    const itemKey = `${normalize(row.cod_produto)}|${normalize(row.descricao_produto)}|${normalize(row.subgrupo)}|${normalize(row.grupo)}|${row.faturamento_item}`;
     if (!processoEntry.itemMap.has(itemKey)) {
       processoEntry.itemMap.set(itemKey, {
         key: `${processoKey}-${itemKey}`,
@@ -554,8 +563,29 @@ const ResultadosPage = () => {
         title: 'Processo',
         dataIndex: 'processo',
         key: 'processo',
-        width: 140,
+        width: 220,
         fixed: 'left',
+        render: (value, record) => (
+          <span>
+            {value}
+            {record.has_cross_selling && (
+              <Tooltip
+                title={
+                  record.cross_selling_decision === 'A'
+                    ? 'Cross-Selling (Opção A): A taxa de cross-selling foi SUBTRAÍDA da taxa de rateio máximo dos demais colaboradores. Exemplo: Se a taxa máxima era 5% e a taxa de cross-selling é 1%, os demais recebem sobre 4%.'
+                    : 'Cross-Selling (Opção B): A comissão de cross-selling é ADICIONAL. A taxa de rateio dos demais colaboradores permanece intacta. A comissão do consultor externo é paga separadamente.'
+                }
+              >
+                <Tag
+                  color={record.cross_selling_decision === 'A' ? 'orange' : 'blue'}
+                  style={{ marginLeft: 8, cursor: 'help' }}
+                >
+                  CS-{record.cross_selling_decision || 'A'} <QuestionCircleOutlined />
+                </Tag>
+              </Tooltip>
+            )}
+          </span>
+        ),
       },
       {
         title: 'Total Faturado (Processo)',
@@ -947,7 +977,7 @@ const ResultadosPage = () => {
         // Mesclar itens idênticos por segurança (evita repetições visuais por linha de colaborador)
         const mergedMap = new Map();
         items.forEach((it) => {
-          const k = `${normalize(it.cod_produto)}|${normalize(it.descricao_produto)}`;
+          const k = it.item_key || `${normalize(it.cod_produto)}|${normalize(it.descricao_produto)}|${normalize(it.subgrupo)}|${normalize(it.grupo)}|${it.faturamento_item}`;
           if (!mergedMap.has(k)) {
             mergedMap.set(k, {
               ...it,
@@ -969,7 +999,7 @@ const ResultadosPage = () => {
             // eslint-disable-next-line no-console
             console.table(items.map((it) => ({ key: it.key, item_key: it.item_key, cod: it.cod_produto, desc: it.descricao_produto, colaboradores_len: (it.colaboradores || []).length, fat_item: it.faturamento_item, comissao_total_item: it.comissao_total_item })));
             // eslint-disable-next-line no-console
-            console.table(mergedItems.map((it) => ({ key: it.key, merged_key: `${normalize(it.cod_produto)}|${normalize(it.descricao_produto)}`, item_key: it.item_key, colaboradores_len: (it.colaboradores || []).length, fat_item: it.faturamento_item, comissao_total_item: it.comissao_total_item })));
+            console.table(mergedItems.map((it) => ({ key: it.key, merged_key: it.item_key, item_key: it.item_key, colaboradores_len: (it.colaboradores || []).length, fat_item: it.faturamento_item, comissao_total_item: it.comissao_total_item })));
             // eslint-disable-next-line no-console
             console.groupEnd();
           } catch (_) { }

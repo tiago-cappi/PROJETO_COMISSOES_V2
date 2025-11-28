@@ -2,31 +2,68 @@ import pandas as pd
 import os
 import sys
 import unicodedata
+import re
 
 
 # --- FUNÇÕES AUXILIARES ---
+def _parse_single_date(val):
+    """
+    Parse uma única data, detectando automaticamente o formato.
+    Suporta: YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY, MM/DD/YYYY e variações.
+    """
+    if pd.isna(val) or val is None:
+        return pd.NaT
+    
+    s = str(val).strip()
+    if not s or s.lower() in ('nan', 'nat', 'none', ''):
+        return pd.NaT
+    
+    # Limpar caracteres especiais
+    s = s.replace('\u00a0', ' ').replace('T', ' ').split(' ')[0].strip()
+    
+    # Padrão ISO: YYYY-MM-DD
+    if re.match(r'^\d{4}-\d{1,2}-\d{1,2}$', s):
+        try:
+            return pd.to_datetime(s, format='%Y-%m-%d', errors='coerce')
+        except:
+            pass
+    
+    # Padrão BR com barra: DD/MM/YYYY
+    if re.match(r'^\d{1,2}/\d{1,2}/\d{4}$', s):
+        try:
+            return pd.to_datetime(s, format='%d/%m/%Y', errors='coerce')
+        except:
+            pass
+    
+    # Padrão BR com hífen: DD-MM-YYYY
+    if re.match(r'^\d{1,2}-\d{1,2}-\d{4}$', s):
+        try:
+            return pd.to_datetime(s, format='%d-%m-%Y', errors='coerce')
+        except:
+            pass
+    
+    # Fallback: tentar parsing automático
+    try:
+        # Tentar dayfirst (formato brasileiro)
+        result = pd.to_datetime(s, dayfirst=True, errors='coerce')
+        if pd.notna(result):
+            return result
+    except:
+        pass
+    
+    try:
+        return pd.to_datetime(s, errors='coerce')
+    except:
+        return pd.NaT
+
+
 def _parse_dates_smart(series):
     """
-    Parse dates intelligently, detecting ISO format (YYYY-MM-DD) automatically.
-    Falls back to day-first or month-first parsing for ambiguous formats.
+    Parse dates intelligently, handling MIXED formats in the same column.
+    Supports: YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY and variations.
+    Each value is parsed individually to handle mixed formats correctly.
     """
-    raw = series.astype(str).str.strip().replace({"nan": ""})
-    raw_clean = raw.str.replace("\u00a0", " ", regex=False).str.replace(
-        "T", " ", regex=False
-    )
-
-    # Check if most values match ISO format pattern (YYYY-MM-DD)
-    iso_pattern = r"^\d{4}-\d{2}-\d{2}"
-    iso_count = raw_clean.str.match(iso_pattern, na=False).sum()
-
-    # If >= 50% are ISO format, use yearfirst=True
-    if iso_count >= max(1, int(0.5 * len(raw_clean))):
-        return pd.to_datetime(raw_clean, yearfirst=True, errors="coerce")
-    else:
-        # Try both dayfirst and monthfirst, choose the one with fewer NaT
-        parsed1 = pd.to_datetime(raw_clean, dayfirst=True, errors="coerce")
-        parsed2 = pd.to_datetime(raw_clean, dayfirst=False, errors="coerce")
-        return parsed1 if parsed1.isna().sum() <= parsed2.isna().sum() else parsed2
+    return series.apply(_parse_single_date)
 
 
 # --- CONFIGURAÇÕES ---
@@ -121,19 +158,28 @@ DEFAULT_YTD_WANTED = [
     "Fabricante",
 ]
 
-# Auto-conversão: suportar .xlsx e .csv
-# Se existir .xlsx e não existir .csv, converte automaticamente
+# Auto-conversão: SEMPRE regenerar CSV a partir do XLSX para garantir dados atualizados
 # NOVO: Procurar primeiro em dados_entrada/
 xlsx_path = _encontrar_arquivo_entrada("Analise_Comercial_Completa.xlsx")
 csv_path = _encontrar_arquivo_entrada(ARQUIVO_ANALISE_COMPLETA)
 
-if xlsx_path and not csv_path:
+should_convert = False
+if xlsx_path:
+    # SEMPRE converter para garantir sincronização com dados mais recentes
+    should_convert = True
+    if not csv_path:
+        print(f"Detectado {xlsx_path} (CSV ausente) - convertendo para .csv...")
+    else:
+        print(f"Regenerando {ARQUIVO_ANALISE_COMPLETA} a partir de {xlsx_path} para garantir dados atualizados...")
+
+if should_convert:
     try:
-        print(f"Detectado {xlsx_path} - convertendo para .csv...")
         df_temp = pd.read_excel(xlsx_path, dtype=str)
         # Salvar CSV na raiz (onde o código espera)
         df_temp.to_csv(ARQUIVO_ANALISE_COMPLETA, index=False, encoding="utf-8-sig")
-        print(f"[OK] Conversao concluida: {ARQUIVO_ANALISE_COMPLETA} criado.")
+        print(f"[OK] Conversao concluida: {ARQUIVO_ANALISE_COMPLETA} atualizado.")
+        # Atualizar csv_path para o novo arquivo gerado
+        csv_path = ARQUIVO_ANALISE_COMPLETA
     except Exception as e:
         print(f"AVISO: Falha ao converter .xlsx para .csv: {e}")
         print("Tentarei usar o arquivo .xlsx diretamente se possivel.")
@@ -653,28 +699,29 @@ def run_preparador(mes: int, ano: int) -> bool:
     """
     print(f"--- Preparador: gerando arquivos para {mes}/{ano} ---")
 
-    # NOVO: Auto-conversão procurando primeiro em dados_entrada/
+    # NOVO: SEMPRE regenerar CSV a partir do XLSX para garantir dados atualizados
+    xlsx_path = _encontrar_arquivo_entrada("Analise_Comercial_Completa.xlsx")
     csv_path = _encontrar_arquivo_entrada(ARQUIVO_ANALISE_COMPLETA)
-    if not csv_path:
-        xlsx_path = _encontrar_arquivo_entrada("Analise_Comercial_Completa.xlsx")
-        if xlsx_path:
-            try:
-                print(f"Detectado {xlsx_path} - convertendo para .csv...")
-                df_temp = pd.read_excel(xlsx_path, dtype=str)
-                # Salvar CSV na raiz (onde o código espera)
-                df_temp.to_csv(
-                    ARQUIVO_ANALISE_COMPLETA, index=False, encoding="utf-8-sig"
-                )
-                print(f"[OK] Conversao concluida: {ARQUIVO_ANALISE_COMPLETA} criado.")
-            except Exception as e:
-                print(f"AVISO: Falha ao converter .xlsx para .csv: {e}")
-                print("Tentarei usar o arquivo .xlsx diretamente se possivel.")
-        else:
-            print(
-                f"\nERRO CRÍTICO: O arquivo '{ARQUIVO_ANALISE_COMPLETA}' não foi encontrado em '{PASTA_DADOS_ENTRADA}/' nem na raiz, "
-                f"e 'Analise_Comercial_Completa.xlsx' também não existe em '{PASTA_DADOS_ENTRADA}/' nem na raiz."
+    
+    if xlsx_path:
+        try:
+            print(f"Regenerando {ARQUIVO_ANALISE_COMPLETA} a partir de {xlsx_path} para garantir dados atualizados...")
+            df_temp = pd.read_excel(xlsx_path, dtype=str)
+            # Salvar CSV na raiz (onde o código espera)
+            df_temp.to_csv(
+                ARQUIVO_ANALISE_COMPLETA, index=False, encoding="utf-8-sig"
             )
-            return False
+            print(f"[OK] Conversao concluida: {ARQUIVO_ANALISE_COMPLETA} atualizado.")
+            csv_path = ARQUIVO_ANALISE_COMPLETA  # Atualizar referência
+        except Exception as e:
+            print(f"AVISO: Falha ao converter .xlsx para .csv: {e}")
+            print("Tentarei usar o arquivo existente se possivel.")
+    elif not csv_path:
+        print(
+            f"\nERRO CRÍTICO: O arquivo '{ARQUIVO_ANALISE_COMPLETA}' não foi encontrado em '{PASTA_DADOS_ENTRADA}/' nem na raiz, "
+            f"e 'Analise_Comercial_Completa.xlsx' também não existe em '{PASTA_DADOS_ENTRADA}/' nem na raiz."
+        )
+        return False
 
     # Determinar qual arquivo usar
     arquivo_para_ler = None

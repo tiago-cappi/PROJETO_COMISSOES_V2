@@ -132,8 +132,12 @@ def get_regras_path() -> Path:
 
 def get_resultado_path() -> Optional[Path]:
     """Retorna caminho do arquivo de resultado mais recente"""
-    pattern = "Comissoes_Calculadas_*.xlsx"
-    files = list(Path(ROBO_ROOT_PATH).glob(pattern))
+    # Suporte para novo padrão (Calculo_Comissoes_MM_AAAA.xlsx) e antigo
+    patterns = ["Calculo_Comissoes_*.xlsx", "Comissoes_Calculadas_*.xlsx"]
+    files = []
+    for pattern in patterns:
+        files.extend(Path(ROBO_ROOT_PATH).glob(pattern))
+    
     if not files:
         return None
     # Ordenar por data de modificação (mais recente primeiro)

@@ -1,7 +1,3 @@
 === POPULANDO cross_selling_decisions ===
-Total de casos detectados: 1
+Total de casos detectados: 0
 
-
-Caso: processo=400001, consultor=André Camargo, linha=Hidrologia, taxa=1.0
-Taxa final aplicada: 1.0, Decisão: A
-Decisão criada: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'A', 'timestamp': '2025-11-28T03:27:22.275460'}

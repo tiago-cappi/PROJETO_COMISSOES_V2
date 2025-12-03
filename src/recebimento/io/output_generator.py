@@ -140,29 +140,10 @@ class RecebimentoOutputGenerator:
                     )
                     print(f"[RECEBIMENTO] [OUTPUT] Aba RECONCILIACOES vazia criada")
                 
-                # Aba 4: ESTADO
-                print(f"[RECEBIMENTO] [OUTPUT] Criando aba ESTADO...")
-                if not dados.get('estado', pd.DataFrame()).empty:
-                    print(f"[RECEBIMENTO] [OUTPUT] Estado: {len(dados['estado'])} linha(s)")
-                    dados['estado'].to_excel(
-                        writer,
-                        sheet_name='ESTADO',
-                        index=False
-                    )
-                    print(f"[RECEBIMENTO] [OUTPUT] Aba ESTADO criada com sucesso")
-                else:
-                    print(f"[RECEBIMENTO] [OUTPUT] Estado vazio. Criando aba vazia...")
-                    # Criar DataFrame vazio com colunas do schema
-                    from ..estado.state_schema import COLUNAS_ESTADO
-                    df_vazio = pd.DataFrame(columns=COLUNAS_ESTADO)
-                    df_vazio.to_excel(
-                        writer,
-                        sheet_name='ESTADO',
-                        index=False
-                    )
-                    print(f"[RECEBIMENTO] [OUTPUT] Aba ESTADO vazia criada")
+                # NOTA: A aba ESTADO foi removida deste arquivo de saída.
+                # O estado dos processos é salvo no arquivo dedicado: Estado_Processos_Recebimento.xlsx
                 
-                # Aba 5: AVISOS
+                # Aba 4: AVISOS
                 print(f"[RECEBIMENTO] [OUTPUT] Criando aba AVISOS...")
                 if not dados.get('avisos', pd.DataFrame()).empty:
                     print(f"[RECEBIMENTO] [OUTPUT] Avisos: {len(dados['avisos'])} linha(s)")

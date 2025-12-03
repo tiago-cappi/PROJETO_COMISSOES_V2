@@ -101,9 +101,7 @@ class RecebimentoOrchestrator:
 
         # 2. Carregar estado anterior
         print("[RECEBIMENTO] [ETAPA 2.2/6] Carregando estado anterior...")
-        arquivo_estado_anterior = (
-            f"Comissoes_Recebimento_{self.mes:02d}_{self.ano}.xlsx"
-        )
+        arquivo_estado_anterior = "Estado_Processos_Recebimento.xlsx"
         caminho_estado = os.path.join(self.base_path, arquivo_estado_anterior)
         print(
             f"[RECEBIMENTO] [ETAPA 2.2/6] Caminho do estado anterior: {caminho_estado}"
@@ -890,3 +888,17 @@ class RecebimentoOrchestrator:
                 return colunas_df[nome_norm]
 
         return None
+
+    def salvar_estado_processos(self) -> bool:
+        """
+        Salva o estado dos processos no arquivo dedicado Estado_Processos_Recebimento.xlsx.
+        
+        Este método deve ser chamado após executar() para persistir o estado dos processos
+        que tiveram ao menos um recebimento (adiantamento ou pagamento regular).
+        
+        Returns:
+            True se salvou com sucesso, False caso contrário
+        """
+        filepath = os.path.join(self.base_path, "Estado_Processos_Recebimento.xlsx")
+        print(f"[RECEBIMENTO] [ESTADO] Salvando estado dos processos em: {filepath}")
+        return self.state_manager.salvar_estado(filepath)

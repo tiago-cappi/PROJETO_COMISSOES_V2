@@ -152,7 +152,7 @@ def gerar_secao_comissoes(story, dados_processo_formatado: dict):
     adicionar_espacamento(story, "pequeno")
     gerar_legenda(
         story,
-        "Fonte: Estado (aba ESTADO do arquivo Comissoes_Recebimento_MM_AAAA.xlsx)",
+        "Fonte: Estado (arquivo Estado_Processos_Recebimento.xlsx)",
     )
 
     adicionar_espacamento(story, "medio")

@@ -5112,6 +5112,10 @@ class CalculoComissao:
                 print("[RECEBIMENTO] [ETAPA 2/6] Iniciando execução do orquestrador...")
                 arquivo_recebimento = orchestrator.executar()
 
+                # Salvar estado dos processos no arquivo dedicado
+                print("[RECEBIMENTO] [ETAPA 3/6] Salvando estado dos processos...")
+                orchestrator.salvar_estado_processos()
+
                 print("\n" + "=" * 80)
                 print(
                     f"[RECEBIMENTO] ===== ARQUIVO DE RECEBIMENTO GERADO COM SUCESSO ====="
@@ -5152,12 +5156,10 @@ class CalculoComissao:
         _phase("6. Gerando arquivos de saída...")
         with _timer_ctx("Gerar arquivos de saída", _safe_percent("saida")):
             self._gerar_saida()
-        # Salvar estado persistente (obrigatório)
-        try:
-            with _timer_ctx("Salvar estado", _safe_percent("salvar_estado")):
-                self._salvar_estado()
-        except Exception:
-            pass
+        # NOTA: O estado dos processos de recebimento é salvo pelo RecebimentoOrchestrator
+        # (orchestrator.salvar_estado_processos()) logo após executar().
+        # NÃO chamar self._salvar_estado() aqui pois sobrescreveria o arquivo com dados vazios
+        # do ProcessStateManager antigo (que não é usado pelo fluxo de recebimento).
 
 
 if __name__ == "__main__":

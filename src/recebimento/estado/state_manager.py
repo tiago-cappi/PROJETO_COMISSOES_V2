@@ -487,3 +487,33 @@ class StateManager:
         
         return df_retorno
 
+    def salvar_estado(self, filepath: str) -> bool:
+        """
+        Salva o estado atual em um arquivo Excel dedicado.
+        
+        Args:
+            filepath: Caminho para o arquivo Excel (Estado_Processos_Recebimento.xlsx)
+        
+        Returns:
+            True se salvou com sucesso, False caso contrário
+        """
+        try:
+            import pandas as pd
+            
+            df_estado = self.obter_dataframe_estado()
+            
+            if df_estado.empty:
+                print(f"[RECEBIMENTO] [ESTADO] Estado vazio, nada a salvar.")
+                return True
+            
+            # Salvar em Excel com aba ESTADO
+            with pd.ExcelWriter(filepath, engine='openpyxl') as writer:
+                df_estado.to_excel(writer, sheet_name="ESTADO", index=False)
+            
+            print(f"[RECEBIMENTO] [ESTADO] Estado salvo com sucesso: {filepath}")
+            print(f"[RECEBIMENTO] [ESTADO] Total de processos salvos: {len(df_estado)}")
+            return True
+        except Exception as e:
+            print(f"[RECEBIMENTO] [ESTADO] ERRO ao salvar estado: {e}")
+            return False
+

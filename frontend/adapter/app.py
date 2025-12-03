@@ -1407,16 +1407,18 @@ async def obter_detalhes_calculo_recebimento(
     ano: int = Query(...)
 ):
     """Retorna detalhes do cálculo de TCMP e FCMP para auditoria"""
-    recebimento_path = get_recebimento_path(mes, ano)
-    if not recebimento_path:
+    # Ler do arquivo de estado dedicado (Estado_Processos_Recebimento.xlsx)
+    estado_path = Path(ROBO_ROOT_PATH) / "Estado_Processos_Recebimento.xlsx"
+    
+    if not estado_path.exists():
         raise HTTPException(
             status_code=404,
-            detail=f"Arquivo de recebimento não encontrado para {mes:02d}/{ano}"
+            detail=f"Arquivo de estado não encontrado: {estado_path}"
         )
     
     try:
-        # Ler aba ESTADO
-        df_estado = read_excel_sheet(recebimento_path, "ESTADO")
+        # Ler aba ESTADO do arquivo dedicado
+        df_estado = read_excel_sheet(str(estado_path), "ESTADO")
         
         # Filtrar pelo processo
         df_processo = df_estado[df_estado["PROCESSO"].astype(str).str.strip() == str(processo).strip()]

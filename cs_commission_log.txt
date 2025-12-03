@@ -1,6 +1,13 @@
 
 === Processo 400001 ===
-cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'B', 'timestamp': '2025-12-01T11:56:26.773272'}
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'B', 'timestamp': '2025-12-03T16:37:57.150397'}
+consultor_externo: André Camargo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo 400001 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'B', 'timestamp': '2025-12-03T16:46:23.690573'}
 consultor_externo: André Camargo
 taxa: 1.0
 taxa_cs (dividido por 100): 0.01

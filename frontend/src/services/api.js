@@ -253,5 +253,38 @@ export const recebimentoAPI = {
   baixar: (mes, ano) => api.get(`/baixar/recebimento?mes=${mes}&ano=${ano}`, { responseType: 'blob' }),
 };
 
+// ==================== MONITORAMENTO (Estado de Processos) ====================
+
+export const monitorAPI = {
+  /**
+   * Retorna o estado atual de todos os processos de recebimento.
+   * @param {Object} params - Parâmetros de filtro
+   * @param {string} params.statusPagamento - Filtrar por status (PENDENTE, PARCIAL, COMPLETO)
+   * @param {string} params.statusReconciliacao - Filtrar por reconciliação (PENDENTE, CONCLUIDA)
+   * @param {boolean} params.apenasSaldoAberto - Mostrar apenas processos com saldo > 0
+   */
+  getEstadoProcessos: (params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.statusPagamento) {
+      queryParams.append('status_pagamento', params.statusPagamento);
+    }
+    if (params.statusReconciliacao) {
+      queryParams.append('status_reconciliacao', params.statusReconciliacao);
+    }
+    if (params.apenasSaldoAberto) {
+      queryParams.append('apenas_saldo_aberto', 'true');
+    }
+    const queryString = queryParams.toString();
+    return api.get(`/api/monitor/processos${queryString ? `?${queryString}` : ''}`);
+  },
+
+  /**
+   * Retorna detalhes completos de um processo específico.
+   * @param {string} processoId - ID do processo
+   */
+  getProcessoDetalhes: (processoId) => 
+    api.get(`/api/monitor/processos/${processoId}/detalhes`),
+};
+
 export default api;
 

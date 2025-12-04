@@ -6,6 +6,8 @@ import pandas as pd
 from typing import Dict, Optional, List
 import re
 
+from ..exceptions import InconsistenciaAdiantamentoError
+
 
 class ProcessMapper:
     """
@@ -37,9 +39,11 @@ class ProcessMapper:
         # Encontrar colunas relevantes
         self.col_nf = self._encontrar_coluna(["numero nf", "número nf", "num nf", "Numero NF"])
         self.col_processo = self._encontrar_coluna(["processo", "id processo", "Processo"])
+        self.col_status = self._encontrar_coluna(["status processo", "Status Processo"])
         
         print(f"[RECEBIMENTO] [MAPPER] __init__: Coluna NF encontrada: '{self.col_nf}'")
         print(f"[RECEBIMENTO] [MAPPER] __init__: Coluna Processo encontrada: '{self.col_processo}'")
+        print(f"[RECEBIMENTO] [MAPPER] __init__: Coluna Status encontrada: '{self.col_status}'")
     
     def mapear_documento(self, documento: str) -> Dict:
         """
@@ -75,6 +79,15 @@ class ProcessMapper:
             processo = documento.replace("COT", "").strip()
             # Validar que o sufixo é numérico
             if processo.isdigit():
+                # VALIDAÇÃO DE CONSISTÊNCIA: COT não pode estar associado a processo FATURADO
+                status_processo = self._obter_status_processo(processo)
+                if status_processo and status_processo.upper() == "FATURADO":
+                    raise InconsistenciaAdiantamentoError(
+                        documento=documento,
+                        processo=processo,
+                        status_processo=status_processo
+                    )
+                
                 resultado = {
                     'processo': processo,
                     'tipo': 'ADIANTAMENTO',
@@ -230,6 +243,32 @@ class ProcessMapper:
             nome_norm = nome.lower().strip()
             if nome_norm in colunas_df:
                 return colunas_df[nome_norm]
+        
+        return None
+    
+    def _obter_status_processo(self, processo: str) -> Optional[str]:
+        """
+        Obtém o Status Processo de um processo na Análise Comercial.
+        
+        Args:
+            processo: ID do processo a buscar
+        
+        Returns:
+            Status do processo ou None se não encontrado
+        """
+        if self.df_comercial.empty or not self.col_processo or not self.col_status:
+            return None
+        
+        try:
+            # Buscar processo na Análise Comercial
+            mask = self.df_comercial[self.col_processo].astype(str).str.strip() == str(processo).strip()
+            candidatos = self.df_comercial[mask]
+            
+            if not candidatos.empty:
+                status = str(candidatos.iloc[0][self.col_status]).strip()
+                return status if status and status.lower() != "nan" else None
+        except Exception as e:
+            print(f"[RECEBIMENTO] [MAPPER] ERRO ao obter status do processo: {e}")
         
         return None
     

@@ -1,0 +1,180 @@
+{
+  "metadata": {
+    "ultima_atualizacao": "2025-11-14T16:41:18.280987",
+    "ano_atual": 2025,
+    "mes_atual": 11,
+    "moedas_disponiveis": [
+      "GBP",
+      "USD"
+    ],
+    "schema_version": 1
+  },
+  "taxas": {
+    "2025": {
+      "GBP": {
+        "1": {
+          "taxa_media": 0.13517,
+          "fonte": "frankfurter.app",
+          "dias_utilizados": 1,
+          "data_atualizacao": "2025-11-14T16:20:03.486289",
+          "fallback": false,
+          "observacao": null
+        },
+        "2": {
+          "taxa_media": 0.13517,
+          "fonte": "fallback_media_anual",
+          "dias_utilizados": 1,
+          "data_atualizacao": "2025-11-14T16:22:05.443206",
+          "fallback": true,
+          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA GBP 2025-02; USANDO MÉDIA DO ANO ATÉ 2025-01 COMO FALLBACK."
+        },
+        "3": {
+          "taxa_media": 0.1343,
+          "fonte": "frankfurter.app",
+          "dias_utilizados": 1,
+          "data_atualizacao": "2025-11-14T16:22:25.890360",
+          "fallback": false,
+          "observacao": null
+        },
+        "4": {
+          "taxa_media": 0.12925,
+          "fonte": "frankfurter.app",
+          "dias_utilizados": 1,
+          "data_atualizacao": "2025-11-14T16:23:12.855542",
+          "fallback": false,
+          "observacao": null
+        },
+        "5": {
+          "taxa_media": 0.1334725,
+          "fonte": "fallback_media_anual",
+          "dias_utilizados": 4,
+          "data_atualizacao": "2025-11-14T16:24:34.252331",
+          "fallback": true,
+          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA GBP 2025-05; USANDO MÉDIA DO ANO ATÉ 2025-04 COMO FALLBACK."
+        },
+        "6": {
+          "taxa_media": 0.13347250000000002,
+          "fonte": "fallback_media_anual",
+          "dias_utilizados": 5,
+          "data_atualizacao": "2025-11-14T16:25:15.457455",
+          "fallback": true,
+          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA GBP 2025-06; USANDO MÉDIA DO ANO ATÉ 2025-05 COMO FALLBACK."
+        },
+        "7": {
+          "taxa_media": 0.13285,
+          "fonte": "frankfurter.app",
+          "dias_utilizados": 1,
+          "data_atualizacao": "2025-11-14T16:25:35.868509",
+          "fallback": false,
+          "observacao": null
+        },
+        "8": {
+          "taxa_media": 0.13658,
+          "fonte": "frankfurter.app",
+          "dias_utilizados": 1,
+          "data_atualizacao": "2025-11-14T16:26:56.400244",
+          "fallback": false,
+          "observacao": null
+        },
+        "9": {
+          "taxa_media": 0.133783125,
+          "fonte": "fallback_media_anual",
+          "dias_utilizados": 8,
+          "data_atualizacao": "2025-11-14T16:28:58.353616",
+          "fallback": true,
+          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA GBP 2025-09; USANDO MÉDIA DO ANO ATÉ 2025-08 COMO FALLBACK."
+        },
+        "10": {
+          "taxa_media": 0.133783125,
+          "fonte": "fallback_media_anual",
+          "dias_utilizados": 9,
+          "data_atualizacao": "2025-11-14T16:30:19.813494",
+          "fallback": true,
+          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA GBP 2025-10; USANDO MÉDIA DO ANO ATÉ 2025-09 COMO FALLBACK."
+        }
+      },
+      "USD": {
+        "1": {
+          "taxa_media": 0.16512,
+          "fonte": "frankfurter.app",
+          "dias_utilizados": 1,
+          "data_atualizacao": "2025-11-14T16:31:06.844642",
+          "fallback": false,
+          "observacao": null
+        },
+        "2": {
+          "taxa_media": 0.17426,
+          "fonte": "frankfurter.app",
+          "dias_utilizados": 1,
+          "data_atualizacao": "2025-11-14T16:31:27.169428",
+          "fallback": false,
+          "observacao": null
+        },
+        "3": {
+          "taxa_media": 0.16969,
+          "fonte": "fallback_media_anual",
+          "dias_utilizados": 2,
+          "data_atualizacao": "2025-11-14T16:33:29.109115",
+          "fallback": true,
+          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA USD 2025-03; USANDO MÉDIA DO ANO ATÉ 2025-02 COMO FALLBACK."
+        },
+        "4": {
+          "taxa_media": 0.16969,
+          "fonte": "fallback_media_anual",
+          "dias_utilizados": 3,
+          "data_atualizacao": "2025-11-14T16:34:50.420796",
+          "fallback": true,
+          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA USD 2025-04; USANDO MÉDIA DO ANO ATÉ 2025-03 COMO FALLBACK."
+        },
+        "5": {
+          "taxa_media": 0.16969,
+          "fonte": "fallback_media_anual",
+          "dias_utilizados": 4,
+          "data_atualizacao": "2025-11-14T16:36:12.054961",
+          "fallback": true,
+          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA USD 2025-05; USANDO MÉDIA DO ANO ATÉ 2025-04 COMO FALLBACK."
+        },
+        "6": {
+          "taxa_media": 0.17986,
+          "fonte": "frankfurter.app",
+          "dias_utilizados": 1,
+          "data_atualizacao": "2025-11-14T16:37:32.681364",
+          "fallback": false,
+          "observacao": null
+        },
+        "7": {
+          "taxa_media": 0.171385,
+          "fonte": "fallback_media_anual",
+          "dias_utilizados": 6,
+          "data_atualizacao": "2025-11-14T16:38:54.335567",
+          "fallback": true,
+          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA USD 2025-07; USANDO MÉDIA DO ANO ATÉ 2025-06 COMO FALLBACK."
+        },
+        "8": {
+          "taxa_media": 0.17138499999999998,
+          "fonte": "fallback_media_anual",
+          "dias_utilizados": 7,
+          "data_atualizacao": "2025-11-14T16:40:37.300128",
+          "fallback": true,
+          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA USD 2025-08; USANDO MÉDIA DO ANO ATÉ 2025-07 COMO FALLBACK."
+        },
+        "9": {
+          "taxa_media": 0.18745,
+          "fonte": "frankfurter.app",
+          "dias_utilizados": 1,
+          "data_atualizacao": "2025-11-14T16:40:57.782651",
+          "fallback": false,
+          "observacao": null
+        },
+        "10": {
+          "taxa_media": 0.18302,
+          "fonte": "frankfurter.app",
+          "dias_utilizados": 1,
+          "data_atualizacao": "2025-11-14T16:41:18.277254",
+          "fallback": false,
+          "observacao": null
+        }
+      }
+    }
+  }
+}

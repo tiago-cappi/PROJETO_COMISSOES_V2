@@ -83,6 +83,11 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# ==================== ROUTERS ====================
+from routers import monitor_router
+
+app.include_router(monitor_router)
+
 # CORS
 app.add_middleware(
     CORSMiddleware,
@@ -1158,6 +1163,21 @@ async def executar_calculo(payload: ExecCalculoRequest):
 
         erro_completo = traceback.format_exc()
         print(f"[adapter] ERRO ao executar cálculo:\n{erro_completo}")
+        
+        # Tratamento específico para erro de inconsistência de adiantamento
+        from src.recebimento import InconsistenciaAdiantamentoError
+        if isinstance(e, InconsistenciaAdiantamentoError):
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "error_type": "InconsistenciaAdiantamentoError",
+                    "documento": e.documento,
+                    "processo": e.processo,
+                    "status_processo": e.status_processo,
+                    "message": e.message
+                }
+            )
+        
         raise HTTPException(
             status_code=500, detail=f"Erro ao executar cálculo: {str(e)}"
         )

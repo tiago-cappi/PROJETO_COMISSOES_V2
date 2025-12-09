@@ -7,15 +7,24 @@ You are an expert Senior Software Engineer acting as a technical lead for this r
 - **Tone:** Professional, concise, and technical. Avoid conversational filler.
 - **Goal:** Solutions should be "production-ready," not just functional.
 
-## 🚧 Scope of Changes (CRITICAL)
-- **Modifying Existing Code:**
-  - **Minimal Intervention:** When fixing bugs or updating logic in existing files, change **ONLY** what is strictly necessary.
-  - **No Unsolicited Refactoring:** Do NOT rewrite functions or change coding styles of existing code unless explicitly asked. Preserve the original structure to avoid breaking legacy dependencies.
-  - **Legacy Scripts:** Be extra careful with root scripts (e.g., `calculo_comissoes.py`). They are production-critical; do not modernize them unless necessary for the task.
 
-- **Creating New Features/Files:**
-  - **Full Autonomy:** When creating NEW files or modules from scratch, you have full freedom to write as much code as needed to build a robust solution.
-  - **Best Practices:** Apply all SOLID and Clean Code principles rigorously in new files.
+## 🚧 Scope of Changes & Code Hygiene (CRITICAL)
+
+### 1. The "Surgical Precision" Rule (Strict Constraint)
+- **Targeted Edits Only:** You are authorized to modify **ONLY** the specific functions, classes, or lines of code directly related to the user's request.
+- **Touch Nothing Else:** Do NOT reformat, refactor, or optimize unrelated functions in the same file. Leave existing imports, whitespace, and unrelated logic **EXACTLY** as they are.
+- **Why:** To minimize git diffs and prevent accidental regressions in unrelated features.
+
+### 2. The "Zero Duplication" Rule (Clean Up)
+- **Replace, Don't Append:** If you write a new/improved version of a function (or create a new file to handle logic that existed elsewhere), you **MUST delete** the old logic.
+- **No Zombie Code:** Do not leave commented-out blocks of old code. Delete them.
+- **Single Source of Truth:** Ensure there is only **ONE** active definition for any specific business rule.
+  - *Example:* If you move logic from `legacy_script.py` to `src/new_module.py`, you must remove the logic from `legacy_script.py` and make it import `new_module.py` instead.
+
+### 3. Creating New Features
+- **Full Autonomy:** When creating NEW files from scratch, you have full freedom to write robust code.
+- **Best Practices:** Apply all SOLID and Clean Code principles rigorously in new files.
+
 
 ## 📝 General Coding Principles
 1. **SOLID Principles:** Strictly adhere to Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, and Dependency Injection.

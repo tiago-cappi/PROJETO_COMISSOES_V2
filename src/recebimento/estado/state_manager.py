@@ -5,7 +5,7 @@ Gerenciador de estado dos processos de recebimento.
 import os
 import json
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
@@ -111,9 +111,15 @@ class StateManager:
         novo_registro = VALORES_PADRAO_ESTADO.copy()
         novo_registro["PROCESSO"] = processo_id
         novo_registro["VALOR_TOTAL_PROCESSO"] = valor_total
-        novo_registro["SALDO_A_RECEBER"] = valor_total
         novo_registro["STATUS_PROCESSO"] = status_processo
         novo_registro["ULTIMA_ATUALIZACAO"] = datetime.now()
+        
+        # SALDO_A_RECEBER só faz sentido quando o processo já foi faturado
+        # Para processos não faturados, deixar como None/NaN
+        if status_processo.upper() == "FATURADO":
+            novo_registro["SALDO_A_RECEBER"] = valor_total
+        else:
+            novo_registro["SALDO_A_RECEBER"] = None  # Ainda não há saldo definido
         
         # Adicionar ao DataFrame
         novo_df = pd.DataFrame([novo_registro])
@@ -158,10 +164,16 @@ class StateManager:
             self.estado_df.at[idx, "TOTAL_COMISSAO_ANTECIPACOES"] +
             self.estado_df.at[idx, "TOTAL_COMISSAO_REGULARES"]
         )
-        self.estado_df.at[idx, "SALDO_A_RECEBER"] = (
-            self.estado_df.at[idx, "VALOR_TOTAL_PROCESSO"] -
-            self.estado_df.at[idx, "TOTAL_PAGO_ACUMULADO"]
-        )
+        
+        # SALDO_A_RECEBER só faz sentido quando o processo já foi faturado
+        status_processo = str(self.estado_df.at[idx, "STATUS_PROCESSO"]).upper()
+        if status_processo == "FATURADO":
+            self.estado_df.at[idx, "SALDO_A_RECEBER"] = (
+                self.estado_df.at[idx, "VALOR_TOTAL_PROCESSO"] -
+                self.estado_df.at[idx, "TOTAL_PAGO_ACUMULADO"]
+            )
+        # Se não for faturado, manter SALDO_A_RECEBER como None/NaN
+        
         self.estado_df.at[idx, "QUANTIDADE_PAGAMENTOS"] += 1
         
         # Atualizar datas
@@ -171,9 +183,14 @@ class StateManager:
             self.estado_df.at[idx, "DATA_ULTIMO_PAGAMENTO"] = data_pagamento
         
         # Atualizar status de pagamento
-        if self.estado_df.at[idx, "TOTAL_PAGO_ACUMULADO"] >= self.estado_df.at[idx, "VALOR_TOTAL_PROCESSO"]:
-            self.estado_df.at[idx, "STATUS_PAGAMENTO"] = "COMPLETO"
-        elif self.estado_df.at[idx, "TOTAL_PAGO_ACUMULADO"] > 0:
+        # Para adiantamentos (não faturados), usar lógica diferente
+        if status_processo == "FATURADO":
+            if self.estado_df.at[idx, "TOTAL_PAGO_ACUMULADO"] >= self.estado_df.at[idx, "VALOR_TOTAL_PROCESSO"]:
+                self.estado_df.at[idx, "STATUS_PAGAMENTO"] = "COMPLETO"
+            elif self.estado_df.at[idx, "TOTAL_PAGO_ACUMULADO"] > 0:
+                self.estado_df.at[idx, "STATUS_PAGAMENTO"] = "PARCIAL"
+        else:
+            # Para processos não faturados, sempre é PARCIAL (ainda esperando faturamento)
             self.estado_df.at[idx, "STATUS_PAGAMENTO"] = "PARCIAL"
         
         self.estado_df.at[idx, "ULTIMA_ATUALIZACAO"] = datetime.now()
@@ -235,6 +252,71 @@ class StateManager:
         
         self.estado_df.at[idx, "ULTIMA_ATUALIZACAO"] = datetime.now()
     
+    def salvar_metricas(
+        self,
+        processo_id: str,
+        tcmp_dict: Dict[str, float],
+        fcmp_dict: Dict[str, float],
+        tcmp_detalhes: Optional[Dict] = None,
+        fcmp_detalhes: Optional[Dict] = None
+    ):
+        """
+        Salva TCMP e FCMP para um processo (sem alterar status do processo).
+        
+        Usado para adiantamentos onde precisamos salvar o TCMP calculado
+        e FCMP=1.0 sem marcar o processo como faturado.
+        
+        Args:
+            processo_id: ID do processo
+            tcmp_dict: Dict {nome_colaborador: tcmp}
+            fcmp_dict: Dict {nome_colaborador: fcmp}
+            tcmp_detalhes: Dict opcional com detalhes do cálculo de TCMP
+            fcmp_detalhes: Dict opcional com detalhes do cálculo de FCMP
+        """
+        processo_id = str(processo_id).strip()
+        mask = self.estado_df["PROCESSO"] == processo_id
+        
+        if not mask.any():
+            # Criar processo se não existir
+            self.criar_processo(processo_id)
+            mask = self.estado_df["PROCESSO"] == processo_id
+        
+        idx = self.estado_df[mask].index[0]
+        
+        # Converter dicts para JSON
+        self.estado_df.at[idx, "TCMP_JSON"] = json.dumps(tcmp_dict, ensure_ascii=False)
+        self.estado_df.at[idx, "FCMP_JSON"] = json.dumps(fcmp_dict, ensure_ascii=False)
+        
+        # Armazenar detalhes se fornecidos
+        if tcmp_detalhes:
+            self.estado_df.at[idx, "TCMP_DETALHES_JSON"] = json.dumps(tcmp_detalhes, ensure_ascii=False)
+        if fcmp_detalhes:
+            self.estado_df.at[idx, "FCMP_DETALHES_JSON"] = json.dumps(fcmp_detalhes, ensure_ascii=False)
+        
+        # Marcar que as métricas foram PARCIALMENTE calculadas (TCMP ok, FCMP=1.0 forçado)
+        # Somente quando o processo for FATURADO é que STATUS_CALCULO_MEDIAS será "CALCULADO"
+        self.estado_df.at[idx, "STATUS_CALCULO_MEDIAS"] = "PARCIAL"
+        
+        self.estado_df.at[idx, "ULTIMA_ATUALIZACAO"] = datetime.now()
+    
+    def atualizar_colaboradores_envolvidos(self, processo_id: str, colaboradores: List[str]):
+        """
+        Atualiza a lista de colaboradores envolvidos no processo.
+        
+        Args:
+            processo_id: ID do processo
+            colaboradores: Lista de nomes dos colaboradores
+        """
+        processo_id = str(processo_id).strip()
+        mask = self.estado_df["PROCESSO"] == processo_id
+        
+        if not mask.any():
+            return
+        
+        idx = self.estado_df[mask].index[0]
+        self.estado_df.at[idx, "COLABORADORES_ENVOLVIDOS"] = ", ".join(colaboradores)
+        self.estado_df.at[idx, "ULTIMA_ATUALIZACAO"] = datetime.now()
+
     def definir_metricas(
         self,
         processo_id: str,

@@ -63,6 +63,68 @@ class RecebimentoOrchestrator:
         self.reconciliacoes_calculadas = []
         self.documentos_nao_mapeados = []
 
+    def _obter_dados_processo_comercial(self, processo_id: str) -> dict:
+        """
+        Obtém dados do processo da Análise Comercial de forma inteligente.
+        
+        Regras:
+        - Se Status != FATURADO: usa Valor Orçado
+        - Se Status == FATURADO: usa Valor Realizado
+        
+        Args:
+            processo_id: ID do processo
+            
+        Returns:
+            Dict com: valor_total, status_processo
+        """
+        df_comercial = self.calc_comissao.data.get("ANALISE_COMERCIAL_COMPLETA", pd.DataFrame())
+        
+        if df_comercial.empty:
+            return {"valor_total": 0.0, "status_processo": "DESCONHECIDO"}
+        
+        # Encontrar colunas
+        proc_col = self._encontrar_coluna(df_comercial, ["processo", "Processo"])
+        status_col = self._encontrar_coluna(df_comercial, ["Status Processo", "status processo"])
+        valor_realizado_col = self._encontrar_coluna(df_comercial, ["Valor Realizado", "valor realizado"])
+        valor_orcado_col = self._encontrar_coluna(df_comercial, ["Valor Orçado", "valor orçado", "Valor Orcado"])
+        
+        if not proc_col:
+            return {"valor_total": 0.0, "status_processo": "DESCONHECIDO"}
+        
+        # Filtrar pelo processo
+        processo_str = str(processo_id).strip()
+        mask = df_comercial[proc_col].astype(str).str.strip() == processo_str
+        itens = df_comercial[mask]
+        
+        if itens.empty:
+            return {"valor_total": 0.0, "status_processo": "DESCONHECIDO"}
+        
+        # Obter status (pegar do primeiro item)
+        status = "DESCONHECIDO"
+        if status_col:
+            status_raw = itens.iloc[0].get(status_col, "")
+            status = str(status_raw).strip().upper() if pd.notna(status_raw) and str(status_raw).strip() else "DESCONHECIDO"
+        
+        # Determinar qual coluna de valor usar baseado no status
+        valor_total = 0.0
+        
+        if status == "FATURADO":
+            # Processo faturado: usar Valor Realizado
+            if valor_realizado_col:
+                try:
+                    valor_total = float(pd.to_numeric(itens[valor_realizado_col], errors="coerce").fillna(0.0).sum())
+                except Exception:
+                    pass
+        else:
+            # Processo não faturado (PENDENTE, ORCAMENTO, etc.): usar Valor Orçado
+            if valor_orcado_col:
+                try:
+                    valor_total = float(pd.to_numeric(itens[valor_orcado_col], errors="coerce").fillna(0.0).sum())
+                except Exception:
+                    pass
+        
+        return {"valor_total": valor_total, "status_processo": status}
+
     def executar(self) -> str:
         """
         Executa o fluxo completo de cálculo de comissões por recebimento.
@@ -92,11 +154,6 @@ class RecebimentoOrchestrator:
             )
             # Gerar arquivo vazio
             arquivo_gerado = self._gerar_arquivo_vazio()
-            # Gerar PDF de auditoria mesmo sem pagamentos (pode ter processos no estado)
-            print(
-                "[RECEBIMENTO] [ETAPA 2.7/6] Verificando se deve gerar PDF de auditoria (arquivo vazio)..."
-            )
-            self._gerar_pdf_auditoria()
             return arquivo_gerado
 
         # 2. Carregar estado anterior
@@ -189,12 +246,16 @@ class RecebimentoOrchestrator:
             # Obter ou criar processo no estado
             dados_processo = self.state_manager.obter_processo(processo)
             if not dados_processo:
-                # Criar processo no estado
-                valor_total = self.calc_comissao._get_valor_total_processo(processo)
+                # Obter dados do processo da Análise Comercial (valor e status corretos)
+                dados_comercial = self._obter_dados_processo_comercial(processo)
+                valor_total = dados_comercial["valor_total"]
+                status_processo = dados_comercial["status_processo"]
+                
                 print(
-                    f"[RECEBIMENTO] [ETAPA 2.4/6] Criando novo processo no estado: {processo}, valor_total={valor_total}"
+                    f"[RECEBIMENTO] [ETAPA 2.4/6] Criando novo processo no estado: {processo}, "
+                    f"valor_total={valor_total}, status={status_processo}"
                 )
-                self.state_manager.criar_processo(processo, valor_total)
+                self.state_manager.criar_processo(processo, valor_total, status_processo)
 
             # Processar conforme tipo
             if tipo == "ADIANTAMENTO":
@@ -240,12 +301,6 @@ class RecebimentoOrchestrator:
         arquivo_gerado = self._gerar_arquivo_saida()
         print(f"[RECEBIMENTO] [ETAPA 2.7/6] Arquivo gerado: {arquivo_gerado}")
 
-        # 8. Gerar PDF de auditoria (opcional)
-        print(
-            "[RECEBIMENTO] [ETAPA 2.8/6] Verificando se deve gerar PDF de auditoria..."
-        )
-        self._gerar_pdf_auditoria()
-
         return arquivo_gerado
 
     def _processar_adiantamento(
@@ -256,15 +311,23 @@ class RecebimentoOrchestrator:
             f"[RECEBIMENTO] [ADIANTAMENTO] Processando adiantamento: processo={processo}, valor={valor}, documento={documento}"
         )
 
-        # Calcular TCMP temporária (sem FC, pois ainda não foi faturado)
+        # Obter status do processo para passar ao cálculo de métricas
+        dados_comercial = self._obter_dados_processo_comercial(processo)
+        status_processo = dados_comercial.get("status_processo", "")
+
+        # Calcular TCMP (FCMP será forçado a 1.0 pois ainda não foi faturado)
         print(
-            f"[RECEBIMENTO] [ADIANTAMENTO] Calculando TCMP para processo {processo}..."
+            f"[RECEBIMENTO] [ADIANTAMENTO] Calculando TCMP para processo {processo} (status={status_processo})..."
         )
         metricas = self.metricas_calc.calcular_metricas_processo(
-            processo, self.mes, self.ano
+            processo, self.mes, self.ano, status_processo=status_processo
         )
 
         tcmp_dict = metricas.get("TCMP", {})
+        fcmp_dict = metricas.get("FCMP", {})
+        tcmp_detalhes = metricas.get("TCMP_DETALHES", {})
+        fcmp_detalhes = metricas.get("FCMP_DETALHES", {})
+        
         print(
             f"[RECEBIMENTO] [ADIANTAMENTO] TCMP calculado: {len(tcmp_dict)} colaborador(es)"
         )
@@ -275,6 +338,17 @@ class RecebimentoOrchestrator:
             )
             # Se não conseguir calcular TCMP, pular
             return
+
+        # SALVAR MÉTRICAS NO ESTADO (importante para adiantamentos também!)
+        # Mesmo sem faturamento, salvamos o TCMP calculado e FCMP=1.0
+        print(f"[RECEBIMENTO] [ADIANTAMENTO] Salvando métricas no estado...")
+        self.state_manager.salvar_metricas(
+            processo, tcmp_dict, fcmp_dict, tcmp_detalhes, fcmp_detalhes
+        )
+        
+        # Listar colaboradores envolvidos
+        colaboradores_nomes = list(tcmp_dict.keys())
+        self.state_manager.atualizar_colaboradores_envolvidos(processo, colaboradores_nomes)
 
         # Calcular comissões
         print(
@@ -734,135 +808,7 @@ class RecebimentoOrchestrator:
         print(f"[RECEBIMENTO] [GERAÇÃO] Arquivo vazio gerado: {arquivo_gerado}")
         return arquivo_gerado
 
-    def _gerar_pdf_auditoria(self):
-        """Gera PDF de auditoria (opcional)."""
-        print(
-            "[RECEBIMENTO] [AUDITORIA] ===== INÍCIO DO MÉTODO _gerar_pdf_auditoria ====="
-        )
-        try:
-            # Verificar se ReportLab está disponível
-            print(
-                "[RECEBIMENTO] [AUDITORIA] Verificando disponibilidade do ReportLab..."
-            )
-            try:
-                from reportlab.platypus import SimpleDocTemplate
 
-                reportlab_disponivel = True
-                print("[RECEBIMENTO] [AUDITORIA] ReportLab disponível!")
-            except ImportError as e:
-                reportlab_disponivel = False
-                print(f"[RECEBIMENTO] [AUDITORIA] ReportLab não disponível. Erro: {e}")
-                print("[RECEBIMENTO] [AUDITORIA] Pulando geração de PDF.")
-                return
-
-            # Verificar parâmetro
-            print(
-                "[RECEBIMENTO] [AUDITORIA] Verificando parâmetro gerar_pdf_auditoria..."
-            )
-            print(
-                f"[RECEBIMENTO] [AUDITORIA] Params disponíveis: {list(self.calc_comissao.params.keys())}"
-            )
-            gerar_pdf = self.calc_comissao.params.get("gerar_pdf_auditoria", True)
-            print(
-                f"[RECEBIMENTO] [AUDITORIA] Valor do parâmetro gerar_pdf_auditoria: {gerar_pdf} (tipo: {type(gerar_pdf)})"
-            )
-
-            # Converter string "True"/"False" para boolean se necessário
-            if isinstance(gerar_pdf, str):
-                gerar_pdf = gerar_pdf.strip().lower() in ["true", "1", "yes", "sim"]
-                print(
-                    f"[RECEBIMENTO] [AUDITORIA] Parâmetro convertido de string para boolean: {gerar_pdf}"
-                )
-
-            if not gerar_pdf:
-                print(
-                    "[RECEBIMENTO] [AUDITORIA] Geração de PDF desativada por parâmetro. Pulando..."
-                )
-                return
-
-            if not reportlab_disponivel:
-                print(
-                    "[RECEBIMENTO] [AUDITORIA] ReportLab não está instalado. Pulando geração de PDF."
-                )
-                return
-
-            print("[RECEBIMENTO] [AUDITORIA] Iniciando geração de PDF de auditoria...")
-
-            # Tentar importar o módulo de auditoria
-            try:
-                from auditoria_pdf import AuditoriaOrchestrator
-
-                print(
-                    "[RECEBIMENTO] [AUDITORIA] Módulo auditoria_pdf importado com sucesso!"
-                )
-            except ImportError as e:
-                print(
-                    f"[RECEBIMENTO] [AUDITORIA] ERRO ao importar módulo auditoria_pdf: {e}"
-                )
-                print(
-                    "[RECEBIMENTO] [AUDITORIA] Verifique se o módulo está no caminho correto."
-                )
-                import traceback
-
-                traceback.print_exc()
-                return
-            except Exception as e:
-                print(
-                    f"[RECEBIMENTO] [AUDITORIA] ERRO inesperado ao importar auditoria_pdf: {e}"
-                )
-                import traceback
-
-                traceback.print_exc()
-                return
-
-            print(
-                "[RECEBIMENTO] [AUDITORIA] Criando instância do AuditoriaOrchestrator..."
-            )
-            try:
-                auditoria = AuditoriaOrchestrator(
-                    recebimento_orchestrator=self,
-                    calc_comissao=self.calc_comissao,
-                    mes=self.mes,
-                    ano=self.ano,
-                    base_path=self.base_path,
-                )
-                print(
-                    "[RECEBIMENTO] [AUDITORIA] AuditoriaOrchestrator criado com sucesso!"
-                )
-            except Exception as e:
-                print(
-                    f"[RECEBIMENTO] [AUDITORIA] ERRO ao criar AuditoriaOrchestrator: {e}"
-                )
-                import traceback
-
-                traceback.print_exc()
-                return
-
-            print("[RECEBIMENTO] [AUDITORIA] Chamando método gerar_auditoria()...")
-            try:
-                arquivo_pdf = auditoria.gerar_auditoria()
-
-                if arquivo_pdf:
-                    print(
-                        f"[RECEBIMENTO] [AUDITORIA] PDF de auditoria gerado: {arquivo_pdf}"
-                    )
-                else:
-                    print(
-                        "[RECEBIMENTO] [AUDITORIA] PDF não gerado (sem dados ou erro)."
-                    )
-            except Exception as e:
-                print(
-                    f"[RECEBIMENTO] [AUDITORIA] ERRO ao chamar gerar_auditoria(): {e}"
-                )
-                import traceback
-
-                traceback.print_exc()
-
-        except Exception as e:
-            print(
-                f"[RECEBIMENTO] [AUDITORIA] ERRO GERAL ao gerar PDF de auditoria: {e}"
-            )
-            import traceback
 
             traceback.print_exc()
         finally:

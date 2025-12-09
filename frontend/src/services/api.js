@@ -257,33 +257,31 @@ export const recebimentoAPI = {
 
 export const monitorAPI = {
   /**
-   * Retorna o estado atual de todos os processos de recebimento.
+   * Retorna o estado raw (todas as colunas) de todos os processos.
+   * Ideal para visualização completa do arquivo Estado_Processos_Recebimento.
    * @param {Object} params - Parâmetros de filtro
-   * @param {string} params.statusPagamento - Filtrar por status (PENDENTE, PARCIAL, COMPLETO)
-   * @param {string} params.statusReconciliacao - Filtrar por reconciliação (PENDENTE, CONCLUIDA)
-   * @param {boolean} params.apenasSaldoAberto - Mostrar apenas processos com saldo > 0
+   * @param {string} params.busca - Busca por texto em processo ou colaborador
+   * @param {string} params.statusProcesso - Filtrar por status do processo
+   * @param {string} params.statusPagamento - Filtrar por status de pagamento
+   * @param {string} params.statusCalculo - Filtrar por status de cálculo de médias
    */
-  getEstadoProcessos: (params = {}) => {
+  getEstadoRaw: (params = {}) => {
     const queryParams = new URLSearchParams();
+    if (params.busca) {
+      queryParams.append('busca', params.busca);
+    }
+    if (params.statusProcesso) {
+      queryParams.append('status_processo', params.statusProcesso);
+    }
     if (params.statusPagamento) {
       queryParams.append('status_pagamento', params.statusPagamento);
     }
-    if (params.statusReconciliacao) {
-      queryParams.append('status_reconciliacao', params.statusReconciliacao);
-    }
-    if (params.apenasSaldoAberto) {
-      queryParams.append('apenas_saldo_aberto', 'true');
+    if (params.statusCalculo) {
+      queryParams.append('status_calculo', params.statusCalculo);
     }
     const queryString = queryParams.toString();
-    return api.get(`/api/monitor/processos${queryString ? `?${queryString}` : ''}`);
+    return api.get(`/api/monitor/estado-raw${queryString ? `?${queryString}` : ''}`);
   },
-
-  /**
-   * Retorna detalhes completos de um processo específico.
-   * @param {string} processoId - ID do processo
-   */
-  getProcessoDetalhes: (processoId) => 
-    api.get(`/api/monitor/processos/${processoId}/detalhes`),
 };
 
 export default api;

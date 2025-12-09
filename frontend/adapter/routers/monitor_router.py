@@ -1,8 +1,7 @@
 """
-Router para endpoints de monitoramento de processos.
+Router para endpoints de estado de processos de recebimento.
 
-Gerencia a visualização do estado de ciclo de vida dos processos
-de recebimento, incluindo antecipações, pagamentos regulares e reconciliações.
+Fornece acesso raw ao arquivo Estado_Processos_Recebimento.
 """
 
 import json
@@ -16,58 +15,17 @@ from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/monitor", tags=["Monitoramento"])
+router = APIRouter(prefix="/api/monitor", tags=["Estado Processos"])
 
 
 # ==================== MODELS ====================
 
 
-class ColaboradorTCMP(BaseModel):
-    """Taxa de Comissão Média Ponderada por colaborador."""
-    colaborador: str
-    tcmp: float
-
-
-class ColaboradorFCMP(BaseModel):
-    """Fator de Correção Médio Ponderado por colaborador."""
-    colaborador: str
-    fcmp: float
-
-
-class ProcessoEstado(BaseModel):
-    """Modelo de dados do estado de um processo."""
-    processo: str
-    valor_total_processo: float
-    total_antecipacoes: float
-    total_pagamentos_regulares: float
-    total_pago_acumulado: float
-    saldo_a_receber: float
-    total_comissao_antecipacoes: float
-    total_comissao_regulares: float
-    total_comissao_acumulada: float
-    status_processo: str
-    status_pagamento: str
-    status_calculo_medias: str
-    mes_ano_faturamento: Optional[str]
-    colaboradores_envolvidos: List[str]
-    data_primeiro_pagamento: Optional[str]
-    data_ultimo_pagamento: Optional[str]
-    quantidade_pagamentos: int
-    ultima_atualizacao: Optional[str]
-    status_reconciliacao: str
-    observacoes: Optional[str]
-    # Dados expandidos (TCMP/FCMP por colaborador)
-    tcmp_por_colaborador: List[ColaboradorTCMP]
-    fcmp_por_colaborador: List[ColaboradorFCMP]
-    # Percentual de progresso calculado
-    percentual_pago: float
-
-
-class EstadoProcessosResponse(BaseModel):
-    """Resposta do endpoint de estado de processos."""
+class EstadoRawResponse(BaseModel):
+    """Resposta do endpoint de estado raw (todas as colunas)."""
     total_processos: int
-    processos: List[ProcessoEstado]
-    resumo: Dict[str, Any]
+    colunas: List[str]
+    dados: List[Dict[str, Any]]
 
 
 # ==================== HELPER FUNCTIONS ====================
@@ -75,13 +33,13 @@ class EstadoProcessosResponse(BaseModel):
 
 def get_robo_root_path() -> Path:
     """Retorna o caminho raiz do robô."""
-    # Importar do módulo principal para manter consistência
     import sys
+    import os
+    from dotenv import load_dotenv
+    
     adapter_dir = Path(__file__).parent.parent
     default_path = adapter_dir.parent.parent.resolve()
     
-    import os
-    from dotenv import load_dotenv
     env_path = adapter_dir / ".env"
     load_dotenv(dotenv_path=env_path, override=True)
     
@@ -162,16 +120,6 @@ def safe_float(value: Any, default: float = 0.0) -> float:
         return default
 
 
-def safe_int(value: Any, default: int = 0) -> int:
-    """Converte valor para int de forma segura."""
-    if pd.isna(value) or value is None:
-        return default
-    try:
-        return int(value)
-    except (ValueError, TypeError):
-        return default
-
-
 def safe_str(value: Any, default: str = "") -> str:
     """Converte valor para string de forma segura."""
     if pd.isna(value) or value is None:
@@ -182,40 +130,29 @@ def safe_str(value: Any, default: str = "") -> str:
 # ==================== ENDPOINTS ====================
 
 
-@router.get("/processos", response_model=EstadoProcessosResponse)
-async def get_estado_processos(
-    status_pagamento: Optional[str] = Query(
-        None, description="Filtrar por status de pagamento (PENDENTE, PARCIAL, COMPLETO)"
-    ),
-    status_reconciliacao: Optional[str] = Query(
-        None, description="Filtrar por status de reconciliação (PENDENTE, CONCLUIDA)"
-    ),
-    apenas_saldo_aberto: bool = Query(
-        False, description="Mostrar apenas processos com saldo a receber > 0"
-    ),
+@router.get("/estado-raw", response_model=EstadoRawResponse)
+async def get_estado_raw(
+    busca: Optional[str] = Query(None, description="Busca por texto em processo ou colaborador"),
+    status_processo: Optional[str] = Query(None, description="Filtrar por status do processo"),
+    status_pagamento: Optional[str] = Query(None, description="Filtrar por status de pagamento"),
+    status_calculo: Optional[str] = Query(None, description="Filtrar por status de cálculo de médias"),
 ):
     """
-    Retorna o estado atual de todos os processos de recebimento.
+    Retorna o estado completo de todos os processos em formato raw.
     
-    Este endpoint lê o arquivo Estado_Processos_Recebimento e retorna
-    informações detalhadas sobre o ciclo de vida de cada processo,
-    incluindo valores pagos, saldos, comissões e métricas TCMP/FCMP.
+    Este endpoint retorna TODAS as colunas do arquivo Estado_Processos_Recebimento
+    exatamente como estão armazenadas, ideal para visualização completa dos dados.
+    
+    Colunas JSON são retornadas como objetos (não strings) para facilitar a renderização.
     """
     estado_path = get_estado_file_path()
     
     if not estado_path.exists():
         logger.warning(f"Arquivo de estado não encontrado: {estado_path}")
-        return EstadoProcessosResponse(
+        return EstadoRawResponse(
             total_processos=0,
-            processos=[],
-            resumo={
-                "total_valor_processos": 0,
-                "total_pago": 0,
-                "total_saldo_aberto": 0,
-                "total_comissoes": 0,
-                "por_status_pagamento": {},
-                "por_status_reconciliacao": {},
-            }
+            colunas=[],
+            dados=[]
         )
     
     try:
@@ -225,181 +162,77 @@ async def get_estado_processos(
         else:
             df = pd.read_csv(estado_path, sep=";", dtype=str)
         
-        logger.info(f"Lido arquivo de estado com {len(df)} processos")
+        logger.info(f"[ESTADO-RAW] Lido arquivo de estado com {len(df)} processos: {estado_path}")
         
     except Exception as e:
-        logger.error(f"Erro ao ler arquivo de estado: {e}")
+        logger.error(f"[ESTADO-RAW] Erro ao ler arquivo de estado: {e}")
         raise HTTPException(
             status_code=500,
             detail=f"Erro ao ler arquivo de estado: {str(e)}"
         )
+    
+    # Lista de colunas que contêm JSON
+    json_columns = [
+        "TCMP_JSON", "FCMP_JSON", 
+        "TCMP_DETALHES_JSON", "FCMP_DETALHES_JSON",
+        "COMISSOES_ADIANTADAS_JSON"
+    ]
+    
+    # Lista de colunas numéricas
+    numeric_columns = [
+        "VALOR_TOTAL_PROCESSO", "TOTAL_ANTECIPACOES", "TOTAL_PAGAMENTOS_REGULARES",
+        "TOTAL_PAGO_ACUMULADO", "SALDO_A_RECEBER", "TOTAL_COMISSAO_ANTECIPACOES",
+        "TOTAL_COMISSAO_REGULARES", "TOTAL_COMISSAO_ACUMULADA", "QUANTIDADE_PAGAMENTOS"
+    ]
     
     # Processar cada linha
-    processos: List[ProcessoEstado] = []
-    
-    # Contadores para resumo
-    total_valor_processos = 0.0
-    total_pago = 0.0
-    total_saldo_aberto = 0.0
-    total_comissoes = 0.0
-    por_status_pagamento: Dict[str, int] = {}
-    por_status_reconciliacao: Dict[str, int] = {}
-    
+    dados = []
     for _, row in df.iterrows():
-        # Parse dos valores numéricos
-        valor_total = safe_float(row.get("VALOR_TOTAL_PROCESSO"))
-        total_pago_acum = safe_float(row.get("TOTAL_PAGO_ACUMULADO"))
-        saldo = safe_float(row.get("SALDO_A_RECEBER"))
-        comissao_acum = safe_float(row.get("TOTAL_COMISSAO_ACUMULADA"))
+        registro = {}
         
-        # Calcular percentual pago
-        percentual_pago = (total_pago_acum / valor_total * 100) if valor_total > 0 else 0.0
+        for col in df.columns:
+            value = row.get(col)
+            
+            if col in json_columns:
+                # Parse de colunas JSON
+                registro[col] = parse_json_column(value)
+            elif col in numeric_columns:
+                # Converter para número
+                registro[col] = safe_float(value) if pd.notna(value) else None
+            elif col == "COLABORADORES_ENVOLVIDOS":
+                # Parse de colaboradores
+                registro[col] = parse_colaboradores(value)
+            elif "DATA" in col or "ATUALIZACAO" in col:
+                # Formatar datas
+                registro[col] = format_date(value)
+            else:
+                # Manter como string
+                registro[col] = safe_str(value) if pd.notna(value) else None
         
-        # Parse dos JSONs de TCMP e FCMP
-        tcmp_json = parse_json_column(row.get("TCMP_JSON"))
-        fcmp_json = parse_json_column(row.get("FCMP_JSON"))
-        
-        # Converter para lista de colaboradores
-        tcmp_lista = [
-            ColaboradorTCMP(colaborador=k, tcmp=safe_float(v))
-            for k, v in tcmp_json.items()
-        ]
-        fcmp_lista = [
-            ColaboradorFCMP(colaborador=k, fcmp=safe_float(v))
-            for k, v in fcmp_json.items()
-        ]
-        
-        # Status
-        status_pag = safe_str(row.get("STATUS_PAGAMENTO"), "PENDENTE")
-        status_recon = safe_str(row.get("STATUS_RECONCILIACAO"), "PENDENTE")
-        
-        # Aplicar filtros
-        if status_pagamento and status_pag != status_pagamento:
-            continue
-        if status_reconciliacao and status_recon != status_reconciliacao:
-            continue
-        if apenas_saldo_aberto and saldo <= 0:
-            continue
-        
-        # Criar objeto do processo
-        processo = ProcessoEstado(
-            processo=safe_str(row.get("PROCESSO")),
-            valor_total_processo=valor_total,
-            total_antecipacoes=safe_float(row.get("TOTAL_ANTECIPACOES")),
-            total_pagamentos_regulares=safe_float(row.get("TOTAL_PAGAMENTOS_REGULARES")),
-            total_pago_acumulado=total_pago_acum,
-            saldo_a_receber=saldo,
-            total_comissao_antecipacoes=safe_float(row.get("TOTAL_COMISSAO_ANTECIPACOES")),
-            total_comissao_regulares=safe_float(row.get("TOTAL_COMISSAO_REGULARES")),
-            total_comissao_acumulada=comissao_acum,
-            status_processo=safe_str(row.get("STATUS_PROCESSO"), "DESCONHECIDO"),
-            status_pagamento=status_pag,
-            status_calculo_medias=safe_str(row.get("STATUS_CALCULO_MEDIAS"), "PENDENTE"),
-            mes_ano_faturamento=safe_str(row.get("MES_ANO_FATURAMENTO")) or None,
-            colaboradores_envolvidos=parse_colaboradores(row.get("COLABORADORES_ENVOLVIDOS")),
-            data_primeiro_pagamento=format_date(row.get("DATA_PRIMEIRO_PAGAMENTO")),
-            data_ultimo_pagamento=format_date(row.get("DATA_ULTIMO_PAGAMENTO")),
-            quantidade_pagamentos=safe_int(row.get("QUANTIDADE_PAGAMENTOS")),
-            ultima_atualizacao=format_date(row.get("ULTIMA_ATUALIZACAO")),
-            status_reconciliacao=status_recon,
-            observacoes=safe_str(row.get("OBSERVACOES")) or None,
-            tcmp_por_colaborador=tcmp_lista,
-            fcmp_por_colaborador=fcmp_lista,
-            percentual_pago=round(percentual_pago, 2),
-        )
-        
-        processos.append(processo)
-        
-        # Atualizar contadores
-        total_valor_processos += valor_total
-        total_pago += total_pago_acum
-        total_saldo_aberto += saldo
-        total_comissoes += comissao_acum
-        por_status_pagamento[status_pag] = por_status_pagamento.get(status_pag, 0) + 1
-        por_status_reconciliacao[status_recon] = por_status_reconciliacao.get(status_recon, 0) + 1
+        dados.append(registro)
     
-    logger.info(f"Retornando {len(processos)} processos após filtros")
+    # Aplicar filtros
+    if busca:
+        busca_lower = busca.lower()
+        dados = [
+            d for d in dados
+            if (d.get("PROCESSO") and busca_lower in str(d["PROCESSO"]).lower()) or
+               (d.get("COLABORADORES_ENVOLVIDOS") and any(busca_lower in c.lower() for c in d["COLABORADORES_ENVOLVIDOS"]))
+        ]
     
-    return EstadoProcessosResponse(
-        total_processos=len(processos),
-        processos=processos,
-        resumo={
-            "total_valor_processos": round(total_valor_processos, 2),
-            "total_pago": round(total_pago, 2),
-            "total_saldo_aberto": round(total_saldo_aberto, 2),
-            "total_comissoes": round(total_comissoes, 4),
-            "por_status_pagamento": por_status_pagamento,
-            "por_status_reconciliacao": por_status_reconciliacao,
-        }
+    if status_processo:
+        dados = [d for d in dados if d.get("STATUS_PROCESSO") == status_processo]
+    
+    if status_pagamento:
+        dados = [d for d in dados if d.get("STATUS_PAGAMENTO") == status_pagamento]
+    
+    if status_calculo:
+        dados = [d for d in dados if d.get("STATUS_CALCULO_MEDIAS") == status_calculo]
+    
+    logger.info(f"[ESTADO-RAW] Retornando {len(dados)} processos após filtros")
+    
+    return EstadoRawResponse(
+        total_processos=len(dados),
+        colunas=list(df.columns),
+        dados=dados
     )
-
-
-@router.get("/processos/{processo_id}/detalhes")
-async def get_processo_detalhes(processo_id: str):
-    """
-    Retorna detalhes completos de um processo específico,
-    incluindo breakdown de TCMP e FCMP por item.
-    """
-    estado_path = get_estado_file_path()
-    
-    if not estado_path.exists():
-        raise HTTPException(
-            status_code=404,
-            detail="Arquivo de estado não encontrado"
-        )
-    
-    try:
-        if estado_path.suffix.lower() == ".xlsx":
-            df = pd.read_excel(estado_path, dtype=str)
-        else:
-            df = pd.read_csv(estado_path, sep=";", dtype=str)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Erro ao ler arquivo de estado: {str(e)}"
-        )
-    
-    # Buscar processo
-    processo_row = df[df["PROCESSO"].astype(str) == str(processo_id)]
-    
-    if processo_row.empty:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Processo {processo_id} não encontrado"
-        )
-    
-    row = processo_row.iloc[0]
-    
-    # Parse completo dos detalhes
-    tcmp_detalhes = parse_json_column(row.get("TCMP_DETALHES_JSON"))
-    fcmp_detalhes = parse_json_column(row.get("FCMP_DETALHES_JSON"))
-    comissoes_adiantadas = parse_json_column(row.get("COMISSOES_ADIANTADAS_JSON"))
-    
-    return {
-        "processo": safe_str(row.get("PROCESSO")),
-        "valor_total_processo": safe_float(row.get("VALOR_TOTAL_PROCESSO")),
-        "total_antecipacoes": safe_float(row.get("TOTAL_ANTECIPACOES")),
-        "total_pagamentos_regulares": safe_float(row.get("TOTAL_PAGAMENTOS_REGULARES")),
-        "total_pago_acumulado": safe_float(row.get("TOTAL_PAGO_ACUMULADO")),
-        "saldo_a_receber": safe_float(row.get("SALDO_A_RECEBER")),
-        "total_comissao_antecipacoes": safe_float(row.get("TOTAL_COMISSAO_ANTECIPACOES")),
-        "total_comissao_regulares": safe_float(row.get("TOTAL_COMISSAO_REGULARES")),
-        "total_comissao_acumulada": safe_float(row.get("TOTAL_COMISSAO_ACUMULADA")),
-        "status_processo": safe_str(row.get("STATUS_PROCESSO")),
-        "status_pagamento": safe_str(row.get("STATUS_PAGAMENTO")),
-        "status_calculo_medias": safe_str(row.get("STATUS_CALCULO_MEDIAS")),
-        "mes_ano_faturamento": safe_str(row.get("MES_ANO_FATURAMENTO")) or None,
-        "colaboradores_envolvidos": parse_colaboradores(row.get("COLABORADORES_ENVOLVIDOS")),
-        "data_primeiro_pagamento": format_date(row.get("DATA_PRIMEIRO_PAGAMENTO")),
-        "data_ultimo_pagamento": format_date(row.get("DATA_ULTIMO_PAGAMENTO")),
-        "quantidade_pagamentos": safe_int(row.get("QUANTIDADE_PAGAMENTOS")),
-        "ultima_atualizacao": format_date(row.get("ULTIMA_ATUALIZACAO")),
-        "status_reconciliacao": safe_str(row.get("STATUS_RECONCILIACAO")),
-        "observacoes": safe_str(row.get("OBSERVACOES")) or None,
-        # Detalhes expandidos
-        "tcmp_json": parse_json_column(row.get("TCMP_JSON")),
-        "fcmp_json": parse_json_column(row.get("FCMP_JSON")),
-        "tcmp_detalhes": tcmp_detalhes,
-        "fcmp_detalhes": fcmp_detalhes,
-        "comissoes_adiantadas": comissoes_adiantadas,
-    }

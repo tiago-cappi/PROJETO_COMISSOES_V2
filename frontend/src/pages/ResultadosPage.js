@@ -32,7 +32,7 @@ const { Search } = Input;
 const { Option } = Select;
 
 // Abas de debug que devem ser ocultas
-const ABAS_OCULTAS = ['VALIDACAO', 'DEBUG_RECEBIMENTOS_RAW', 'DEBUG_ENV', 'DEBUG_ANALISE_INFO', 'DEBUG_ANALISE_SAMPLE'];
+const ABAS_OCULTAS = ['VALIDACAO', 'DEBUG_RECEBIMENTOS_RAW', 'DEBUG_ENV', 'DEBUG_ANALISE_INFO', 'DEBUG_ANALISE_SAMPLE', 'RECONCILIACAO', 'RECONCILIACOES'];
 
 // Glossário de colunas (simplificado - pode ser expandido)
 const GLOSSARIO = {
@@ -208,6 +208,10 @@ const groupRecebimentoData = (data = []) =>
     }
   );
 
+/**
+ * NOTA: Função de reconciliação movida para a página "Estado Processos".
+ * Esta função não é mais utilizada, mas foi mantida por compatibilidade.
+ */
 const groupReconciliacaoData = (data = []) => {
   const resumos = data.filter((item) => item.SALDO_FINAL_RECONCILIACAO !== undefined && item.SALDO_FINAL_RECONCILIACAO !== null);
   const linhas = data.filter((item) => item.SALDO_FINAL_RECONCILIACAO === undefined || item.SALDO_FINAL_RECONCILIACAO === null);

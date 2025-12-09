@@ -8,7 +8,7 @@ import ExecutarPage from './pages/ExecutarPage';
 import ResultadosPage from './pages/ResultadosPage';
 import CambioPage from './pages/CambioPage';
 import RecebimentosPage from './pages/RecebimentosPage';
-import MonitoramentoPage from './pages/MonitoramentoPage';
+import EstadoProcessosPage from './pages/EstadoProcessosPage';
 
 import 'antd/dist/reset.css';
 import './App.css';
@@ -27,7 +27,7 @@ function App() {
             <Route path="/executar" element={<ExecutarPage />} />
             <Route path="/resultados" element={<ResultadosPage />} />
             <Route path="/recebimentos" element={<RecebimentosPage />} />
-            <Route path="/monitoramento" element={<MonitoramentoPage />} />
+            <Route path="/estado-processos" element={<EstadoProcessosPage />} />
             <Route path="/cambio" element={<CambioPage />} />
           </Routes>
         </Content>

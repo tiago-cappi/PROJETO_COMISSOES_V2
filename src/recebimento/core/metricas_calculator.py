@@ -41,7 +41,8 @@ class MetricasCalculator:
         self,
         processo: str,
         mes_apuracao: int,
-        ano_apuracao: int
+        ano_apuracao: int,
+        status_processo: str = None
     ) -> Dict:
         """
         Calcula TCMP e FCMP por colaborador para um processo.
@@ -50,6 +51,8 @@ class MetricasCalculator:
             processo: ID do processo
             mes_apuracao: Mês de apuração (1-12)
             ano_apuracao: Ano de apuração (ex: 2025)
+            status_processo: Status do processo na Análise Comercial (opcional).
+                            Se não for FATURADO, FCMP será forçado a 1.0.
         
         Returns:
             Dict com:
@@ -82,6 +85,19 @@ class MetricasCalculator:
             return {"TCMP": {}, "FCMP": {}, "colaboradores": []}
         else:
             print(f"[RECEBIMENTO] [MÉTRICAS] Itens encontrados para processo {processo}: {len(itens)}")
+        
+        # Verificar se deve calcular FCMP real ou usar 1.0 (para processos não faturados)
+        # Se status_processo não foi passado, tentar descobrir do DataFrame
+        if status_processo is None:
+            status_col = self._encontrar_coluna(df_comercial, ["Status Processo", "status processo", "STATUS_PROCESSO"])
+            if status_col:
+                status_raw = itens.iloc[0].get(status_col, "")
+                status_processo = str(status_raw).strip().upper() if pd.notna(status_raw) else ""
+        
+        # REGRA: Se o processo NÃO está FATURADO, FCMP = 1.0 (sem ajuste de metas)
+        forcar_fcmp_1 = (status_processo or "").upper() != "FATURADO"
+        if forcar_fcmp_1:
+            print(f"[RECEBIMENTO] [MÉTRICAS] Processo {processo} não faturado (status={status_processo}). FCMP será forçado a 1.0")
         
         # 2. Identificar colaboradores que recebem por recebimento
         colaboradores = self.identificador.identificar_colaboradores(processo)
@@ -121,18 +137,24 @@ class MetricasCalculator:
                 
                 # Calcular FC usando função existente (capturando detalhes para auditoria)
                 fc_detalhes_item = {}
-                try:
-                    fc, fc_detalhes_item = self.calc_comissao._calcular_fc_para_item(
-                        nome_colab=nome,
-                        cargo_colab=cargo,
-                        item_faturado=item.to_dict(),
-                        mes_apuracao_override=mes_apuracao,
-                        ano_apuracao_override=ano_apuracao
-                    )
-                except Exception as e:
-                    print(f"[RECEBIMENTO] [MÉTRICAS] [FC] ERRO ao calcular FC: {e}")
-                    fc = 0.0
-                    fc_detalhes_item = {}
+                
+                # REGRA: Se processo não faturado, FCMP = 1.0 (sem ajuste de metas)
+                if forcar_fcmp_1:
+                    fc = 1.0
+                    fc_detalhes_item = {"nota": "FCMP=1.0 (processo não faturado)"}
+                else:
+                    try:
+                        fc, fc_detalhes_item = self.calc_comissao._calcular_fc_para_item(
+                            nome_colab=nome,
+                            cargo_colab=cargo,
+                            item_faturado=item.to_dict(),
+                            mes_apuracao_override=mes_apuracao,
+                            ano_apuracao_override=ano_apuracao
+                        )
+                    except Exception as e:
+                        print(f"[RECEBIMENTO] [MÉTRICAS] [FC] ERRO ao calcular FC: {e}")
+                        fc = 1.0  # Fallback para 1.0 em caso de erro
+                        fc_detalhes_item = {"erro": str(e)}
                 
                 # Obter regra de comissão
                 taxa_rateio_detalhes = 0.0
@@ -338,28 +360,55 @@ class MetricasCalculator:
         
         return mask.any()
     
-    def _obter_valor_item(self, item: pd.Series) -> float:
+    def _obter_valor_item(self, item: pd.Series, status_processo: str = None) -> float:
         """
-        Obtém o valor realizado de um item.
+        Obtém o valor do item de forma inteligente.
+        
+        Regra:
+        - Primeiro tenta Valor Realizado
+        - Se não existir ou for zero/NaN, usa Valor Orçado
         
         Args:
             item: Series do item
+            status_processo: Status do processo (opcional, para otimizar busca)
         
         Returns:
-            Valor realizado ou 0.0
+            Valor do item ou 0.0
         """
-        valor_col = self._encontrar_coluna_item(
+        # Primeiro tentar Valor Realizado
+        valor_realizado_col = self._encontrar_coluna_item(
             item,
             ["Valor Realizado", "valor realizado", "VALOR_REALIZADO"]
         )
         
-        if valor_col:
+        valor = 0.0
+        if valor_realizado_col:
+            raw_val = item.get(valor_realizado_col)
             try:
-                return float(pd.to_numeric(item.get(valor_col, 0.0), errors='coerce') or 0.0)
+                valor_convertido = pd.to_numeric(raw_val, errors='coerce')
+                # Verificar se é válido (não NaN e não None)
+                if pd.notna(valor_convertido) and valor_convertido != 0:
+                    valor = float(valor_convertido)
             except Exception:
                 pass
         
-        return 0.0
+        # Se Valor Realizado não existir, for zero ou NaN, tentar Valor Orçado
+        if valor == 0.0:
+            valor_orcado_col = self._encontrar_coluna_item(
+                item,
+                ["Valor Orçado", "valor orçado", "Valor Orcado", "VALOR_ORCADO"]
+            )
+            if valor_orcado_col:
+                raw_val = item.get(valor_orcado_col)
+                try:
+                    valor_convertido = pd.to_numeric(raw_val, errors='coerce')
+                    # Verificar se é válido (não NaN e não None)
+                    if pd.notna(valor_convertido):
+                        valor = float(valor_convertido)
+                except Exception:
+                    pass
+        
+        return valor
     
     def _encontrar_coluna(self, df: pd.DataFrame, nomes_possiveis: list) -> Optional[str]:
         """Encontra uma coluna no DataFrame."""

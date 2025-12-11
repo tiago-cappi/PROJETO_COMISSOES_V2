@@ -1419,6 +1419,217 @@ async def baixar_recebimento(mes: int = Query(...), ano: int = Query(...)):
     )
 
 
+@app.get("/resultado/recebimento/pagamentos")
+async def listar_pagamentos_recebimento(
+    mes: int = Query(...),
+    ano: int = Query(...),
+    tipo: Optional[str] = Query(None)  # Filtro opcional: "ADIANTAMENTO" ou "REGULAR"
+):
+    """
+    Lista todos os pagamentos do mês/ano em formato flat (snapshot do mês).
+    Combina COMISSOES_ADIANTAMENTOS + COMISSOES_REGULARES em uma única lista.
+    """
+    recebimento_path = get_recebimento_path(mes, ano)
+    if not recebimento_path:
+        print(f"[adapter] /resultado/recebimento/pagamentos -> arquivo não encontrado para {mes:02d}/{ano}")
+        return {"pagamentos": [], "mes": mes, "ano": ano}
+
+    try:
+        pagamentos = []
+        
+        # Helper function to get column value (case-insensitive)
+        def get_col(row, col_name):
+            # Tentar uppercase primeiro, depois lowercase
+            upper = col_name.upper()
+            lower = col_name.lower()
+            if upper in row.index:
+                return row[upper]
+            elif lower in row.index:
+                return row[lower]
+            else:
+                return None
+        
+        # Ler aba COMISSOES_ADIANTAMENTOS
+        try:
+            df_adiant = read_excel_sheet(recebimento_path, "COMISSOES_ADIANTAMENTOS")
+            for idx, row in df_adiant.iterrows():
+                pagamentos.append({
+                    "id": f"ADIANT_{mes}_{ano}_{idx}",
+                    "tipo": "ADIANTAMENTO",
+                    "processo": str(get_col(row, "processo") or ""),
+                    "nome_colaborador": str(get_col(row, "nome_colaborador") or ""),
+                    "cargo": str(get_col(row, "cargo") or ""),
+                    "data_pagamento": str(get_col(row, "data_pagamento") or ""),
+                    "valor_pago": float(get_col(row, "valor_pago") or 0),
+                    "tcmp": float(get_col(row, "tcmp") or 0),
+                    "fcmp": 1.0,  # Adiantamentos sempre FC=1.0
+                    "comissao_calculada": float(get_col(row, "comissao_calculada") or 0),
+                })
+        except Exception as e:
+            print(f"[adapter] Aba COMISSOES_ADIANTAMENTOS não encontrada ou erro: {e}")
+        
+        # Ler aba COMISSOES_REGULARES
+        try:
+            df_regular = read_excel_sheet(recebimento_path, "COMISSOES_REGULARES")
+            for idx, row in df_regular.iterrows():
+                pagamentos.append({
+                    "id": f"REGULAR_{mes}_{ano}_{idx}",
+                    "tipo": "REGULAR",
+                    "processo": str(get_col(row, "processo") or ""),
+                    "nome_colaborador": str(get_col(row, "nome_colaborador") or ""),
+                    "cargo": str(get_col(row, "cargo") or ""),
+                    "data_pagamento": str(get_col(row, "data_pagamento") or ""),
+                    "valor_pago": float(get_col(row, "valor_pago") or 0),
+                    "tcmp": float(get_col(row, "tcmp") or 0),
+                    "fcmp": float(get_col(row, "fcmp") or 1.0),
+                    "comissao_calculada": float(get_col(row, "comissao_calculada") or 0),
+                })
+        except Exception as e:
+            print(f"[adapter] Aba COMISSOES_REGULARES não encontrada ou erro: {e}")
+        
+        # Aplicar filtro de tipo se especificado
+        if tipo:
+            pagamentos = [p for p in pagamentos if p["tipo"] == tipo.upper()]
+        
+        print(f"[adapter] /resultado/recebimento/pagamentos -> {len(pagamentos)} pagamentos para {mes:02d}/{ano}")
+        return {"pagamentos": pagamentos, "mes": mes, "ano": ano}
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao listar pagamentos: {str(e)}"
+        )
+
+
+@app.get("/resultado/recebimento/pagamento/{id}/detalhes")
+async def obter_detalhes_pagamento(id: str):
+    """
+    Retorna detalhes completos de um pagamento incluindo breakdown de TCMP e FCMP.
+    ID format: TIPO_MES_ANO_INDEX (ex: ADIANT_8_2025_0 ou REGULAR_8_2025_5)
+    """
+    try:
+        # Parse do ID
+        partes = id.split("_")
+        if len(partes) < 4:
+            raise HTTPException(status_code=400, detail="ID inválido")
+        
+        tipo_prefix = partes[0]
+        mes = int(partes[1])
+        ano = int(partes[2])
+        index = int(partes[3])
+        
+        tipo = "ADIANTAMENTO" if tipo_prefix == "ADIANT" else "REGULAR"
+        aba_nome = "COMISSOES_ADIANTAMENTOS" if tipo == "ADIANTAMENTO" else "COMISSOES_REGULARES"
+        
+        recebimento_path = get_recebimento_path(mes, ano)
+        if not recebimento_path:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Arquivo de recebimento não encontrado para {mes:02d}/{ano}"
+            )
+        
+        # Ler aba correspondente
+        df = read_excel_sheet(recebimento_path, aba_nome)
+        
+        if index >= len(df):
+            raise HTTPException(status_code=404, detail="Pagamento não encontrado")
+        
+        row = df.iloc[index]
+        
+        # Helper function to get column value (case-insensitive)
+        def get_col(row, col_name):
+            upper = col_name.upper()
+            lower = col_name.lower()
+            if upper in row.index:
+                return row[upper]
+            elif lower in row.index:
+                return row[lower]
+            else:
+                return None
+        
+        # Dados básicos
+        pagamento = {
+            "id": id,
+            "tipo": tipo,
+            "processo": str(get_col(row, "processo") or ""),
+            "nome_colaborador": str(get_col(row, "nome_colaborador") or ""),
+            "cargo": str(get_col(row, "cargo") or ""),
+            "data_pagamento": str(get_col(row, "data_pagamento") or ""),
+            "valor_pago": float(get_col(row, "valor_pago") or 0),
+            "tcmp": float(get_col(row, "tcmp") or 0),
+            "fcmp": float(get_col(row, "fcmp") or 1.0),
+            "comissao_calculada": float(get_col(row, "comissao_calculada") or 0),
+        }
+        
+        # Buscar breakdown de TCMP e FCMP do Estado
+        processo = pagamento["processo"]
+        colaborador = pagamento["nome_colaborador"]
+        
+        estado_path = Path(ROBO_ROOT_PATH) / "Estado_Processos_Recebimento.xlsx"
+        
+        pagamento["tcmp_detalhes"] = []
+        pagamento["fcmp_detalhes"] = []
+        
+        if estado_path.exists() and processo and colaborador:
+            try:
+                df_estado = read_excel_sheet(str(estado_path), "ESTADO")
+                df_processo = df_estado[df_estado["PROCESSO"].astype(str).str.strip() == processo.strip()]
+                
+                if not df_processo.empty:
+                    processo_data = df_processo.iloc[0]
+                    
+                    # Parse JSON details
+                    tcmp_json = processo_data.get("TCMP_DETALHES_JSON", "{}")
+                    fcmp_json = processo_data.get("FCMP_DETALHES_JSON", "{}")
+                    
+                    tcmp_detalhes = json.loads(tcmp_json) if tcmp_json and tcmp_json != "{}" else {}
+                    fcmp_detalhes = json.loads(fcmp_json) if fcmp_json and fcmp_json != "{}" else {}
+                    
+                    # Extrair detalhes do colaborador
+                    colab_tcmp = tcmp_detalhes.get(colaborador, {})
+                    colab_fcmp = fcmp_detalhes.get(colaborador, {})
+                    
+                    # Converter estrutura de TCMP (tem "itens" como dict)
+                    if "itens" in colab_tcmp and isinstance(colab_tcmp["itens"], dict):
+                        for item_nome, dados in colab_tcmp["itens"].items():
+                            pagamento["tcmp_detalhes"].append({
+                                "item": item_nome,
+                                "valor": dados.get("valor", 0),
+                                "taxa": dados.get("taxa", 0),
+                                "peso": dados.get("peso", 0),
+                                "tcmp_parcial": dados.get("tcmp_parcial", 0),
+                            })
+                    
+                    # Converter estrutura de FCMP (tem "itens" como dict)
+                    if "itens" in colab_fcmp and isinstance(colab_fcmp["itens"], dict):
+                        for item_nome, dados in colab_fcmp["itens"].items():
+                            pagamento["fcmp_detalhes"].append({
+                                "item": item_nome,
+                                "comissao": dados.get("comissao", 0),
+                                "fc": dados.get("fc", 1.0),
+                                "peso": dados.get("peso", 0),
+                                "fcmp_parcial": dados.get("fcmp_parcial", 0),
+                            })
+                            
+            except Exception as e:
+                print(f"[adapter] Erro ao buscar breakdown de TCMP/FCMP: {e}")
+                import traceback
+                traceback.print_exc()
+        
+        print(f"[adapter] /resultado/recebimento/pagamento/{id}/detalhes -> encontrado (tcmp: {len(pagamento['tcmp_detalhes'])} itens, fcmp: {len(pagamento['fcmp_detalhes'])} itens)")
+        return pagamento
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao obter detalhes do pagamento: {str(e)}"
+        )
+
+
 @app.get("/resultado/recebimento/detalhes")
 async def obter_detalhes_calculo_recebimento(
     processo: str = Query(...),
@@ -1426,7 +1637,10 @@ async def obter_detalhes_calculo_recebimento(
     mes: int = Query(...),
     ano: int = Query(...)
 ):
-    """Retorna detalhes do cálculo de TCMP e FCMP para auditoria"""
+    """
+    [LEGACY] Retorna detalhes do cálculo de TCMP e FCMP para auditoria.
+    Mantido para compatibilidade com código antigo.
+    """
     # Ler do arquivo de estado dedicado (Estado_Processos_Recebimento.xlsx)
     estado_path = Path(ROBO_ROOT_PATH) / "Estado_Processos_Recebimento.xlsx"
     

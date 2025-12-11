@@ -808,14 +808,6 @@ class RecebimentoOrchestrator:
         print(f"[RECEBIMENTO] [GERAÇÃO] Arquivo vazio gerado: {arquivo_gerado}")
         return arquivo_gerado
 
-
-
-            traceback.print_exc()
-        finally:
-            print(
-                "[RECEBIMENTO] [AUDITORIA] ===== FIM DO MÉTODO _gerar_pdf_auditoria ====="
-            )
-
     def _encontrar_coluna(
         self, df: pd.DataFrame, nomes_possiveis: list
     ) -> Optional[str]:

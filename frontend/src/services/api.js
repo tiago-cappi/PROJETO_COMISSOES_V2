@@ -240,6 +240,30 @@ export const cambioAPI = {
 // ==================== RECEBIMENTO ====================
 
 export const recebimentoAPI = {
+  // ==================== MÉTODOS NOVOS (Minimalista) ====================
+  /**
+   * Obtém lista de pagamentos do mês/ano (snapshot do mês selecionado).
+   * Retorna adiantamentos + regulares em uma lista flat.
+   */
+  getPagamentos: (mes, ano, filtros = {}) => {
+    const params = new URLSearchParams({ mes, ano, ...filtros });
+    return api.get(`/resultado/recebimento/pagamentos?${params.toString()}`);
+  },
+  
+  /**
+   * Obtém detalhes completos do cálculo de um pagamento específico.
+   * Inclui breakdown de TCMP (por item) e FCMP (por item, com metas).
+   */
+  getDetalhesPagamento: (id) => 
+    api.get(`/resultado/recebimento/pagamento/${id}/detalhes`),
+  
+  /**
+   * Download do Excel de recebimentos do mês/ano.
+   */
+  baixarExcel: (mes, ano) => 
+    api.get(`/baixar/recebimento?mes=${mes}&ano=${ano}`, { responseType: 'blob' }),
+  
+  // ==================== MÉTODOS ANTIGOS (Legacy - manter compatibilidade) ====================
   listarAbas: (mes, ano) => api.get(`/resultado/recebimento/abas?mes=${mes}&ano=${ano}`),
   
   lerAba: (nomeAba, mes, ano, params = {}) => {

@@ -5144,11 +5144,9 @@ class CalculoComissao:
                 print("=" * 80 + "\n")
 
                 _info(f"[Recebimentos] Erro ao calcular comissões por recebimento: {e}")
-                # Fallback para método antigo se houver erro
-                try:
-                    self._calcular_comissoes_recebimento_nova_logica()
-                except Exception:
-                    self.comissoes_recebimento_df = pd.DataFrame()
+                # Definir DataFrame vazio mas continuar execução (não bloquear faturamento)
+                self.comissoes_recebimento_df = pd.DataFrame()
+                print("[RECEBIMENTO] AVISO: Continuando execução sem arquivo de recebimentos devido ao erro acima.")
         # Por fim, comissões por faturamento (lógica existente, item a item)
         _phase("5.3 Calculando comissões e FC item a item (faturamento)...")
         with _timer_ctx("Calcular comissões e FC", _safe_percent("comissoes")):

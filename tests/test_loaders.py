@@ -95,7 +95,6 @@ def test_data_loader():
             "FATURADOS",
             "CONVERSOES",
             "RENTABILIDADE_REALIZADA",
-            "RETENCAO_CLIENTES",
             "FATURADOS_YTD",
             "RECEBIMENTOS",
             "PAGAMENTOS_REGULARES",

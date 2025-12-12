@@ -54,3 +54,59 @@ consultor_externo: André Camargo
 taxa: 1.0
 taxa_cs (dividido por 100): 0.01
 Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo 400001 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'B', 'timestamp': '2025-12-10T23:01:56.999289'}
+consultor_externo: André Camargo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo 400001 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'B', 'timestamp': '2025-12-11T12:50:06.198700'}
+consultor_externo: André Camargo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo 400001 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'B', 'timestamp': '2025-12-11T14:12:23.716703'}
+consultor_externo: André Camargo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo 400001 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'B', 'timestamp': '2025-12-11T14:24:46.823339'}
+consultor_externo: André Camargo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo 400001 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'B', 'timestamp': '2025-12-11T14:33:30.905291'}
+consultor_externo: André Camargo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo 400001 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'B', 'timestamp': '2025-12-12T09:55:44.935389'}
+consultor_externo: André Camargo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo 400001 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'B', 'timestamp': '2025-12-12T10:00:02.422188'}
+consultor_externo: André Camargo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo 400001 ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'A', 'timestamp': '2025-12-12T13:13:30.869022'}
+consultor_externo: André Camargo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True

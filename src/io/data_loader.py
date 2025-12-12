@@ -79,9 +79,6 @@ class DataLoader:
             mes, ano, base_path, arquivo_rentabilidade
         )
         
-        # Carregar RETENCAO_CLIENTES
-        data["RETENCAO_CLIENTES"] = self._load_retencao_clientes(base_path)
-        
         # Carregar FATURADOS_YTD
         data["FATURADOS_YTD"] = self._load_faturados_ytd(
             base_path, arquivo_faturados_ytd
@@ -236,25 +233,6 @@ class DataLoader:
                 "Tipo de Mercadoria",
                 "rentabilidade_realizada_pct",
             ]
-        )
-    
-    def _load_retencao_clientes(self, base_path: str) -> pd.DataFrame:
-        """Carrega arquivo de retenção de clientes."""
-        arquivo_retencao = os.path.join(base_path, "Retencao_Clientes.xlsx")
-        try:
-            if os.path.exists(arquivo_retencao):
-                return pd.read_excel(arquivo_retencao)
-        except FileNotFoundError:
-            pass
-        except Exception:
-            if self.validation_logger:
-                self.validation_logger.aviso(
-                    f"Erro ao carregar Retencao_Clientes.xlsx",
-                    {"path": arquivo_retencao}
-                )
-        
-        return pd.DataFrame(
-            columns=["linha", "clientes_mes_anterior", "clientes_mes_atual"]
         )
     
     def _load_faturados_ytd(

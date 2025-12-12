@@ -356,21 +356,6 @@ def validar_arquivos_saida(mes: int, ano: int) -> Tuple[bool, Dict]:
     if not sucesso_ytd:
         sucesso_geral = False
 
-    # Validar Retencao_Clientes.xlsx
-    sucesso_reten, detalhes_reten = validar_arquivo_saida(
-        "Retencao_Clientes.xlsx",
-        [
-            "linha",
-            "clientes_mes_anterior",
-            "clientes_mes_atual",
-        ],
-        "Retenção de Clientes",
-        validar_nao_vazio=False,
-    )
-    resultados["Retencao_Clientes"] = detalhes_reten
-    if not sucesso_reten:
-        sucesso_geral = False
-
     return sucesso_geral, resultados
 
 

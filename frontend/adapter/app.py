@@ -1448,6 +1448,20 @@ async def listar_pagamentos_recebimento(
                 return row[lower]
             else:
                 return None
+
+        def safe_float(val):
+            if not val:
+                return 0.0
+            if isinstance(val, (int, float)):
+                return float(val)
+            if isinstance(val, str):
+                # Remove commas (thousands separator)
+                clean_val = val.replace(',', '').strip()
+                try:
+                    return float(clean_val)
+                except ValueError:
+                    return 0.0
+            return 0.0
         
         # Ler aba COMISSOES_ADIANTAMENTOS
         try:
@@ -1460,10 +1474,10 @@ async def listar_pagamentos_recebimento(
                     "nome_colaborador": str(get_col(row, "nome_colaborador") or ""),
                     "cargo": str(get_col(row, "cargo") or ""),
                     "data_pagamento": str(get_col(row, "data_pagamento") or ""),
-                    "valor_pago": float(get_col(row, "valor_pago") or 0),
-                    "tcmp": float(get_col(row, "tcmp") or 0),
+                    "valor_pago": safe_float(get_col(row, "valor_pago")),
+                    "tcmp": safe_float(get_col(row, "tcmp")),
                     "fcmp": 1.0,  # Adiantamentos sempre FC=1.0
-                    "comissao_calculada": float(get_col(row, "comissao_calculada") or 0),
+                    "comissao_calculada": safe_float(get_col(row, "comissao_calculada")),
                 })
         except Exception as e:
             print(f"[adapter] Aba COMISSOES_ADIANTAMENTOS não encontrada ou erro: {e}")
@@ -1479,10 +1493,10 @@ async def listar_pagamentos_recebimento(
                     "nome_colaborador": str(get_col(row, "nome_colaborador") or ""),
                     "cargo": str(get_col(row, "cargo") or ""),
                     "data_pagamento": str(get_col(row, "data_pagamento") or ""),
-                    "valor_pago": float(get_col(row, "valor_pago") or 0),
-                    "tcmp": float(get_col(row, "tcmp") or 0),
-                    "fcmp": float(get_col(row, "fcmp") or 1.0),
-                    "comissao_calculada": float(get_col(row, "comissao_calculada") or 0),
+                    "valor_pago": safe_float(get_col(row, "valor_pago")),
+                    "tcmp": safe_float(get_col(row, "tcmp")),
+                    "fcmp": safe_float(get_col(row, "fcmp") or 1.0),
+                    "comissao_calculada": safe_float(get_col(row, "comissao_calculada")),
                 })
         except Exception as e:
             print(f"[adapter] Aba COMISSOES_REGULARES não encontrada ou erro: {e}")
@@ -1546,6 +1560,20 @@ async def obter_detalhes_pagamento(id: str):
                 return row[lower]
             else:
                 return None
+
+        def safe_float(val):
+            if not val:
+                return 0.0
+            if isinstance(val, (int, float)):
+                return float(val)
+            if isinstance(val, str):
+                # Remove commas (thousands separator)
+                clean_val = val.replace(',', '').strip()
+                try:
+                    return float(clean_val)
+                except ValueError:
+                    return 0.0
+            return 0.0
         
         # Dados básicos
         pagamento = {
@@ -1555,10 +1583,10 @@ async def obter_detalhes_pagamento(id: str):
             "nome_colaborador": str(get_col(row, "nome_colaborador") or ""),
             "cargo": str(get_col(row, "cargo") or ""),
             "data_pagamento": str(get_col(row, "data_pagamento") or ""),
-            "valor_pago": float(get_col(row, "valor_pago") or 0),
-            "tcmp": float(get_col(row, "tcmp") or 0),
-            "fcmp": float(get_col(row, "fcmp") or 1.0),
-            "comissao_calculada": float(get_col(row, "comissao_calculada") or 0),
+            "valor_pago": safe_float(get_col(row, "valor_pago")),
+            "tcmp": safe_float(get_col(row, "tcmp")),
+            "fcmp": safe_float(get_col(row, "fcmp") or 1.0),
+            "comissao_calculada": safe_float(get_col(row, "comissao_calculada")),
         }
         
         # Buscar breakdown de TCMP e FCMP do Estado
@@ -1589,27 +1617,83 @@ async def obter_detalhes_pagamento(id: str):
                     colab_tcmp = tcmp_detalhes.get(colaborador, {})
                     colab_fcmp = fcmp_detalhes.get(colaborador, {})
                     
-                    # Converter estrutura de TCMP (tem "itens" como dict)
-                    if "itens" in colab_tcmp and isinstance(colab_tcmp["itens"], dict):
-                        for item_nome, dados in colab_tcmp["itens"].items():
-                            pagamento["tcmp_detalhes"].append({
-                                "item": item_nome,
-                                "valor": dados.get("valor", 0),
-                                "taxa": dados.get("taxa", 0),
-                                "peso": dados.get("peso", 0),
-                                "tcmp_parcial": dados.get("tcmp_parcial", 0),
-                            })
+                    # Converter estrutura de TCMP (tem "itens" como dict ou list)
+                    if "itens" in colab_tcmp:
+                        itens_data = colab_tcmp["itens"]
+                        total_valor_tcmp = colab_tcmp.get("total_valor", 0)
+                        
+                        if isinstance(itens_data, dict):
+                            for item_nome, dados in itens_data.items():
+                                pagamento["tcmp_detalhes"].append({
+                                    "item": item_nome,
+                                    "valor": dados.get("valor", 0),
+                                    "taxa": dados.get("taxa", 0),
+                                    "peso": dados.get("peso", 0),
+                                    "tcmp_parcial": dados.get("tcmp_parcial", 0),
+                                })
+                        elif isinstance(itens_data, list):
+                            for item in itens_data:
+                                # Construir nome do item a partir dos campos
+                                item_nome = f"{item.get('grupo', '')} - {item.get('subgrupo', '')} ({item.get('tipo_mercadoria', '')})"
+                                valor_item = item.get("valor", 0)
+                                taxa_item = item.get("taxa", 0)
+                                
+                                # Calcular peso e parcial se não existirem
+                                peso = item.get("peso", 0)
+                                if peso == 0 and total_valor_tcmp > 0:
+                                    peso = valor_item / total_valor_tcmp
+                                    
+                                tcmp_parcial = item.get("tcmp_parcial", 0)
+                                if tcmp_parcial == 0:
+                                    tcmp_parcial = taxa_item * peso
+                                
+                                pagamento["tcmp_detalhes"].append({
+                                    "item": item_nome,
+                                    "valor": valor_item,
+                                    "taxa": taxa_item,
+                                    "peso": peso,
+                                    "tcmp_parcial": tcmp_parcial,
+                                    "taxa_rateio": item.get("taxa_rateio", 0),
+                                    "fatia_cargo": item.get("fatia_cargo", 0),
+                                })
                     
-                    # Converter estrutura de FCMP (tem "itens" como dict)
-                    if "itens" in colab_fcmp and isinstance(colab_fcmp["itens"], dict):
-                        for item_nome, dados in colab_fcmp["itens"].items():
-                            pagamento["fcmp_detalhes"].append({
-                                "item": item_nome,
-                                "comissao": dados.get("comissao", 0),
-                                "fc": dados.get("fc", 1.0),
-                                "peso": dados.get("peso", 0),
-                                "fcmp_parcial": dados.get("fcmp_parcial", 0),
-                            })
+                    # Converter estrutura de FCMP (tem "itens" como dict ou list)
+                    if "itens" in colab_fcmp:
+                        itens_data = colab_fcmp["itens"]
+                        total_valor_fcmp = colab_fcmp.get("total_valor", 0)
+
+                        if isinstance(itens_data, dict):
+                            for item_nome, dados in itens_data.items():
+                                pagamento["fcmp_detalhes"].append({
+                                    "item": item_nome,
+                                    "comissao": dados.get("comissao", 0),
+                                    "fc": dados.get("fc", 1.0),
+                                    "peso": dados.get("peso", 0),
+                                    "fcmp_parcial": dados.get("fcmp_parcial", 0),
+                                })
+                        elif isinstance(itens_data, list):
+                            for item in itens_data:
+                                item_nome = f"{item.get('grupo', '')} - {item.get('subgrupo', '')} ({item.get('tipo_mercadoria', '')})"
+                                valor_item = item.get("valor", 0)
+                                fc_item = item.get("fc", 1.0)
+                                
+                                # Calcular peso e parcial
+                                peso = item.get("peso", 0)
+                                if peso == 0 and total_valor_fcmp > 0:
+                                    peso = valor_item / total_valor_fcmp
+                                    
+                                fcmp_parcial = item.get("fcmp_parcial", 0)
+                                if fcmp_parcial == 0:
+                                    fcmp_parcial = fc_item * peso
+                                
+                                pagamento["fcmp_detalhes"].append({
+                                    "item": item_nome,
+                                    "comissao": 0,
+                                    "fc": fc_item,
+                                    "peso": peso,
+                                    "fcmp_parcial": fcmp_parcial,
+                                    "fc_detalhes": item.get("fc_detalhes", {}),
+                                })
                             
             except Exception as e:
                 print(f"[adapter] Erro ao buscar breakdown de TCMP/FCMP: {e}")

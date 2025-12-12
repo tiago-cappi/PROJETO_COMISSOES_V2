@@ -132,6 +132,28 @@ const ModalDetalhesCalculoRecebimento = ({ visible, onClose, pagamento }) => {
           pagination={false}
           size="small"
           bordered
+          expandable={{
+            expandedRowRender: (record) => {
+              if (record.taxa_rateio !== undefined && record.fatia_cargo !== undefined) {
+                return (
+                  <div style={{ padding: '8px 16px', backgroundColor: '#f9f9f9', borderRadius: 4 }}>
+                    <Space direction="vertical" size={0}>
+                      <Text strong style={{ fontSize: 12, color: '#666' }}>Decomposição da Taxa:</Text>
+                      <Space align="center" style={{ marginTop: 4 }}>
+                        <Tag color="blue">Taxa Rateio: {(record.taxa_rateio * 100).toFixed(2)}%</Tag>
+                        <Text type="secondary">×</Text>
+                        <Tag color="cyan">Fatia Cargo: {(record.fatia_cargo * 100).toFixed(2)}%</Tag>
+                        <Text type="secondary">=</Text>
+                        <Tag color="green">Taxa Efetiva: {(record.taxa * 100).toFixed(2)}%</Tag>
+                      </Space>
+                    </Space>
+                  </div>
+                );
+              }
+              return null;
+            },
+            rowExpandable: (record) => record.taxa_rateio !== undefined && record.fatia_cargo !== undefined,
+          }}
           summary={() => (
             <Table.Summary fixed>
               <Table.Summary.Row style={{ backgroundColor: '#fafafa' }}>
@@ -265,6 +287,26 @@ const ModalDetalhesCalculoRecebimento = ({ visible, onClose, pagamento }) => {
           pagination={false}
           size="small"
           bordered
+          expandable={{
+            expandedRowRender: (record) => {
+              if (record.fc_detalhes) {
+                return (
+                  <div style={{ padding: '8px 16px', backgroundColor: '#f9f9f9', borderRadius: 4 }}>
+                    <Text strong style={{ fontSize: 12, color: '#666' }}>Detalhes do Fator de Correção:</Text>
+                    <div style={{ marginTop: 4 }}>
+                      <pre style={{ fontSize: 11, margin: 0, whiteSpace: 'pre-wrap' }}>
+                        {typeof record.fc_detalhes === 'object' 
+                          ? JSON.stringify(record.fc_detalhes, null, 2) 
+                          : record.fc_detalhes}
+                      </pre>
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            },
+            rowExpandable: (record) => !!record.fc_detalhes,
+          }}
           summary={() => (
             <Table.Summary fixed>
               <Table.Summary.Row style={{ backgroundColor: '#fafafa' }}>

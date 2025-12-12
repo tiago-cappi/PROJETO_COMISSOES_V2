@@ -920,6 +920,109 @@ class CalculoComissao:
             # Restaurar realizados originais
             self.realizado = realizado_original
 
+    def _calcular_retencao_clientes(self, linha_negocio, mes_apuracao, ano_apuracao):
+        """
+        Calcula a taxa de retenção de clientes para uma linha de negócio.
+        Regra: Comparação de clientes ativos (com faturamento) em janelas móveis de 24 meses.
+        
+        Retorna:
+            tuple: (taxa_retencao, clientes_atual, clientes_anterior)
+        """
+        # Cache key para evitar recálculo na mesma execução
+        cache_key = (linha_negocio, mes_apuracao, ano_apuracao)
+        if not hasattr(self, "_cache_retencao"):
+            self._cache_retencao = {}
+        if cache_key in self._cache_retencao:
+            return self._cache_retencao[cache_key]
+
+        # Fonte de dados: ANALISE_COMERCIAL_COMPLETA (histórico de vendas)
+        df_analise = self.data.get("ANALISE_COMERCIAL_COMPLETA", pd.DataFrame())
+        
+        # Fallback: Se ANALISE_COMERCIAL_COMPLETA estiver vazia, tentar FATURADOS_YTD
+        if df_analise.empty:
+            df_analise = self.data.get("FATURADOS_YTD", pd.DataFrame())
+            
+        if df_analise.empty:
+            self._cache_retencao[cache_key] = (0.0, 0, 0)
+            return (0.0, 0, 0)
+
+        # Normalizar colunas de data
+        df_work = df_analise.copy()
+        col_data = None
+        for c in ["Dt Emissão", "Data Emissão", "Dt Faturamento", "Data Faturamento"]:
+            if c in df_work.columns:
+                col_data = c
+                break
+        
+        if not col_data:
+            self._cache_retencao[cache_key] = (0.0, 0, 0)
+            return (0.0, 0, 0)
+
+        # Garantir datetime
+        if not pd.api.types.is_datetime64_any_dtype(df_work[col_data]):
+            df_work[col_data] = pd.to_datetime(df_work[col_data], errors="coerce")
+        
+        # Remover linhas com data inválida
+        df_work = df_work.dropna(subset=[col_data])
+
+        # Identificar colunas de Linha, Status e Cliente
+        col_linha = next((c for c in ["Negócio", "Linha", "Business Unit"] if c in df_work.columns), None)
+        col_status = next((c for c in ["Status Processo", "Status"] if c in df_work.columns), None)
+        col_cliente = next((c for c in ["Cliente", "Cliente ID", "Nome Fantasia"] if c in df_work.columns), None)
+
+        if not col_linha or not col_cliente:
+            self._cache_retencao[cache_key] = (0.0, 0, 0)
+            return (0.0, 0, 0)
+
+        # Filtros: Linha e Status FATURADO
+        mask_linha = df_work[col_linha] == linha_negocio
+        mask_status = pd.Series(True, index=df_work.index)
+        if col_status:
+            mask_status = df_work[col_status].astype(str).str.upper().str.strip() == "FATURADO"
+        
+        df_filtrado = df_work[mask_linha & mask_status]
+        
+        if df_filtrado.empty:
+            self._cache_retencao[cache_key] = (0.0, 0, 0)
+            return (0.0, 0, 0)
+
+        # Definir janelas de tempo (24 meses)
+        from dateutil.relativedelta import relativedelta
+        
+        # Data de referência: Último dia do mês de apuração
+        ultimo_dia_mes = calendar.monthrange(ano_apuracao, mes_apuracao)[1]
+        data_ref_atual = datetime(ano_apuracao, mes_apuracao, ultimo_dia_mes)
+        
+        # Janela Atual: [M-23, M]
+        inicio_janela_atual = (data_ref_atual - relativedelta(months=23)).replace(day=1)
+        fim_janela_atual = data_ref_atual
+        
+        # Janela Anterior: [M-24, M-1]
+        data_ref_anterior = (data_ref_atual.replace(day=1) - relativedelta(days=1))
+        inicio_janela_anterior = (data_ref_anterior - relativedelta(months=23)).replace(day=1)
+        fim_janela_anterior = data_ref_anterior
+
+        # Contagem de Clientes Únicos
+        mask_atual = (df_filtrado[col_data] >= inicio_janela_atual) & (df_filtrado[col_data] <= fim_janela_atual)
+        clientes_atual = df_filtrado[mask_atual][col_cliente].nunique()
+
+        mask_anterior = (df_filtrado[col_data] >= inicio_janela_anterior) & (df_filtrado[col_data] <= fim_janela_anterior)
+        clientes_anterior = df_filtrado[mask_anterior][col_cliente].nunique()
+
+        # Cálculo da Taxa
+        if clientes_anterior == 0:
+            taxa = 1.0 if clientes_atual > 0 else 0.0
+        else:
+            taxa = clientes_atual / clientes_anterior
+
+        resultado = (taxa, clientes_atual, clientes_anterior)
+        self._cache_retencao[cache_key] = resultado
+        
+        if hasattr(self, "_logger") and self._logger.isEnabledFor(logging.DEBUG):
+            self._logger.debug(f"[RETENCAO] Linha: {linha_negocio} | Janela Atual: {inicio_janela_atual.date()} a {fim_janela_atual.date()} ({clientes_atual}) | Janela Ant: {inicio_janela_anterior.date()} a {fim_janela_anterior.date()} ({clientes_anterior}) | Taxa: {taxa:.4f}")
+
+        return resultado
+
     def _calcular_fc_para_item(
         self,
         nome_colab,
@@ -1180,36 +1283,50 @@ class CalculoComissao:
                     .unique()
                 )
                 # Se houver pelo menos uma linha atribuída, usamos a primeira para retenção
-                if len(linhas_do_gerente) > 0 and "RETENCAO_CLIENTES" in self.data:
+                if len(linhas_do_gerente) > 0:
                     linha_gerente = linhas_do_gerente[0]
-                    df_ret = self.data.get("RETENCAO_CLIENTES", pd.DataFrame())
-                    # Filtra pela linha
-                    ret_row = df_ret[df_ret["linha"] == linha_gerente]
-                    if not ret_row.empty:
-                        clientes_ant = ret_row.iloc[0].get(
-                            "clientes_mes_anterior", None
-                        )
-                        clientes_atual = ret_row.iloc[0].get("clientes_mes_atual", None)
-                        # Calcular taxa de retenção com tratamento correto para meta zero
-                        taxa_retencao = _calcular_atingimento(
-                            clientes_atual, clientes_ant
-                        )
+                    
+                    # Determinar mês e ano de apuração para o cálculo
+                    mes_calc = mes_apuracao_override if mes_apuracao_override else datetime.now().month
+                    ano_calc = ano_apuracao_override if ano_apuracao_override else datetime.now().year
+                    
+                    # Tentar extrair da data de emissão do item se não houver override
+                    if not mes_apuracao_override:
+                        dt_emissao = item_faturado.get("Dt Emissão")
+                        if pd.notna(dt_emissao):
+                            try:
+                                if isinstance(dt_emissao, (pd.Timestamp, datetime)):
+                                    mes_calc = dt_emissao.month
+                                    ano_calc = dt_emissao.year
+                                else:
+                                    parsed_dt = _parse_single_date(dt_emissao)
+                                    if parsed_dt:
+                                        mes_calc = parsed_dt.month
+                                        ano_calc = parsed_dt.year
+                            except Exception:
+                                pass
 
-                        # Peso da meta para retenção (em % na tabela PESOS_METAS)
-                        peso_ret = 0.0
-                        pesos_df = self.data.get("PESOS_METAS", pd.DataFrame())
-                        if (
-                            not pesos_df.empty
-                            and "retencao_clientes" in pesos_df.columns
-                        ):
-                            # procura linha pelo cargo
-                            row_peso = pesos_df[pesos_df["cargo"] == cargo_colab]
-                            if not row_peso.empty:
-                                peso_ret = (
-                                    float(row_peso.iloc[0].get("retencao_clientes", 0))
-                                    / 100.0
-                                )
+                    # Calcular retenção dinâmica
+                    taxa_retencao, clientes_atual, clientes_ant = self._calcular_retencao_clientes(
+                        linha_gerente, mes_calc, ano_calc
+                    )
 
+                    # Peso da meta para retenção (em % na tabela PESOS_METAS)
+                    peso_ret = 0.0
+                    pesos_df = self.data.get("PESOS_METAS", pd.DataFrame())
+                    if (
+                        not pesos_df.empty
+                        and "retencao_clientes" in pesos_df.columns
+                    ):
+                        # procura linha pelo cargo
+                        row_peso = pesos_df[pesos_df["cargo"] == cargo_colab]
+                        if not row_peso.empty:
+                            peso_ret = (
+                                float(row_peso.iloc[0].get("retencao_clientes", 0))
+                                / 100.0
+                            )
+
+                    if peso_ret > 0:
                         cap_atingimento = float(
                             self.params.get("cap_atingimento_max", 1.0)
                         )
@@ -1225,8 +1342,10 @@ class CalculoComissao:
                             "atingimento_cap": atingimento_cap,
                             "componente_fc": componente_fc_ret,
                         }
-        except Exception:
+        except Exception as e:
             # Em caso de qualquer erro nessa extensão, não interrompemos o cálculo principal
+            if hasattr(self, "_logger"):
+                self._logger.error(f"Erro ao calcular retenção de clientes: {e}")
             pass
 
         # --- Novos componentes: metas por fornecedor (meta_fornecedor_1, meta_fornecedor_2) ---

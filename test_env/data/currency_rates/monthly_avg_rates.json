@@ -26,7 +26,7 @@
           "dias_utilizados": 1,
           "data_atualizacao": "2025-11-14T16:22:05.443206",
           "fallback": true,
-          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA GBP 2025-02; USANDO MÉDIA DO ANO ATÉ 2025-01 COMO FALLBACK."
+          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA GBP 2025-02; USANDO M\u00c3\u2030DIA DO ANO AT\u00c3\u2030 2025-01 COMO FALLBACK."
         },
         "3": {
           "taxa_media": 0.1343,
@@ -50,7 +50,7 @@
           "dias_utilizados": 4,
           "data_atualizacao": "2025-11-14T16:24:34.252331",
           "fallback": true,
-          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA GBP 2025-05; USANDO MÉDIA DO ANO ATÉ 2025-04 COMO FALLBACK."
+          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA GBP 2025-05; USANDO M\u00c3\u2030DIA DO ANO AT\u00c3\u2030 2025-04 COMO FALLBACK."
         },
         "6": {
           "taxa_media": 0.13347250000000002,
@@ -58,7 +58,7 @@
           "dias_utilizados": 5,
           "data_atualizacao": "2025-11-14T16:25:15.457455",
           "fallback": true,
-          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA GBP 2025-06; USANDO MÉDIA DO ANO ATÉ 2025-05 COMO FALLBACK."
+          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA GBP 2025-06; USANDO M\u00c3\u2030DIA DO ANO AT\u00c3\u2030 2025-05 COMO FALLBACK."
         },
         "7": {
           "taxa_media": 0.13285,
@@ -82,7 +82,7 @@
           "dias_utilizados": 8,
           "data_atualizacao": "2025-11-14T16:28:58.353616",
           "fallback": true,
-          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA GBP 2025-09; USANDO MÉDIA DO ANO ATÉ 2025-08 COMO FALLBACK."
+          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA GBP 2025-09; USANDO M\u00c3\u2030DIA DO ANO AT\u00c3\u2030 2025-08 COMO FALLBACK."
         },
         "10": {
           "taxa_media": 0.133783125,
@@ -90,7 +90,7 @@
           "dias_utilizados": 9,
           "data_atualizacao": "2025-11-14T16:30:19.813494",
           "fallback": true,
-          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA GBP 2025-10; USANDO MÉDIA DO ANO ATÉ 2025-09 COMO FALLBACK."
+          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA GBP 2025-10; USANDO M\u00c3\u2030DIA DO ANO AT\u00c3\u2030 2025-09 COMO FALLBACK."
         }
       },
       "USD": {
@@ -116,7 +116,7 @@
           "dias_utilizados": 2,
           "data_atualizacao": "2025-11-14T16:33:29.109115",
           "fallback": true,
-          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA USD 2025-03; USANDO MÉDIA DO ANO ATÉ 2025-02 COMO FALLBACK."
+          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA USD 2025-03; USANDO M\u00c3\u2030DIA DO ANO AT\u00c3\u2030 2025-02 COMO FALLBACK."
         },
         "4": {
           "taxa_media": 0.16969,
@@ -124,7 +124,7 @@
           "dias_utilizados": 3,
           "data_atualizacao": "2025-11-14T16:34:50.420796",
           "fallback": true,
-          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA USD 2025-04; USANDO MÉDIA DO ANO ATÉ 2025-03 COMO FALLBACK."
+          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA USD 2025-04; USANDO M\u00c3\u2030DIA DO ANO AT\u00c3\u2030 2025-03 COMO FALLBACK."
         },
         "5": {
           "taxa_media": 0.16969,
@@ -132,7 +132,7 @@
           "dias_utilizados": 4,
           "data_atualizacao": "2025-11-14T16:36:12.054961",
           "fallback": true,
-          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA USD 2025-05; USANDO MÉDIA DO ANO ATÉ 2025-04 COMO FALLBACK."
+          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA USD 2025-05; USANDO M\u00c3\u2030DIA DO ANO AT\u00c3\u2030 2025-04 COMO FALLBACK."
         },
         "6": {
           "taxa_media": 0.17986,
@@ -148,7 +148,7 @@
           "dias_utilizados": 6,
           "data_atualizacao": "2025-11-14T16:38:54.335567",
           "fallback": true,
-          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA USD 2025-07; USANDO MÉDIA DO ANO ATÉ 2025-06 COMO FALLBACK."
+          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA USD 2025-07; USANDO M\u00c3\u2030DIA DO ANO AT\u00c3\u2030 2025-06 COMO FALLBACK."
         },
         "8": {
           "taxa_media": 0.17138499999999998,
@@ -156,7 +156,7 @@
           "dias_utilizados": 7,
           "data_atualizacao": "2025-11-14T16:40:37.300128",
           "fallback": true,
-          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA USD 2025-08; USANDO MÉDIA DO ANO ATÉ 2025-07 COMO FALLBACK."
+          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA USD 2025-08; USANDO M\u00c3\u2030DIA DO ANO AT\u00c3\u2030 2025-07 COMO FALLBACK."
         },
         "9": {
           "taxa_media": 0.18745,
@@ -167,12 +167,12 @@
           "observacao": null
         },
         "10": {
-          "taxa_media": 0.18302,
-          "fonte": "frankfurter.app",
-          "dias_utilizados": 1,
-          "data_atualizacao": "2025-11-14T16:41:18.277254",
+          "taxa_media": 0.183,
+          "fonte": "manual_test",
+          "dias_utilizados": 30,
+          "data_atualizacao": "2025-12-12T12:49:42.380938",
           "fallback": false,
-          "observacao": null
+          "observacao": "Teste FCMP"
         }
       }
     }

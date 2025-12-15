@@ -9,6 +9,7 @@ import ResultadosPage from './pages/ResultadosPage';
 import CambioPage from './pages/CambioPage';
 import RecebimentosPage from './pages/RecebimentosPage';
 import EstadoProcessosPage from './pages/EstadoProcessosPage';
+import DadosEntradaPage from './pages/DadosEntradaPage';
 
 import 'antd/dist/reset.css';
 import './App.css';
@@ -24,6 +25,7 @@ function App() {
             <Route path="/" element={<Navigate to="/regras" replace />} />
             <Route path="/regras" element={<RegrasPage />} />
             <Route path="/uploads" element={<UploadsPage />} />
+            <Route path="/dados-entrada" element={<DadosEntradaPage />} />
             <Route path="/executar" element={<ExecutarPage />} />
             <Route path="/resultados" element={<ResultadosPage />} />
             <Route path="/recebimentos" element={<RecebimentosPage />} />

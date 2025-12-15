@@ -24,12 +24,9 @@ const RecebimentosPage = () => {
   // Dados dos pagamentos do mês selecionado
   const [pagamentos, setPagamentos] = useState([]);
   const [totais, setTotais] = useState({
-    totalAdiantamentos: 0,
-    qtdAdiantamentos: 0,
-    totalRegulares: 0,
-    qtdRegulares: 0,
-    total: 0,
-    qtdTotal: 0,
+    adiantamentos: { valor: 0, quantidade: 0 },
+    regulares: { valor: 0, quantidade: 0 },
+    geral: { valor: 0, quantidade: 0 },
   });
   
   // Modal de detalhes
@@ -54,24 +51,27 @@ const RecebimentosPage = () => {
       const regulares = dados.filter(p => p.tipo === 'REGULAR' || p.tipo === 'Regular');
       
       setTotais({
-        totalAdiantamentos: adiantamentos.reduce((acc, p) => acc + (p.comissao_calculada || 0), 0),
-        qtdAdiantamentos: adiantamentos.length,
-        totalRegulares: regulares.reduce((acc, p) => acc + (p.comissao_calculada || 0), 0),
-        qtdRegulares: regulares.length,
-        total: dados.reduce((acc, p) => acc + (p.comissao_calculada || 0), 0),
-        qtdTotal: dados.length,
+        adiantamentos: {
+          valor: adiantamentos.reduce((acc, p) => acc + (p.comissao_calculada || 0), 0),
+          quantidade: adiantamentos.length,
+        },
+        regulares: {
+          valor: regulares.reduce((acc, p) => acc + (p.comissao_calculada || 0), 0),
+          quantidade: regulares.length,
+        },
+        geral: {
+          valor: dados.reduce((acc, p) => acc + (p.comissao_calculada || 0), 0),
+          quantidade: dados.length,
+        },
       });
     } catch (error) {
       console.error('Erro ao carregar pagamentos:', error);
       message.error(`Erro ao carregar pagamentos de ${mes}/${ano}`);
       setPagamentos([]);
       setTotais({
-        totalAdiantamentos: 0,
-        qtdAdiantamentos: 0,
-        totalRegulares: 0,
-        qtdRegulares: 0,
-        total: 0,
-        qtdTotal: 0,
+        adiantamentos: { valor: 0, quantidade: 0 },
+        regulares: { valor: 0, quantidade: 0 },
+        geral: { valor: 0, quantidade: 0 },
       });
     } finally {
       setLoading(false);

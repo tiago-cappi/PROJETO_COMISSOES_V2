@@ -69,6 +69,12 @@ const RecebimentosTabelaSimples = ({ dados, loading, onVerDetalhes, filtros, onF
       render: (data) => {
         if (!data) return '-';
         try {
+          // Se vier no formato YYYY-MM-DD (ISO), fazer split para evitar timezone
+          if (typeof data === 'string' && data.includes('-')) {
+            const [ano, mes, dia] = data.split('-');
+            return `${dia}/${mes}/${ano}`;
+          }
+          // Fallback para outros formatos
           return new Date(data).toLocaleDateString('pt-BR');
         } catch {
           return data;

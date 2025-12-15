@@ -1,0 +1,156 @@
+/* MetasEditorV2 - Estilos para editor de metas com formatação */
+
+.metas-editor-card {
+    height: 100%;
+}
+
+.metas-editor-card .ant-card-body {
+    padding: 16px;
+}
+
+/* Tabs styling */
+.metas-tabs .ant-tabs-nav {
+    margin-bottom: 16px;
+}
+
+.metas-tabs .ant-tabs-tab {
+    padding: 8px 16px;
+}
+
+.metas-tabs .ant-tabs-tab-active {
+    font-weight: 500;
+}
+
+/* Sheet editor */
+.metas-sheet-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.metas-sheet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #f6f8fa 0%, #fff 100%);
+    border-radius: 8px;
+    border: 1px solid #f0f0f0;
+}
+
+.metas-sheet-info {
+    flex: 1;
+    min-width: 200px;
+}
+
+/* Stats */
+.metas-stats {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.metas-stats .ant-statistic {
+    min-width: 100px;
+}
+
+.metas-stats .ant-statistic-title {
+    font-size: 12px;
+    color: #8c8c8c;
+}
+
+.metas-stats .ant-statistic-content {
+    font-size: 18px;
+}
+
+/* SmartTable dentro do editor de metas */
+.metas-sheet-editor .smart-table-card {
+    margin-top: 0;
+}
+
+.metas-sheet-editor .smart-table-card .ant-card-head {
+    display: none; /* Hide redundant title */
+}
+
+/* Money cells */
+.metas-sheet-editor .cell-money {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+    font-size: 12px;
+    color: #1890ff;
+    text-align: right;
+    display: block;
+}
+
+/* Percent cells com cor baseada no valor */
+.metas-sheet-editor .cell-percent {
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    min-width: 60px;
+    text-align: center;
+}
+
+/* Tag cells */
+.metas-sheet-editor .ant-tag {
+    margin: 0;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .metas-sheet-header {
+        flex-direction: column;
+    }
+    
+    .metas-stats {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .metas-stats .ant-statistic {
+        min-width: 80px;
+    }
+    
+    .metas-stats .ant-statistic-content {
+        font-size: 14px;
+    }
+}
+
+/* Highlight para células de meta mensal */
+.metas-sheet-editor .month-cell {
+    position: relative;
+}
+
+.metas-sheet-editor .month-cell::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(24, 144, 255, 0.05) 0%, transparent 100%);
+    pointer-events: none;
+}
+
+/* Indicador de meta atingida/não atingida (futuro) */
+.meta-achieved {
+    background-color: rgba(82, 196, 26, 0.1);
+    border-left: 3px solid #52c41a;
+}
+
+.meta-not-achieved {
+    background-color: rgba(255, 77, 79, 0.05);
+    border-left: 3px solid #ff4d4f;
+}
+
+/* Loading state */
+.metas-sheet-editor .ant-spin-nested-loading {
+    min-height: 200px;
+}
+
+/* Empty state */
+.metas-sheet-editor .ant-empty {
+    padding: 40px 0;
+}

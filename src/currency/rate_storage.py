@@ -16,8 +16,8 @@ Formato do arquivo `data/currency_rates/monthly_avg_rates.json`:
       "USD": {
         "1": {
           "taxa_media": 0.201234,
-          "fonte": "exchangerate.host/timeseries",
-          "dias_utilizados": 31,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 21,
           "data_atualizacao": "...",
           "fallback": false,
           "observacao": null

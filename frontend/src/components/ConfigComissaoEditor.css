@@ -1,0 +1,231 @@
+/* ConfigComissaoEditorV2 - Estilos melhorados */
+
+.config-comissao-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Stats Card */
+.config-stats-card {
+    background: linear-gradient(135deg, #f6f8fa 0%, #fff 100%);
+}
+
+.config-stats-card .ant-statistic-title {
+    font-size: 12px;
+    color: #8c8c8c;
+}
+
+.config-stats-card .ant-statistic-content {
+    font-size: 20px;
+}
+
+/* Filter Section */
+.config-filter-card {
+    margin-bottom: 0;
+}
+
+.config-filter-section {
+    padding: 8px 0;
+}
+
+.config-filter-title {
+    font-weight: 500;
+    margin-bottom: 12px;
+    color: #595959;
+}
+
+.config-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.config-filter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.config-filter-label {
+    font-size: 12px;
+    color: #8c8c8c;
+    text-transform: capitalize;
+}
+
+.config-filter-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+/* Table Card */
+.config-table-card .ant-table {
+    font-size: 13px;
+}
+
+.config-table-card .row-warning {
+    background-color: #fffbe6;
+}
+
+.config-table-card .row-warning:hover > td {
+    background-color: #fff1b8 !important;
+}
+
+/* Percent Cell */
+.percent-cell {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+    font-weight: 500;
+    text-align: right;
+}
+
+.percent-input {
+    width: 100%;
+}
+
+.percent-input .ant-input-number-input {
+    text-align: right;
+}
+
+/* ==================== WIZARD ==================== */
+.wizard-steps {
+    margin-bottom: 24px;
+}
+
+.wizard-content {
+    min-height: 300px;
+}
+
+.wizard-step {
+    padding: 16px 0;
+}
+
+.wizard-scope-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.wizard-scope-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.wizard-scope-item label {
+    font-size: 12px;
+    color: #8c8c8c;
+    text-transform: capitalize;
+}
+
+.wizard-value-input {
+    display: flex;
+    justify-content: center;
+    padding: 24px 0;
+}
+
+.wizard-fatias-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.wizard-fatia-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.wizard-fatia-label {
+    min-width: 120px;
+    font-weight: 500;
+}
+
+.wizard-fatias-total {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px;
+    background: #fafafa;
+    border-radius: 8px;
+}
+
+.wizard-summary {
+    background: #fafafa;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.wizard-summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.wizard-summary-item:last-child {
+    margin-bottom: 0;
+}
+
+.wizard-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #f0f0f0;
+}
+
+/* ==================== VALIDAÇÃO ==================== */
+.validar-content {
+    padding: 8px 0;
+}
+
+.validar-filters {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.validar-filter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.validar-filter-item label {
+    font-size: 12px;
+    color: #8c8c8c;
+    text-transform: capitalize;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .config-filter-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .wizard-scope-grid,
+    .wizard-fatias-grid,
+    .validar-filters {
+        grid-template-columns: 1fr;
+    }
+    
+    .wizard-fatia-label {
+        min-width: 80px;
+    }
+}
+
+/* Animações */
+.wizard-content {
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

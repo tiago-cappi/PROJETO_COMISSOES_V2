@@ -1,0 +1,87 @@
+/* Cell Renderer Styles */
+
+/* Base cell value */
+.cell-value {
+  display: inline-block;
+  padding: 2px 0;
+  transition: background-color 0.2s;
+}
+
+.cell-value--modified {
+  position: relative;
+}
+
+.cell-value--modified::after {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: #faad14;
+  border-radius: 2px;
+}
+
+/* Money values */
+.cell-value--money {
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 500;
+  color: #389e0d;
+}
+
+/* Percentage values with color intensity */
+.cell-value--percent {
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 13px;
+  min-width: 65px;
+  text-align: center;
+}
+
+/* Date values */
+.cell-value--date {
+  color: #595959;
+  font-size: 13px;
+}
+
+/* Number values */
+.cell-value--number {
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #262626;
+}
+
+/* Tag style (for categories, roles, etc.) */
+.cell-value--tag {
+  background-color: #e6f7ff;
+  color: #0958d9;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Editor wrappers */
+.cell-editor {
+  position: relative;
+}
+
+.cell-editor--modified .ant-input,
+.cell-editor--modified .ant-input-number,
+.cell-editor--modified .ant-select-selector,
+.cell-editor--modified .ant-picker {
+  border-color: #faad14;
+  background-color: #fffbe6;
+}
+
+/* Compact inputs */
+.cell-editor .ant-input,
+.cell-editor .ant-input-number,
+.cell-editor .ant-select,
+.cell-editor .ant-picker {
+  font-size: 13px;
+}
+
+.cell-editor .ant-input-number-input {
+  text-align: right;
+}

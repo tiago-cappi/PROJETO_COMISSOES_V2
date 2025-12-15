@@ -10,6 +10,7 @@ import {
   DollarCircleOutlined,
   DashboardOutlined,
   DatabaseOutlined,
+  FileExcelOutlined,
 } from '@ant-design/icons';
 
 const { Sider, Header } = Layout;
@@ -28,6 +29,11 @@ const MainLayout = ({ children }) => {
       key: '/uploads',
       icon: <UploadOutlined />,
       label: 'Uploads',
+    },
+    {
+      key: '/dados-entrada',
+      icon: <FileExcelOutlined />,
+      label: 'Dados de Entrada',
     },
     {
       key: '/executar',

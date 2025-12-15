@@ -960,7 +960,22 @@ class CalculoComissao:
 
         # Garantir datetime
         if not pd.api.types.is_datetime64_any_dtype(df_work[col_data]):
-            df_work[col_data] = pd.to_datetime(df_work[col_data], errors="coerce")
+            # Detectar formato da data: se parece ISO (YYYY-MM-DD), não usar dayfirst
+            # Exemplo ISO: "2023-10-01" ou "2023-10-01 00:00:00"
+            # Exemplo BR: "01/10/2023" ou "1/10/2023"
+            sample_val = df_work[col_data].dropna().iloc[0] if not df_work[col_data].dropna().empty else ""
+            sample_str = str(sample_val).strip()
+            
+            # Verificar se está em formato ISO (começa com 4 dígitos seguidos de hífen)
+            import re
+            is_iso_format = bool(re.match(r'^\d{4}-\d{1,2}-\d{1,2}', sample_str))
+            
+            if is_iso_format:
+                # Formato ISO: não usar dayfirst (pandas já interpreta corretamente)
+                df_work[col_data] = pd.to_datetime(df_work[col_data], errors="coerce")
+            else:
+                # Formato brasileiro (DD/MM/YYYY): usar dayfirst=True
+                df_work[col_data] = pd.to_datetime(df_work[col_data], dayfirst=True, errors="coerce")
         
         # Remover linhas com data inválida
         df_work = df_work.dropna(subset=[col_data])
@@ -1515,188 +1530,188 @@ class CalculoComissao:
                                 mes_final=mes_apuracao,
                             )
 
-                    # Cálculo do atingimento e componente
-                    atingimento = _calcular_atingimento(
-                        faturamento_realizado_ytd, meta_ytd
-                    )
-
-                    cap_atingimento = float(self.params.get("cap_atingimento_max", 1.0))
-                    atingimento_cap = min(atingimento, cap_atingimento)
-
-                    # Peso referente a meta_fornecedor_1 ou meta_fornecedor_2 conforme idx
-                    peso_col_name = f"meta_fornecedor_{idx}"
-                    peso_fornecedor = peso_forn_1 if idx == 1 else peso_forn_2
-
-                    componente_fc_forn = atingimento_cap * peso_fornecedor
-
-                    # Log resumo do fornecedor
-                    try:
-                        if logger and logger.isEnabledFor(logging.DEBUG):
-                            logger.debug(
-                                f"Resumo fornecedor#{idx} colaborador={nome_colab} fornecedor={fornecedor_nome} meta_ytd={meta_ytd:.2f} faturamento_realizado_ytd={faturamento_realizado_ytd:.4f} atingimento={atingimento:.4f} atingimento_cap={atingimento_cap:.4f} peso={peso_fornecedor:.4f} componente_fc={componente_fc_forn:.6f}"
-                            )
-                    except Exception:
-                        pass
-                    # Coleta de depuração para este cálculo de fornecedor
-                    # Sanity-check: recompute converted faturamento from the ON-DISK FATURADOS_YTD file and taxas
-                    try:
-                        safe_total = 0.0
-                        # try to reload the source FATURADOS_YTD from disk to avoid mutated in-memory frames
-                        try:
-                            faturados_ytd_disk = pd.read_excel(ARQUIVO_FATURADOS_YTD)
-                        except Exception:
-                            # fallback: use whatever is in memory
-                            faturados_ytd_disk = self.data.get(
-                                "FATURADOS_YTD", pd.DataFrame()
-                            )
-
-                        # find fabricante and valor columns
-                        if not faturados_ytd_disk.empty:
-                            fab_col = next(
-                                (
-                                    c
-                                    for c in faturados_ytd_disk.columns
-                                    if "fabricante" in str(c).lower()
-                                    or "fornecedor" in str(c).lower()
-                                ),
-                                None,
-                            )
-                            val_col = next(
-                                (
-                                    c
-                                    for c in faturados_ytd_disk.columns
-                                    if "valor" in str(c).lower()
-                                ),
-                                None,
-                            )
-                            dt_col_local = next(
-                                (
-                                    c
-                                    for c in faturados_ytd_disk.columns
-                                    if "dt" in str(c).lower()
-                                    or "data" in str(c).lower()
-                                ),
-                                None,
-                            )
-                            if fab_col and val_col:
-                                # filter case-insensitive
-                                filt_disk = faturados_ytd_disk[
-                                    faturados_ytd_disk[fab_col]
-                                    .astype(str)
-                                    .str.upper()
-                                    .str.contains(
-                                        str(fornecedor_nome).upper(), na=False
-                                    )
-                                ].copy()
-                                if dt_col_local and dt_col_local in filt_disk.columns:
-                                    filt_disk["mes"] = _parse_dates_smart(
-                                        filt_disk[dt_col_local]
-                                    ).dt.month
-                                else:
-                                    filt_disk["mes"] = mes_apuracao
-                                for m in range(1, int(mes_apuracao) + 1):
-                                    soma_brl = (
-                                        filt_disk[filt_disk["mes"] == m][val_col].sum()
-                                        if not filt_disk.empty
-                                        else 0.0
-                                    )
-                                    taxa_m = None
-                                    if (
-                                        moeda
-                                        and taxas
-                                        and moeda in taxas
-                                        and m in taxas[moeda]
-                                    ):
-                                        taxa_m = taxas[moeda].get(m)
-                                    if taxa_m and taxa_m != 0:
-                                        safe_total += float(soma_brl) * float(taxa_m)
-                    except Exception:
-                        safe_total = faturamento_realizado_ytd
-
-                    # If the computed total differs wildly from the runtime value (or runtime value is absurd), prefer the recomputed safe_total
-                    try:
-                        if (
-                            (faturamento_realizado_ytd is None)
-                            or (abs(faturamento_realizado_ytd) > 1e6)
-                            or (
-                                abs(faturamento_realizado_ytd - safe_total)
-                                > max(1e3, abs(0.1 * safe_total))
-                            )
-                        ):
-                            # Log a validation warning and replace the value to avoid propagation of absurd numbers
-                            self._log_validacao(
-                                "AVISO",
-                                f"Valor de faturamento_realizado_ytd anômalo detectado para fornecedor {fornecedor_nome} (orig={faturamento_realizado_ytd}, recomputed={safe_total}). Substituindo pelo valor recomputado.",
-                                {
-                                    "fornecedor": fornecedor_nome,
-                                    "orig": faturamento_realizado_ytd,
-                                    "recomputed": safe_total,
-                                },
-                            )
-                            faturamento_realizado_ytd = safe_total
-                            # recompute atingimento and component after replacement
-                            atingimento = _calcular_atingimento(
-                                faturamento_realizado_ytd, meta_ytd
-                            )
-                            atingimento_cap = min(atingimento, cap_atingimento)
-                            componente_fc_forn = atingimento_cap * peso_fornecedor
-                    except Exception:
-                        pass
-
-                    debug_entry = {
-                        "colaborador": nome_colab,
-                        "cargo": cargo_colab,
-                        "cod_produto": item_faturado.get("Código Produto", None),
-                        "linha_item": linha_do_item,
-                        "fornecedor_index": idx,
-                        "fornecedor": fornecedor_nome,
-                        "moeda": moeda,
-                        "meta_anual": meta_anual,
-                        "meta_ytd": meta_ytd,
-                        "faturamento_realizado_ytd": faturamento_realizado_ytd,
-                        "mes_apuracao": mes_apuracao,
-                        "peso_col_name": peso_col_name,
-                        "peso_fornecedor": peso_fornecedor,
-                        "atingimento": atingimento,
-                        "atingimento_cap": atingimento_cap,
-                        "componente_fc": componente_fc_forn,
-                    }
-                    # Observações sobre taxas usadas (se houver)
-                    taxas_obs = {}
-                    if (
-                        moeda
-                        and "taxas" in locals()
-                        and isinstance(taxas, dict)
-                        and moeda in taxas
-                    ):
-                        taxas_obs = taxas.get(moeda, {})
-                    debug_entry["taxas_usadas"] = str(taxas_obs)
-                    # Indica se houve meses sem taxa (None)
-                    taxas_meses_none = [
-                        m
-                        for m, v in (
-                            taxas_obs.items() if isinstance(taxas_obs, dict) else []
+                        # Cálculo do atingimento e componente (DENTRO do loop para processar ambos fornecedores)
+                        atingimento = _calcular_atingimento(
+                            faturamento_realizado_ytd, meta_ytd
                         )
-                        if v is None
-                    ]
-                    debug_entry["taxas_meses_none"] = str(taxas_meses_none)
-                    debug_entry["taxas_completas"] = (
-                        (len(taxas_meses_none) == 0)
-                        if isinstance(taxas_obs, dict) and len(taxas_obs) > 0
-                        else False
-                    )
-                    self.debug_fornecedores.append(debug_entry)
 
-                    # armazenar detalhes do fornecedor (meta_fornecedor_1/2)
-                    detalhes_fc[peso_col_name] = {
-                        "peso": peso_fornecedor,
-                        "realizado": faturamento_realizado_ytd,
-                        "meta": meta_ytd,
-                        "atingimento": atingimento,
-                        "atingimento_cap": atingimento_cap,
-                        "componente_fc": componente_fc_forn,
-                        "moeda": moeda,
-                    }
+                        cap_atingimento = float(self.params.get("cap_atingimento_max", 1.0))
+                        atingimento_cap = min(atingimento, cap_atingimento)
+
+                        # Peso referente a meta_fornecedor_1 ou meta_fornecedor_2 conforme idx
+                        peso_col_name = f"meta_fornecedor_{idx}"
+                        peso_fornecedor = peso_forn_1 if idx == 1 else peso_forn_2
+
+                        componente_fc_forn = atingimento_cap * peso_fornecedor
+
+                        # Log resumo do fornecedor
+                        try:
+                            if logger and logger.isEnabledFor(logging.DEBUG):
+                                logger.debug(
+                                    f"Resumo fornecedor#{idx} colaborador={nome_colab} fornecedor={fornecedor_nome} meta_ytd={meta_ytd:.2f} faturamento_realizado_ytd={faturamento_realizado_ytd:.4f} atingimento={atingimento:.4f} atingimento_cap={atingimento_cap:.4f} peso={peso_fornecedor:.4f} componente_fc={componente_fc_forn:.6f}"
+                                )
+                        except Exception:
+                            pass
+                        # Coleta de depuração para este cálculo de fornecedor
+                        # Sanity-check: recompute converted faturamento from the ON-DISK FATURADOS_YTD file and taxas
+                        try:
+                            safe_total = 0.0
+                            # try to reload the source FATURADOS_YTD from disk to avoid mutated in-memory frames
+                            try:
+                                faturados_ytd_disk = pd.read_excel(ARQUIVO_FATURADOS_YTD)
+                            except Exception:
+                                # fallback: use whatever is in memory
+                                faturados_ytd_disk = self.data.get(
+                                    "FATURADOS_YTD", pd.DataFrame()
+                                )
+
+                            # find fabricante and valor columns
+                            if not faturados_ytd_disk.empty:
+                                fab_col = next(
+                                    (
+                                        c
+                                        for c in faturados_ytd_disk.columns
+                                        if "fabricante" in str(c).lower()
+                                        or "fornecedor" in str(c).lower()
+                                    ),
+                                    None,
+                                )
+                                val_col = next(
+                                    (
+                                        c
+                                        for c in faturados_ytd_disk.columns
+                                        if "valor" in str(c).lower()
+                                    ),
+                                    None,
+                                )
+                                dt_col_local = next(
+                                    (
+                                        c
+                                        for c in faturados_ytd_disk.columns
+                                        if "dt" in str(c).lower()
+                                        or "data" in str(c).lower()
+                                    ),
+                                    None,
+                                )
+                                if fab_col and val_col:
+                                    # filter case-insensitive
+                                    filt_disk = faturados_ytd_disk[
+                                        faturados_ytd_disk[fab_col]
+                                        .astype(str)
+                                        .str.upper()
+                                        .str.contains(
+                                            str(fornecedor_nome).upper(), na=False
+                                        )
+                                    ].copy()
+                                    if dt_col_local and dt_col_local in filt_disk.columns:
+                                        filt_disk["mes"] = _parse_dates_smart(
+                                            filt_disk[dt_col_local]
+                                        ).dt.month
+                                    else:
+                                        filt_disk["mes"] = mes_apuracao
+                                    for m in range(1, int(mes_apuracao) + 1):
+                                        soma_brl = (
+                                            filt_disk[filt_disk["mes"] == m][val_col].sum()
+                                            if not filt_disk.empty
+                                            else 0.0
+                                        )
+                                        taxa_m = None
+                                        if (
+                                            moeda
+                                            and taxas
+                                            and moeda in taxas
+                                            and m in taxas[moeda]
+                                        ):
+                                            taxa_m = taxas[moeda].get(m)
+                                        if taxa_m and taxa_m != 0:
+                                            safe_total += float(soma_brl) * float(taxa_m)
+                        except Exception:
+                            safe_total = faturamento_realizado_ytd
+
+                        # If the computed total differs wildly from the runtime value (or runtime value is absurd), prefer the recomputed safe_total
+                        try:
+                            if (
+                                (faturamento_realizado_ytd is None)
+                                or (abs(faturamento_realizado_ytd) > 1e6)
+                                or (
+                                    abs(faturamento_realizado_ytd - safe_total)
+                                    > max(1e3, abs(0.1 * safe_total))
+                                )
+                            ):
+                                # Log a validation warning and replace the value to avoid propagation of absurd numbers
+                                self._log_validacao(
+                                    "AVISO",
+                                    f"Valor de faturamento_realizado_ytd anômalo detectado para fornecedor {fornecedor_nome} (orig={faturamento_realizado_ytd}, recomputed={safe_total}). Substituindo pelo valor recomputado.",
+                                    {
+                                        "fornecedor": fornecedor_nome,
+                                        "orig": faturamento_realizado_ytd,
+                                        "recomputed": safe_total,
+                                    },
+                                )
+                                faturamento_realizado_ytd = safe_total
+                                # recompute atingimento and component after replacement
+                                atingimento = _calcular_atingimento(
+                                    faturamento_realizado_ytd, meta_ytd
+                                )
+                                atingimento_cap = min(atingimento, cap_atingimento)
+                                componente_fc_forn = atingimento_cap * peso_fornecedor
+                        except Exception:
+                            pass
+
+                        debug_entry = {
+                            "colaborador": nome_colab,
+                            "cargo": cargo_colab,
+                            "cod_produto": item_faturado.get("Código Produto", None),
+                            "linha_item": linha_do_item,
+                            "fornecedor_index": idx,
+                            "fornecedor": fornecedor_nome,
+                            "moeda": moeda,
+                            "meta_anual": meta_anual,
+                            "meta_ytd": meta_ytd,
+                            "faturamento_realizado_ytd": faturamento_realizado_ytd,
+                            "mes_apuracao": mes_apuracao,
+                            "peso_col_name": peso_col_name,
+                            "peso_fornecedor": peso_fornecedor,
+                            "atingimento": atingimento,
+                            "atingimento_cap": atingimento_cap,
+                            "componente_fc": componente_fc_forn,
+                        }
+                        # Observações sobre taxas usadas (se houver)
+                        taxas_obs = {}
+                        if (
+                            moeda
+                            and "taxas" in locals()
+                            and isinstance(taxas, dict)
+                            and moeda in taxas
+                        ):
+                            taxas_obs = taxas.get(moeda, {})
+                        debug_entry["taxas_usadas"] = str(taxas_obs)
+                        # Indica se houve meses sem taxa (None)
+                        taxas_meses_none = [
+                            m
+                            for m, v in (
+                                taxas_obs.items() if isinstance(taxas_obs, dict) else []
+                            )
+                            if v is None
+                        ]
+                        debug_entry["taxas_meses_none"] = str(taxas_meses_none)
+                        debug_entry["taxas_completas"] = (
+                            (len(taxas_meses_none) == 0)
+                            if isinstance(taxas_obs, dict) and len(taxas_obs) > 0
+                            else False
+                        )
+                        self.debug_fornecedores.append(debug_entry)
+
+                        # armazenar detalhes do fornecedor (meta_fornecedor_1/2)
+                        detalhes_fc[peso_col_name] = {
+                            "peso": peso_fornecedor,
+                            "realizado": faturamento_realizado_ytd,
+                            "meta": meta_ytd,
+                            "atingimento": atingimento,
+                            "atingimento_cap": atingimento_cap,
+                            "componente_fc": componente_fc_forn,
+                            "moeda": moeda,
+                        }
         except Exception as e:
             # Não interromper fluxo principal em caso de erro nos componentes de fornecedor
             self._log_validacao(

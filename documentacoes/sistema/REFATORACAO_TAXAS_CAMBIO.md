@@ -46,14 +46,15 @@ for item in itens:
 
 Hoje a busca de taxas é feita **somente na etapa de preparação do JSON**, antes de qualquer cálculo de comissão. Isso permite usar um timeout maior por requisição, já que esse passo acontece poucas vezes.
 
-- **APIs utilizadas (em ordem de prioridade)**:
-  1. `exchangerate.host/timeseries` — média mensal verdadeira (muitos dias).
-  2. `frankfurter.app` — taxa do dia central do mês.
-  3. `exchangerate.host/convert` — taxa do dia central do mês.
+- **APIs utilizadas**:
+  1. **Banco Central do Brasil (BCB)** — API oficial de Dados Abertos (PTAX).
+     - Endpoint: `olinda.bcb.gov.br/.../CotacaoMoedaPeriodo`
+     - Método: Média aritmética das taxas de venda de fechamento diário (PTAX) do mês.
+     - Inversão: As taxas são invertidas (1/PTAX) para adequação ao padrão do sistema.
 
 - **Timeout e tentativas (`RateFetcher`)**:
   - Timeout padrão: **60 segundos** por requisição.
-  - Tentativas: **2** por API.
+  - Tentativas: **2** (embora a API do BCB seja única e oficial).
 
 Como essa etapa é feita **antes do cálculo das comissões** e apenas para meses/moedas faltantes, é aceitável que a preparação leve alguns minutos se necessário, em troca de maior chance de obter as taxas de câmbio corretas.
 
@@ -76,8 +77,8 @@ Como essa etapa é feita **antes do cálculo das comissões** e apenas para mese
       "USD": {
         "1": {
           "taxa_media": 0.201234,
-          "fonte": "exchangerate.host/timeseries",
-          "dias_utilizados": 31,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 21,
           "data_atualizacao": "...",
           "fallback": false,
           "observacao": null

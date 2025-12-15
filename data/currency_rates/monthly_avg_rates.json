@@ -11,166 +11,296 @@
   },
   "taxas": {
     "2025": {
-      "GBP": {
-        "1": {
-          "taxa_media": 0.13517,
-          "fonte": "frankfurter.app",
-          "dias_utilizados": 1,
-          "data_atualizacao": "2025-11-14T16:20:03.486289",
-          "fallback": false,
-          "observacao": null
-        },
-        "2": {
-          "taxa_media": 0.13517,
-          "fonte": "fallback_media_anual",
-          "dias_utilizados": 1,
-          "data_atualizacao": "2025-11-14T16:22:05.443206",
-          "fallback": true,
-          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA GBP 2025-02; USANDO MÉDIA DO ANO ATÉ 2025-01 COMO FALLBACK."
-        },
-        "3": {
-          "taxa_media": 0.1343,
-          "fonte": "frankfurter.app",
-          "dias_utilizados": 1,
-          "data_atualizacao": "2025-11-14T16:22:25.890360",
-          "fallback": false,
-          "observacao": null
-        },
-        "4": {
-          "taxa_media": 0.12925,
-          "fonte": "frankfurter.app",
-          "dias_utilizados": 1,
-          "data_atualizacao": "2025-11-14T16:23:12.855542",
-          "fallback": false,
-          "observacao": null
-        },
-        "5": {
-          "taxa_media": 0.1334725,
-          "fonte": "fallback_media_anual",
-          "dias_utilizados": 4,
-          "data_atualizacao": "2025-11-14T16:24:34.252331",
-          "fallback": true,
-          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA GBP 2025-05; USANDO MÉDIA DO ANO ATÉ 2025-04 COMO FALLBACK."
-        },
-        "6": {
-          "taxa_media": 0.13347250000000002,
-          "fonte": "fallback_media_anual",
-          "dias_utilizados": 5,
-          "data_atualizacao": "2025-11-14T16:25:15.457455",
-          "fallback": true,
-          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA GBP 2025-06; USANDO MÉDIA DO ANO ATÉ 2025-05 COMO FALLBACK."
-        },
-        "7": {
-          "taxa_media": 0.13285,
-          "fonte": "frankfurter.app",
-          "dias_utilizados": 1,
-          "data_atualizacao": "2025-11-14T16:25:35.868509",
-          "fallback": false,
-          "observacao": null
-        },
-        "8": {
-          "taxa_media": 0.13658,
-          "fonte": "frankfurter.app",
-          "dias_utilizados": 1,
-          "data_atualizacao": "2025-11-14T16:26:56.400244",
-          "fallback": false,
-          "observacao": null
-        },
-        "9": {
-          "taxa_media": 0.133783125,
-          "fonte": "fallback_media_anual",
-          "dias_utilizados": 8,
-          "data_atualizacao": "2025-11-14T16:28:58.353616",
-          "fallback": true,
-          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA GBP 2025-09; USANDO MÉDIA DO ANO ATÉ 2025-08 COMO FALLBACK."
-        },
-        "10": {
-          "taxa_media": 0.133783125,
-          "fonte": "fallback_media_anual",
-          "dias_utilizados": 9,
-          "data_atualizacao": "2025-11-14T16:30:19.813494",
-          "fallback": true,
-          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA GBP 2025-10; USANDO MÉDIA DO ANO ATÉ 2025-09 COMO FALLBACK."
-        }
-      },
       "USD": {
         "1": {
-          "taxa_media": 0.16512,
-          "fonte": "frankfurter.app",
-          "dias_utilizados": 1,
-          "data_atualizacao": "2025-11-14T16:31:06.844642",
+          "taxa_media": 0.16611185976970033,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 22,
+          "data_atualizacao": "2025-12-15T14:13:11.787816",
           "fallback": false,
           "observacao": null
         },
         "2": {
-          "taxa_media": 0.17426,
-          "fonte": "frankfurter.app",
-          "dias_utilizados": 1,
-          "data_atualizacao": "2025-11-14T16:31:27.169428",
+          "taxa_media": 0.17345308685523234,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 20,
+          "data_atualizacao": "2025-12-15T14:13:12.102562",
           "fallback": false,
           "observacao": null
         },
         "3": {
-          "taxa_media": 0.16969,
-          "fonte": "fallback_media_anual",
-          "dias_utilizados": 2,
-          "data_atualizacao": "2025-11-14T16:33:29.109115",
-          "fallback": true,
-          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA USD 2025-03; USANDO MÉDIA DO ANO ATÉ 2025-02 COMO FALLBACK."
+          "taxa_media": 0.17402219469970504,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 19,
+          "data_atualizacao": "2025-12-15T14:13:12.410647",
+          "fallback": false,
+          "observacao": null
         },
         "4": {
-          "taxa_media": 0.16969,
-          "fonte": "fallback_media_anual",
-          "dias_utilizados": 3,
-          "data_atualizacao": "2025-11-14T16:34:50.420796",
-          "fallback": true,
-          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA USD 2025-04; USANDO MÉDIA DO ANO ATÉ 2025-03 COMO FALLBACK."
+          "taxa_media": 0.17297384905473717,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 20,
+          "data_atualizacao": "2025-12-15T14:13:12.729889",
+          "fallback": false,
+          "observacao": null
         },
         "5": {
-          "taxa_media": 0.16969,
-          "fonte": "fallback_media_anual",
-          "dias_utilizados": 4,
-          "data_atualizacao": "2025-11-14T16:36:12.054961",
-          "fallback": true,
-          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA USD 2025-05; USANDO MÉDIA DO ANO ATÉ 2025-04 COMO FALLBACK."
+          "taxa_media": 0.17645364639911726,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 21,
+          "data_atualizacao": "2025-12-15T14:13:13.052050",
+          "fallback": false,
+          "observacao": null
         },
         "6": {
-          "taxa_media": 0.17986,
-          "fonte": "frankfurter.app",
-          "dias_utilizados": 1,
-          "data_atualizacao": "2025-11-14T16:37:32.681364",
+          "taxa_media": 0.18029906973529547,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 20,
+          "data_atualizacao": "2025-12-15T14:13:13.376588",
           "fallback": false,
           "observacao": null
         },
         "7": {
-          "taxa_media": 0.171385,
-          "fonte": "fallback_media_anual",
-          "dias_utilizados": 6,
-          "data_atualizacao": "2025-11-14T16:38:54.335567",
-          "fallback": true,
-          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA USD 2025-07; USANDO MÉDIA DO ANO ATÉ 2025-06 COMO FALLBACK."
+          "taxa_media": 0.18090230773109123,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 23,
+          "data_atualizacao": "2025-12-15T14:13:13.719372",
+          "fallback": false,
+          "observacao": null
         },
         "8": {
-          "taxa_media": 0.17138499999999998,
-          "fonte": "fallback_media_anual",
-          "dias_utilizados": 7,
-          "data_atualizacao": "2025-11-14T16:40:37.300128",
-          "fallback": true,
-          "observacao": "FALHA AO BUSCAR TAXA NAS APIS PARA USD 2025-08; USANDO MÉDIA DO ANO ATÉ 2025-07 COMO FALLBACK."
+          "taxa_media": 0.1836002331316225,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 21,
+          "data_atualizacao": "2025-12-15T14:13:14.008102",
+          "fallback": false,
+          "observacao": null
         },
         "9": {
-          "taxa_media": 0.18745,
-          "fonte": "frankfurter.app",
-          "dias_utilizados": 1,
-          "data_atualizacao": "2025-11-14T16:40:57.782651",
+          "taxa_media": 0.18632990757941154,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 22,
+          "data_atualizacao": "2025-12-15T14:13:14.327225",
           "fallback": false,
           "observacao": null
         },
         "10": {
-          "taxa_media": 0.18302,
-          "fonte": "frankfurter.app",
-          "dias_utilizados": 1,
-          "data_atualizacao": "2025-11-14T16:41:18.277254",
+          "taxa_media": 0.18569672115518812,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 23,
+          "data_atualizacao": "2025-12-15T14:13:14.632236",
+          "fallback": false,
+          "observacao": null
+        },
+        "11": {
+          "taxa_media": 0.18724513574297985,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 19,
+          "data_atualizacao": "2025-12-15T14:13:14.926007",
+          "fallback": false,
+          "observacao": null
+        },
+        "12": {
+          "taxa_media": 0.18581240755248285,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 11,
+          "data_atualizacao": "2025-12-15T14:13:15.232533",
+          "fallback": false,
+          "observacao": null
+        }
+      },
+      "EUR": {
+        "1": {
+          "taxa_media": 0.16034688296452468,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 22,
+          "data_atualizacao": "2025-12-15T14:13:15.536280",
+          "fallback": false,
+          "observacao": null
+        },
+        "2": {
+          "taxa_media": 0.166456244254893,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 20,
+          "data_atualizacao": "2025-12-15T14:13:15.849146",
+          "fallback": false,
+          "observacao": null
+        },
+        "3": {
+          "taxa_media": 0.16045512530187053,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 19,
+          "data_atualizacao": "2025-12-15T14:13:16.174156",
+          "fallback": false,
+          "observacao": null
+        },
+        "4": {
+          "taxa_media": 0.1543441351412938,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 20,
+          "data_atualizacao": "2025-12-15T14:13:16.479710",
+          "fallback": false,
+          "observacao": null
+        },
+        "5": {
+          "taxa_media": 0.15645799628568594,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 21,
+          "data_atualizacao": "2025-12-15T14:13:16.791745",
+          "fallback": false,
+          "observacao": null
+        },
+        "6": {
+          "taxa_media": 0.156324707801688,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 20,
+          "data_atualizacao": "2025-12-15T14:13:17.109212",
+          "fallback": false,
+          "observacao": null
+        },
+        "7": {
+          "taxa_media": 0.15493744042914975,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 23,
+          "data_atualizacao": "2025-12-15T14:13:17.407959",
+          "fallback": false,
+          "observacao": null
+        },
+        "8": {
+          "taxa_media": 0.15762764695660875,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 21,
+          "data_atualizacao": "2025-12-15T14:13:18.734319",
+          "fallback": false,
+          "observacao": null
+        },
+        "9": {
+          "taxa_media": 0.15874589209792142,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 22,
+          "data_atualizacao": "2025-12-15T14:13:19.049751",
+          "fallback": false,
+          "observacao": null
+        },
+        "10": {
+          "taxa_media": 0.15955537354393365,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 23,
+          "data_atualizacao": "2025-12-15T14:13:19.353060",
+          "fallback": false,
+          "observacao": null
+        },
+        "11": {
+          "taxa_media": 0.1619154682037176,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 19,
+          "data_atualizacao": "2025-12-15T14:13:19.651602",
+          "fallback": false,
+          "observacao": null
+        },
+        "12": {
+          "taxa_media": 0.15921802840773336,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 11,
+          "data_atualizacao": "2025-12-15T14:13:19.959816",
+          "fallback": false,
+          "observacao": null
+        }
+      },
+      "GBP": {
+        "1": {
+          "taxa_media": 0.13450628603847334,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 22,
+          "data_atualizacao": "2025-12-15T14:13:20.283358",
+          "fallback": false,
+          "observacao": null
+        },
+        "2": {
+          "taxa_media": 0.13825473718998899,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 20,
+          "data_atualizacao": "2025-12-15T14:13:20.627414",
+          "fallback": false,
+          "observacao": null
+        },
+        "3": {
+          "taxa_media": 0.13454568295476213,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 19,
+          "data_atualizacao": "2025-12-15T14:13:20.962933",
+          "fallback": false,
+          "observacao": null
+        },
+        "4": {
+          "taxa_media": 0.13179484089541965,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 20,
+          "data_atualizacao": "2025-12-15T14:13:21.282600",
+          "fallback": false,
+          "observacao": null
+        },
+        "5": {
+          "taxa_media": 0.13196992198633234,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 21,
+          "data_atualizacao": "2025-12-15T14:13:21.613713",
+          "fallback": false,
+          "observacao": null
+        },
+        "6": {
+          "taxa_media": 0.1327936283781626,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 20,
+          "data_atualizacao": "2025-12-15T14:13:21.916826",
+          "fallback": false,
+          "observacao": null
+        },
+        "7": {
+          "taxa_media": 0.1340439814029228,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 23,
+          "data_atualizacao": "2025-12-15T14:13:22.220838",
+          "fallback": false,
+          "observacao": null
+        },
+        "8": {
+          "taxa_media": 0.136443107424098,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 21,
+          "data_atualizacao": "2025-12-15T14:13:22.536364",
+          "fallback": false,
+          "observacao": null
+        },
+        "9": {
+          "taxa_media": 0.13794182995856416,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 22,
+          "data_atualizacao": "2025-12-15T14:13:22.872345",
+          "fallback": false,
+          "observacao": null
+        },
+        "10": {
+          "taxa_media": 0.13904417402376112,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 23,
+          "data_atualizacao": "2025-12-15T14:13:23.182441",
+          "fallback": false,
+          "observacao": null
+        },
+        "11": {
+          "taxa_media": 0.14242159265674842,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 19,
+          "data_atualizacao": "2025-12-15T14:13:23.488027",
+          "fallback": false,
+          "observacao": null
+        },
+        "12": {
+          "taxa_media": 0.13939040286927448,
+          "fonte": "BCB/PTAX",
+          "dias_utilizados": 11,
+          "data_atualizacao": "2025-12-15T14:13:23.798806",
           "fallback": false,
           "observacao": null
         }

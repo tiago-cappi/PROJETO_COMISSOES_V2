@@ -1437,20 +1437,70 @@ async def listar_pagamentos_recebimento(
     try:
         pagamentos = []
         
+        # Carregar mapa de cargos (fallback)
+        cargo_map = {}
+        try:
+            regras_path = get_regras_path()
+            if regras_path.exists():
+                df_colab = read_excel_sheet(regras_path, "COLABORADORES")
+                for _, row in df_colab.iterrows():
+                    # Tentar pegar colunas de forma insensível a case
+                    nome = None
+                    cargo = None
+                    
+                    for col in row.index:
+                        if col.lower() == "nome_colaborador":
+                            nome = str(row[col]).strip().lower()
+                        elif col.lower() == "cargo":
+                            cargo = str(row[col]).strip()
+                            
+                    if nome and cargo:
+                        cargo_map[nome] = cargo
+        except Exception as e:
+            print(f"[adapter] Erro ao carregar mapa de cargos: {e}")
+        
         # Helper function to get column value (case-insensitive)
         def get_col(row, col_name):
-            # Tentar uppercase primeiro, depois lowercase
-            upper = col_name.upper()
-            lower = col_name.lower()
-            if upper in row.index:
-                return row[upper]
-            elif lower in row.index:
-                return row[lower]
-            else:
-                return None
+            # 1. Tentar match exato
+            if col_name in row.index:
+                return row[col_name]
+            
+            # 2. Tentar variações comuns
+            variations = [col_name.upper(), col_name.lower(), col_name.title()]
+            for v in variations:
+                if v in row.index:
+                    return row[v]
+            
+            # 3. Busca insensível a maiúsculas/minúsculas
+            col_map = {c.lower(): c for c in row.index}
+            if col_name.lower() in col_map:
+                return row[col_map[col_name.lower()]]
+                
+            return None
+
+        def safe_str(val):
+            if pd.isna(val) or val is None:
+                return ""
+            s = str(val).strip()
+            return "" if s.lower() == "nan" else s
+
+        def safe_date(val):
+            if not val or pd.isna(val):
+                return ""
+            # Se já for string, tentar converter para ISO se estiver em PT-BR
+            s_val = str(val).strip()
+            if "/" in s_val:
+                try:
+                    # Assumindo DD/MM/YYYY
+                    parts = s_val.split("/")
+                    if len(parts) == 3:
+                        return f"{parts[2]}-{parts[1]}-{parts[0]}"
+                except:
+                    pass
+            return s_val
 
         def safe_float(val):
-            if not val:
+            if not val or pd.isna(val):
                 return 0.0
             if isinstance(val, (int, float)):
                 return float(val)
@@ -1467,13 +1517,20 @@ async def listar_pagamentos_recebimento(
         try:
             df_adiant = read_excel_sheet(recebimento_path, "COMISSOES_ADIANTAMENTOS")
             for idx, row in df_adiant.iterrows():
+                nome = safe_str(get_col(row, "nome_colaborador"))
+                cargo = safe_str(get_col(row, "cargo"))
+                
+                # Fallback cargo
+                if not cargo and nome.lower() in cargo_map:
+                    cargo = cargo_map[nome.lower()]
+
                 pagamentos.append({
                     "id": f"ADIANT_{mes}_{ano}_{idx}",
                     "tipo": "ADIANTAMENTO",
-                    "processo": str(get_col(row, "processo") or ""),
-                    "nome_colaborador": str(get_col(row, "nome_colaborador") or ""),
-                    "cargo": str(get_col(row, "cargo") or ""),
-                    "data_pagamento": str(get_col(row, "data_pagamento") or ""),
+                    "processo": safe_str(get_col(row, "processo")),
+                    "nome_colaborador": nome,
+                    "cargo": cargo,
+                    "data_pagamento": safe_date(get_col(row, "data_pagamento")),
                     "valor_pago": safe_float(get_col(row, "valor_pago")),
                     "tcmp": safe_float(get_col(row, "tcmp")),
                     "fcmp": 1.0,  # Adiantamentos sempre FC=1.0
@@ -1486,13 +1543,20 @@ async def listar_pagamentos_recebimento(
         try:
             df_regular = read_excel_sheet(recebimento_path, "COMISSOES_REGULARES")
             for idx, row in df_regular.iterrows():
+                nome = safe_str(get_col(row, "nome_colaborador"))
+                cargo = safe_str(get_col(row, "cargo"))
+                
+                # Fallback cargo
+                if not cargo and nome.lower() in cargo_map:
+                    cargo = cargo_map[nome.lower()]
+
                 pagamentos.append({
                     "id": f"REGULAR_{mes}_{ano}_{idx}",
                     "tipo": "REGULAR",
-                    "processo": str(get_col(row, "processo") or ""),
-                    "nome_colaborador": str(get_col(row, "nome_colaborador") or ""),
-                    "cargo": str(get_col(row, "cargo") or ""),
-                    "data_pagamento": str(get_col(row, "data_pagamento") or ""),
+                    "processo": safe_str(get_col(row, "processo")),
+                    "nome_colaborador": nome,
+                    "cargo": cargo,
+                    "data_pagamento": safe_date(get_col(row, "data_pagamento")),
                     "valor_pago": safe_float(get_col(row, "valor_pago")),
                     "tcmp": safe_float(get_col(row, "tcmp")),
                     "fcmp": safe_float(get_col(row, "fcmp") or 1.0),
@@ -1507,6 +1571,9 @@ async def listar_pagamentos_recebimento(
         
         print(f"[adapter] /resultado/recebimento/pagamentos -> {len(pagamentos)} pagamentos para {mes:02d}/{ano}")
         return {"pagamentos": pagamentos, "mes": mes, "ano": ano}
+    except Exception as e:
+        print(f"[adapter] Erro geral em /resultado/recebimento/pagamentos: {e}")
+        return {"pagamentos": [], "mes": mes, "ano": ano, "error": str(e)}
         
     except Exception as e:
         raise HTTPException(
@@ -1765,7 +1832,7 @@ async def obter_detalhes_calculo_recebimento(
                 status_code=404,
                 detail=f"Detalhes não encontrados para colaborador {colaborador} no processo {processo}"
             )
-        
+
         print(f"[adapter] /resultado/recebimento/detalhes -> processo={processo}, colaborador={colaborador}")
         
         return {
@@ -1782,6 +1849,110 @@ async def obter_detalhes_calculo_recebimento(
             status_code=500,
             detail=f"Erro ao obter detalhes: {str(e)}"
         )
+
+
+# ==================== ENDPOINTS - DADOS DE ENTRADA ====================
+
+def get_dados_entrada_path() -> Path:
+    """Retorna caminho da pasta dados_entrada"""
+    path = Path(ROBO_ROOT_PATH) / "dados_entrada"
+    return path.resolve()
+
+@app.get("/dados-entrada/arquivos")
+async def listar_arquivos_entrada():
+    """Lista arquivos na pasta dados_entrada"""
+    path = get_dados_entrada_path()
+    if not path.exists():
+        return {"arquivos": []}
+    
+    arquivos = []
+    for p in path.glob("*"):
+        if p.is_file() and p.suffix.lower() in [".xlsx", ".csv"]:
+            arquivos.append(p.name)
+    return {"arquivos": arquivos}
+
+@app.get("/dados-entrada/arquivo/{nome_arquivo}")
+async def ler_arquivo_entrada(
+    nome_arquivo: str,
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=1000),
+    sort_by: Optional[str] = None,
+    sort_order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
+    filters: Optional[str] = None,  # JSON string com filtros
+    all_pages: bool = Query(False),
+):
+    """Lê um arquivo de dados de entrada (CSV ou Excel)"""
+    path = get_dados_entrada_path() / nome_arquivo
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Arquivo não encontrado")
+    
+    try:
+        if path.suffix.lower() == ".csv":
+            # Tentar detectar encoding ou usar utf-8/latin-1
+            try:
+                df = pd.read_csv(path, dtype=str, keep_default_na=False, encoding="utf-8", sep=";")
+            except:
+                df = pd.read_csv(path, dtype=str, keep_default_na=False, encoding="latin-1", sep=";")
+        else:
+            df = pd.read_excel(path, dtype=str, keep_default_na=False)
+            
+        # Aplicar filtros
+        if filters:
+            try:
+                filter_dict = json.loads(filters)
+                for col, value in filter_dict.items():
+                    if col in df.columns and value:
+                        df = df[
+                            df[col]
+                            .astype(str)
+                            .str.contains(str(value), case=False, na=False)
+                        ]
+            except Exception:
+                pass
+
+        # Ordenação
+        if sort_by and sort_by in df.columns:
+            ascending = sort_order == "asc"
+            df = df.sort_values(by=sort_by, ascending=ascending)
+
+        # Paginação
+        total = len(df)
+        if all_pages:
+            df_page = df
+        else:
+            start = (page - 1) * size
+            end = start + size
+            df_page = df.iloc[start:end]
+
+        return {
+            "data": df_page.to_dict(orient="records"),
+            "total": total,
+            "page": page if not all_pages else 1,
+            "size": len(df_page) if all_pages else size,
+            "columns": list(df.columns),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao ler arquivo: {str(e)}")
+
+class SalvarArquivoRequest(BaseModel):
+    dados: List[Dict[str, Any]]
+
+@app.post("/dados-entrada/arquivo/{nome_arquivo}")
+async def salvar_arquivo_entrada(nome_arquivo: str, request: SalvarArquivoRequest):
+    """Salva alterações no arquivo de dados de entrada"""
+    path = get_dados_entrada_path() / nome_arquivo
+    
+    try:
+        df = pd.DataFrame(request.dados)
+        
+        if path.suffix.lower() == ".csv":
+            df.to_csv(path, index=False, sep=";", encoding="utf-8-sig")
+        else:
+            df.to_excel(path, index=False)
+            
+        return {"message": "Arquivo salvo com sucesso"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao salvar arquivo: {str(e)}")
 
 
 # ==================== ENDPOINTS - TAXAS DE CÂMBIO ====================

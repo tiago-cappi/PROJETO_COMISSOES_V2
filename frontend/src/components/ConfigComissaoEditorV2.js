@@ -45,7 +45,7 @@ const CONTEXT_FIELDS = ['linha', 'grupo', 'subgrupo', 'tipo_mercadoria', 'cargo'
 /**
  * Componente de filtros com visual melhorado
  */
-const FilterSection = ({ options, filters, setFilters, onSearch, loading }) => (
+const FilterSection = ({ options, filters, setFilters, loading }) => (
     <div className="config-filter-section">
         <div className="config-filter-title">
             <FilterOutlined /> Filtros de Busca
@@ -73,14 +73,6 @@ const FilterSection = ({ options, filters, setFilters, onSearch, loading }) => (
             ))}
         </div>
         <div className="config-filter-actions">
-            <Button 
-                type="primary" 
-                icon={<SearchOutlined />} 
-                onClick={onSearch}
-                loading={loading}
-            >
-                Buscar Regras
-            </Button>
             <Button 
                 icon={<CloseOutlined />} 
                 onClick={() => setFilters({})}
@@ -159,8 +151,31 @@ const ConfigComissaoEditorV2 = () => {
             try {
                 const resp = await regrasAPI.getRuleContextOptions();
                 const base = resp.data || {};
-                setOptions(base);
-                setDynOptions(base);
+                
+                // Normalize options to remove duplicates and fix encoding issues
+                const normalizedBase = {};
+                Object.keys(base).forEach(key => {
+                    if (Array.isArray(base[key])) {
+                        const uniqueValues = new Set();
+                        base[key].forEach(val => {
+                            if (!val) return;
+                            // Fix specific encoding issue for "Remediação"
+                            let cleanVal = val;
+                            if (typeof val === 'string') {
+                                if (val.includes('Remediaç') && val.includes('o')) {
+                                    cleanVal = 'Remediação';
+                                }
+                            }
+                            uniqueValues.add(cleanVal);
+                        });
+                        normalizedBase[key] = Array.from(uniqueValues).sort();
+                    } else {
+                        normalizedBase[key] = base[key];
+                    }
+                });
+
+                setOptions(normalizedBase);
+                setDynOptions(normalizedBase);
             } catch (e) {
                 message.error(`Erro ao carregar opções: ${e.message}`);
             }
@@ -168,12 +183,15 @@ const ConfigComissaoEditorV2 = () => {
         loadOptions();
     }, []);
 
-    // Atualizar opções dinâmicas com base nos filtros
+    // Atualizar opções dinâmicas com base nos filtros e buscar dados automaticamente
     useEffect(() => {
-        const updateDynOptions = async () => {
+        const updateDynOptionsAndSearch = async () => {
             const partial = ['linha', 'tipo_mercadoria', 'grupo', 'subgrupo']
                 .reduce((acc, k) => (filters[k] ? { ...acc, [k]: filters[k] } : acc), {});
             
+            // Trigger search automatically
+            buscar(partial);
+
             if (Object.keys(partial).length === 0) {
                 setDynOptions(options);
                 return;
@@ -184,7 +202,19 @@ const ConfigComissaoEditorV2 = () => {
                 const arr = Array.isArray(resp.data) ? resp.data : [];
                 const byCol = {};
                 ['linha', 'tipo_mercadoria', 'grupo', 'subgrupo'].forEach((k) => {
-                    byCol[k] = [...new Set(arr.map((r) => r[k]).filter(Boolean))].sort();
+                    const uniqueValues = new Set();
+                    arr.forEach(r => {
+                        const val = r[k];
+                        if (!val) return;
+                        let cleanVal = val;
+                        if (typeof val === 'string') {
+                            if (val.includes('Remediaç') && val.includes('o')) {
+                                cleanVal = 'Remediação';
+                            }
+                        }
+                        uniqueValues.add(cleanVal);
+                    });
+                    byCol[k] = Array.from(uniqueValues).sort();
                 });
                 byCol['cargo'] = options['cargo'] || [];
                 setDynOptions(byCol);
@@ -192,14 +222,14 @@ const ConfigComissaoEditorV2 = () => {
                 setDynOptions(options);
             }
         };
-        updateDynOptions();
+        updateDynOptionsAndSearch();
     }, [filters.linha, filters.tipo_mercadoria, filters.grupo, filters.subgrupo, options]);
 
     // Buscar dados
-    const buscar = async () => {
+    const buscar = async (currentFilters = filters) => {
         setLoading(true);
         try {
-            const resp = await regrasAPI.getConfigComissao(filters);
+            const resp = await regrasAPI.getConfigComissao(currentFilters);
             const arr = Array.isArray(resp.data) ? resp.data : [];
             setData(arr.map((row, idx) => ({ key: idx, ...row })));
             
@@ -431,7 +461,6 @@ const ConfigComissaoEditorV2 = () => {
                     options={Object.keys(dynOptions).length ? dynOptions : options}
                     filters={filters}
                     setFilters={setFilters}
-                    onSearch={buscar}
                     loading={loading}
                 />
             </Card>

@@ -94,7 +94,6 @@ const PesosMetasEditor = () => {
   // Read mode: show visual progress bars
   const renderReadCell = (value, field) => {
     const num = parseFloat(value) || 0;
-    const config = COMPONENTES_CONFIG[field];
     
     if (num === 0) {
       return <span className="peso-zero">-</span>;
@@ -228,18 +227,6 @@ const PesosMetasEditor = () => {
         </Space>
       }
     >
-      <div className="pesos-legend">
-        {COMPONENTES.map((c) => (
-          <span key={c} className="legend-item">
-            <span 
-              className="legend-dot" 
-              style={{ backgroundColor: COMPONENTES_CONFIG[c].color }}
-            />
-            {COMPONENTES_CONFIG[c].label}
-          </span>
-        ))}
-      </div>
-      
       <Table
         columns={columns}
         dataSource={data}

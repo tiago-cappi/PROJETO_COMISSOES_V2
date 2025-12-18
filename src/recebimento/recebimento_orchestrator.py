@@ -21,6 +21,9 @@ from .reconciliacao import (
     ReconciliacaoValidator,
 )
 
+# Import do banco de dados master de comissões
+from src.io.master_db_manager import MasterDBManager
+
 
 class RecebimentoOrchestrator:
     """
@@ -788,6 +791,13 @@ class RecebimentoOrchestrator:
             tamanho = os.path.getsize(arquivo_gerado)
             print(f"[RECEBIMENTO] [GERAÇÃO] Tamanho do arquivo: {tamanho} bytes")
 
+        # === INTEGRAÇÃO: Salvar no Banco de Dados Master ===
+        self._salvar_no_banco_dados_master(
+            df_adiantamentos=df_adiantamentos,
+            df_regulares=df_regulares,
+            df_reconciliacoes=df_reconciliacoes,
+        )
+
         return arquivo_gerado
 
     def _gerar_arquivo_vazio(self) -> str:
@@ -840,3 +850,88 @@ class RecebimentoOrchestrator:
         filepath = os.path.join(self.base_path, "Estado_Processos_Recebimento.xlsx")
         print(f"[RECEBIMENTO] [ESTADO] Salvando estado dos processos em: {filepath}")
         return self.state_manager.salvar_estado(filepath)
+
+    def _salvar_no_banco_dados_master(
+        self,
+        df_adiantamentos: pd.DataFrame,
+        df_regulares: pd.DataFrame,
+        df_reconciliacoes: pd.DataFrame,
+    ) -> None:
+        """
+        Salva as comissões de recebimento no banco de dados master (audit log).
+        
+        Implementa o protocolo de escrita segura:
+        1. Verificação de lock
+        2. Backup atômico
+        3. Append dos novos registros
+        4. Cálculo de hash de integridade
+        5. Proteção read-only
+        
+        Args:
+            df_adiantamentos: DataFrame com comissões de adiantamentos.
+            df_regulares: DataFrame com comissões de pagamentos regulares.
+            df_reconciliacoes: DataFrame com reconciliações calculadas.
+        """
+        try:
+            # Inicializar o gerenciador do banco de dados
+            master_db = MasterDBManager(base_path=self.base_path)
+            
+            total_salvos = 0
+            
+            # 1. Salvar Adiantamentos
+            if not df_adiantamentos.empty:
+                print(f"[MASTER_DB] Salvando {len(df_adiantamentos)} adiantamentos...")
+                success, msg = master_db.append_comissoes(
+                    df_comissoes=df_adiantamentos,
+                    mes=self.mes,
+                    ano=self.ano,
+                    tipo_comissao="ADIANTAMENTO",
+                )
+                if success:
+                    total_salvos += len(df_adiantamentos)
+                    print(f"[MASTER_DB] Adiantamentos: {msg}")
+                else:
+                    print(f"[MASTER_DB] ERRO em adiantamentos: {msg}")
+            
+            # 2. Salvar Pagamentos Regulares
+            if not df_regulares.empty:
+                print(f"[MASTER_DB] Salvando {len(df_regulares)} pagamentos regulares...")
+                success, msg = master_db.append_comissoes(
+                    df_comissoes=df_regulares,
+                    mes=self.mes,
+                    ano=self.ano,
+                    tipo_comissao="REGULAR",
+                )
+                if success:
+                    total_salvos += len(df_regulares)
+                    print(f"[MASTER_DB] Regulares: {msg}")
+                else:
+                    print(f"[MASTER_DB] ERRO em regulares: {msg}")
+            
+            # 3. Salvar Reconciliações
+            if not df_reconciliacoes.empty:
+                print(f"[MASTER_DB] Salvando {len(df_reconciliacoes)} reconciliações...")
+                success, msg = master_db.append_comissoes(
+                    df_comissoes=df_reconciliacoes,
+                    mes=self.mes,
+                    ano=self.ano,
+                    tipo_comissao="RECONCILIACAO",
+                )
+                if success:
+                    total_salvos += len(df_reconciliacoes)
+                    print(f"[MASTER_DB] Reconciliações: {msg}")
+                else:
+                    print(f"[MASTER_DB] ERRO em reconciliações: {msg}")
+            
+            # Estatísticas finais
+            if total_salvos > 0:
+                stats = master_db.get_estatisticas()
+                print(f"[MASTER_DB] === Resumo do Banco de Dados ===")
+                print(f"[MASTER_DB]   - Total de registros: {stats.get('total_registros', 0)}")
+                print(f"[MASTER_DB]   - Processos distintos: {stats.get('processos_distintos', 0)}")
+                print(f"[MASTER_DB]   - Colaboradores distintos: {stats.get('colaboradores_distintos', 0)}")
+            else:
+                print("[MASTER_DB] Nenhuma comissão para salvar no banco de dados master.")
+                
+        except Exception as e:
+            print(f"[MASTER_DB] ERRO inesperado ao salvar no banco de dados: {str(e)}")

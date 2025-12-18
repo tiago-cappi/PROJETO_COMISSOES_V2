@@ -1,0 +1,3 @@
+# Este diretório armazena backups automáticos do banco de dados de comissões.
+# Os backups são criados automaticamente antes de cada operação de escrita.
+# Backups mais antigos que os últimos 30 são removidos automaticamente.

@@ -70,6 +70,7 @@ from src.utils.styling import style_output_workbook
 # Imports dos novos loaders de dados
 from src.io.config_loader import ConfigLoader
 from src.io.data_loader import DataLoader
+from src.io.master_db_manager import MasterDBManager
 from src.utils.logging import ValidationLogger
 
 # Novos serviços de câmbio centralizados
@@ -3564,6 +3565,97 @@ class CalculoComissao:
             else:
                 print("Entrada inválida. Digite 'A' ou 'B'.")
 
+    def _salvar_no_banco_dados_master(self, df_comissoes: pd.DataFrame, df_resumo: pd.DataFrame):
+        """
+        Salva as comissões calculadas no banco de dados master (audit log).
+        
+        Implementa o protocolo de escrita segura:
+        1. Verificação de lock
+        2. Backup atômico
+        3. Append dos novos registros
+        4. Cálculo de hash de integridade
+        5. Proteção read-only
+        
+        Args:
+            df_comissoes: DataFrame com as comissões detalhadas por item.
+            df_resumo: DataFrame com resumo por colaborador.
+        """
+        print(f" >>> DEBUG [_salvar_no_banco_dados_master]: MÉTODO CHAMADO")
+        print(f" >>> DEBUG [_salvar_no_banco_dados_master]: df_comissoes is None = {df_comissoes is None}")
+        
+        if df_comissoes is None:
+            print(f" >>> DEBUG [_salvar_no_banco_dados_master]: df_comissoes é None! Saindo.")
+            _info("[MASTER_DB] df_comissoes é None, nada a salvar.")
+            return
+            
+        print(f" >>> DEBUG [_salvar_no_banco_dados_master]: df_comissoes.empty = {df_comissoes.empty}")
+        print(f" >>> DEBUG [_salvar_no_banco_dados_master]: len(df_comissoes) = {len(df_comissoes)}")
+        
+        if df_comissoes.empty:
+            print(f" >>> DEBUG [_salvar_no_banco_dados_master]: DataFrame vazio! Saindo.")
+            _info("[MASTER_DB] Nenhuma comissão para salvar no banco de dados master.")
+            return
+        
+        print(f" >>> DEBUG [_salvar_no_banco_dados_master]: Colunas = {list(df_comissoes.columns)[:10]}...")
+        
+        try:
+            # Inicializar o gerenciador do banco de dados
+            print(f" >>> DEBUG [_salvar_no_banco_dados_master]: Inicializando MasterDBManager...")
+            master_db = MasterDBManager(base_path=".")
+            print(f" >>> DEBUG [_salvar_no_banco_dados_master]: MasterDBManager inicializado OK")
+            
+            # Obter mês/ano do cálculo
+            # Primeiro tentar atributos diretos, depois variáveis globais
+            mes = getattr(self, "mes", None)
+            ano = getattr(self, "ano", None)
+            
+            # Se não encontrou, tentar extrair do nome do arquivo de saída
+            if mes is None or ano is None:
+                global NOME_ARQUIVO_SAIDA
+                if NOME_ARQUIVO_SAIDA:
+                    import re
+                    # Tentar extrair de padrões como "Calculo_Comissoes_10_2025.xlsx"
+                    match = re.search(r'_(\d{1,2})_(\d{4})\.xlsx', NOME_ARQUIVO_SAIDA)
+                    if match:
+                        mes = int(match.group(1))
+                        ano = int(match.group(2))
+            
+            # Se ainda não encontrou, usar data atual como fallback
+            if mes is None or ano is None:
+                from datetime import datetime
+                now = datetime.now()
+                mes = mes or now.month
+                ano = ano or now.year
+            
+            print(f" >>> DEBUG [_salvar_no_banco_dados_master]: mes={mes}, ano={ano}")
+            
+            _info(f"[MASTER_DB] Salvando {len(df_comissoes)} comissões no banco de dados master...")
+            
+            # Adicionar ao banco de dados como tipo FATURAMENTO
+            success, msg = master_db.append_comissoes(
+                df_comissoes=df_comissoes,
+                mes=mes,
+                ano=ano,
+                tipo_comissao="FATURAMENTO",
+            )
+            
+            if success:
+                _info(f"[MASTER_DB] {msg}")
+                
+                # Mostrar estatísticas
+                stats = master_db.get_estatisticas()
+                _info(f"[MASTER_DB] Estatísticas do banco de dados:")
+                _info(f"[MASTER_DB]   - Total de registros: {stats.get('total_registros', 0)}")
+                _info(f"[MASTER_DB]   - Processos distintos: {stats.get('processos_distintos', 0)}")
+                _info(f"[MASTER_DB]   - Colaboradores distintos: {stats.get('colaboradores_distintos', 0)}")
+            else:
+                _info(f"[MASTER_DB] ERRO: {msg}")
+                self._log_validacao("ERRO", f"Falha ao salvar no banco de dados: {msg}", {})
+                
+        except Exception as e:
+            _info(f"[MASTER_DB] ERRO inesperado: {str(e)}")
+            self._log_validacao("ERRO", f"Erro inesperado no banco de dados: {str(e)}", {})
+
     def _gerar_detalhamento_pdf(self):
         """Gera um PDF detalhando o cálculo de cada comissão."""
         if not REPORTLAB_DISPONIVEL:
@@ -4995,6 +5087,24 @@ class CalculoComissao:
             style_output_workbook(NOME_ARQUIVO_SAIDA)
         except Exception:
             pass
+
+        # === INTEGRAÇÃO: Salvar no Banco de Dados Master ===
+        print(f" >>> DEBUG [MASTER_DB Entry]: Iniciando integração com banco de dados master")
+        print(f" >>> DEBUG [MASTER_DB Entry]: df_comissoes type = {type(df_comissoes)}")
+        print(f" >>> DEBUG [MASTER_DB Entry]: df_comissoes.empty = {df_comissoes.empty if hasattr(df_comissoes, 'empty') else 'N/A'}")
+        print(f" >>> DEBUG [MASTER_DB Entry]: len(df_comissoes) = {len(df_comissoes) if df_comissoes is not None else 'None'}")
+        print(f" >>> DEBUG [MASTER_DB Entry]: df_resumo type = {type(df_resumo)}")
+        try:
+            self._salvar_no_banco_dados_master(df_comissoes, df_resumo)
+            print(f" >>> DEBUG [MASTER_DB Exit]: Método executado com sucesso")
+        except Exception as e:
+            print(f" >>> DEBUG [MASTER_DB Exit]: EXCEÇÃO CAPTURADA: {type(e).__name__}: {e}")
+            import traceback
+            traceback.print_exc()
+            _info(f"\n[MASTER_DB] AVISO: Falha ao salvar no banco de dados master: {e}")
+            self._log_validacao(
+                "AVISO", f"Falha ao salvar no banco de dados master: {e}", {}
+            )
 
         _info(
             f"\nCálculo finalizado. Arquivo de saída Excel gerado: {NOME_ARQUIVO_SAIDA}"

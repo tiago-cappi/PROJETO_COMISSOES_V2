@@ -1003,7 +1003,9 @@ async def executar_prescan(payload: ExecPrescanRequest):
                     for f in arquivos_necessarios
                 )
 
-            if arquivos_existem and arquivos_recentes and not precisa_converter:
+            # [QUICK_FIX] Sempre executar o preparador para garantir que alterações recentes nos CSVs sejam processadas
+            # A otimização anterior (arquivos_recentes) causava bugs quando o usuário re-upava o CSV e rodava em seguida
+            if False and arquivos_existem and arquivos_recentes and not precisa_converter:
                 logger.info(
                     "[PRESCAN] Arquivos já existem e são recentes, pulando preparador"
                 )

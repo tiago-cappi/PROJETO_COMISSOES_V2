@@ -1,6 +1,0 @@
-﻿Processo;Status Processo;Numero NF;Dt Emissão;Data Aceite;Valor Realizado;Valor Orçado;Consultor Interno;Representante-pedido;Gerente Comercial-Pedido;Negócio;Grupo;Subgrupo;Tipo de Mercadoria;Aplicação Mat./Serv.;Cliente;Nome Cliente;Cidade;UF;Código Produto;Descrição Produto;Qtde Atendida;Operação;Fabricante
-PROC_TESTE_01;Faturado;1001;2025-10-15;2025-10-15;600.0;600.0;Consultor A;;Alessandro Cappi;Hidrologia;Grupo A;Subgrupo A;Produto;Revenda;Cliente A;Cliente A;SP;SP;PROD1;Prod YSI;1;Venda;YSI
-PROC_TESTE_02;Faturado;1002;2025-10-15;2025-10-15;400.0;400.0;Consultor A;;Alessandro Cappi;Hidrologia;Grupo A;Subgrupo A;Produto;Revenda;Cliente B;Cliente B;SP;SP;PROD2;Prod ISCO;1;Venda;ISCO
-PROC_TESTE_03;Faturado;1003;2025-10-15;2025-10-15;20.0;20.0;Consultor A;;Alessandro Cappi;Hidrologia;Grupo A;Subgrupo A;Produto;Revenda;Cliente C;Cliente C;SP;SP;PROD3;Prod Outro;1;Venda;Outro
-PROC_ANT_01;Faturado;901;2025-09-15;2025-09-15;100.0;100.0;Consultor A;;Alessandro Cappi;Hidrologia;Grupo A;Subgrupo A;Produto;Revenda;Cliente A;Cliente A;SP;SP;PROD1;Prod YSI;1;Venda;YSI
-PROC_ANT_02;Faturado;902;2025-09-15;2025-09-15;100.0;100.0;Consultor A;;Alessandro Cappi;Hidrologia;Grupo A;Subgrupo A;Produto;Revenda;Cliente B;Cliente B;SP;SP;PROD2;Prod ISCO;1;Venda;ISCO

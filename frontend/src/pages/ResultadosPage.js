@@ -124,9 +124,13 @@ const groupFaturamentoData = (rawData = []) => {
     const processoEntry = processMap.get(processoKey);
 
     // Verificar se este processo tem cross-selling
-    if (row.observacao === 'CROSS_SELLING') {
+    const rowDecision = row.cross_selling_decision || row.CROSS_SELLING_DECISION;
+    if (row.observacao === 'CROSS_SELLING' || rowDecision) {
       processoEntry.has_cross_selling = true;
-      processoEntry.cross_selling_decision = row.cross_selling_decision || 'A';
+      // Se já temos uma decisão 'B', mantemos. Caso contrário, aceitamos o que vier (default 'A')
+      if (processoEntry.cross_selling_decision !== 'B') {
+        processoEntry.cross_selling_decision = rowDecision || 'A';
+      }
     }
 
     // Chave composta para diferenciar itens com mesmo código mas características diferentes (ex: subgrupo, valor)

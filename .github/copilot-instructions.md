@@ -229,9 +229,7 @@ If you identify that a requested feature or bug fix belongs in a different/new f
 
 ### 🔎 Protocol: [ANALYZE_FILE]
 **Trigger:** Active **ONLY** when the user begins the message with the tag `[ANALYZE_FILE] <filename>`.
-
 **Context:** The user needs a deep dive into a specific file (dataset, config, or script) to understand its structure and utility within the broader system.
-
 **Workflow:**
 1.  **Inspection (Structure):**
     - Scan the specified file.
@@ -249,9 +247,7 @@ If you identify that a requested feature or bug fix belongs in a different/new f
 
 ### 🤿 Protocol: [DEEP_DIVE]
 **Trigger:** Active **ONLY** when the user begins the message with the tag `[DEEP_DIVE] <feature_or_logic>`.
-
 **Context:** The user wants you to "read and understand" a specific business logic or feature before any changes are planned. The goal is to establish a shared mental model of the current state.
-
 **Workflow:**
 1.  **Code Tracing & Mapping:**
     - Identify ALL files involved in the requested feature (entry points, logic handlers, configs, and tests).
@@ -272,9 +268,7 @@ If you identify that a requested feature or bug fix belongs in a different/new f
 
 ### 🐞 Protocol: [DEBUG_PROBE]
 **Trigger:** Active **ONLY** when the user begins the message with the tag `[DEBUG_PROBE] <bug_description>`.
-
 **Context:** A feature is buggy, and the root cause is unclear from static analysis. You need "X-Ray vision" into the runtime data flow to verify business logic compliance.
-
 **Workflow:**
 1.  **Instrumentation (The "Probe"):**
     - Identify the specific execution path of the reported bug.
@@ -296,11 +290,9 @@ If you identify that a requested feature or bug fix belongs in a different/new f
 
 ### 🧪 Protocol: [DATA_TEST_GEN]
 **Trigger:** Active **ONLY** when the user begins the message with the tag `[DATA_TEST_GEN] <logic_to_verify>`.
-
 **Context (Current Project Specifics):**
 - The user wants to verify logic using REAL data from specific project files.
 - **Target Files:** `dados_entrada/Analise_Comercial_Completa.xlsx`, `dados_entrada/Análise Financeria.xlsx`, `config/REGRAS_COMISSOES.xlsx`, `dados_entrada/rentabilidades/`.
-
 **Workflow:**
 1.  **Scenario Design:**
     - Analyze the logic to be tested.
@@ -318,11 +310,37 @@ If you identify that a requested feature or bug fix belongs in a different/new f
 
 
 
+### 🎨 Protocol: [UI_POLISH] (Frontend Design & UX Studio)
+**Trigger:** Active **ONLY** when the user begins the message with `[UI_POLISH]`.
+- **Supported Flags:** You can combine these in one request:
+  - `+THEME`: Update color palette (branding, gradients).
+  - `+LOGO`: Insert images/logos.
+  - `+MOTION`: Add complex animations, hover effects, shadows, transitions.
+  - `+DATAVIZ`: Prioritize optimizing complex tables (pagination, sticky headers, smart columns). However, you MUST also propose creative alternative visualizations (e.g., Interactive Charts, Kanban Boards, Summary Cards) if they provide a superior UX to a standard table.
+  - `+CLEAN`: Minimalism/Decluttering (hide non-essential info).
+**Context:** The user wants to upgrade the visual quality of the React Frontend.
+- **CONSTRAINT:** You are STRICTLY FORBIDDEN from touching Backend logic (`src/core`, `src/recebimento`). You may only edit `frontend/src` (CSS, JSX, Components).
+**Workflow:**
+1.  **Visual Audit (Read-Only):**
+    - Scan `App.css`, `index.css`, and relevant React Components.
+    - Analyze the current structure based on the requested **Flags**.
+2.  **Design Concept Generation (The "UI Brainstorm"):**
+    - Before coding, propose distincts **Visual Directions** based on the flags used:
+      - *Concept A (Safe/Corporate):* Professional, clean, matches standard branding.
+      - *Concept B (Modern/Fluid):* Uses gradients, rounded corners, soft shadows (Glassmorphism).
+      - *Concept C (Data-First):* High contrast, optimized for density (best for complex tables).
+      - *Other concepts if you have a better or more interesting idea or suggestion.
+    - **For `+DATAVIZ`:** Suggest specific libraries or CSS tricks (e.g., "Zebra Striping", "Hover Highlighting", "Interactive Sorting").
+    - **For `+CLEAN`:** List exactly which fields will be visually hidden (BUT confirm they remain in the fetch logic for future use).
+3.  **Selection & Implementation:**
+    - End response with: *"Which Concept (A, B, C or other) do you prefer? Or do you want to mix features?"*
+    - Once the user selects, create the **Action Plan** to update the CSS/JSX files.
+
+
+
 ### ⚡ Protocol: [QUICK_FIX] (Low Latency Mode)
 **Trigger:** Active **ONLY** when the user begins the message with `[QUICK_FIX] <instruction>`.
-
 **Context:** The user needs an immediate, low-risk correction (e.g., CSS tweak, typo fix, simple logic flip). Speed and low token usage are the priority.
-
 **Rules & Overrides:**
 1.  **BYPASS PLANNING:** You are explicitly authorized to **SKIP** the "Blueprint & Strict Approval" step (Execution Protocol #2). Do NOT ask for permission.
 2.  **Direct Execution:** Implement the change immediately in the code.
@@ -334,11 +352,8 @@ If you identify that a requested feature or bug fix belongs in a different/new f
 ### 🚀 Protocol: [WORKFLOW] (The Master Orchestrator)
 **Trigger:** Active **ONLY** when the user begins the message with `[WORKFLOW: TYPE] <Description>`.
 - Types: `NEW` (New Feature), `CHANGE` (Logic Modification), `FIX` (Bug Fix).
-
 **Context:** The user wants a guided, step-by-step SDLC process. You must act as a Project Manager, executing one phase at a time and waiting for user confirmation to proceed to the next.
-
 **State Machine & Sequences:**
-
 #### 🔵 Type: NEW (New Feature)
 1.  **Phase 1: Context:** Run `[ANALYZE_FILE]` and `[DEEP_DIVE]` on relevant files to understand the ecosystem.
     - *Transition:* "Phase 1 Complete. Reply 'NEXT' to start Brainstorming."
@@ -348,7 +363,6 @@ If you identify that a requested feature or bug fix belongs in a different/new f
     - *Transition:* "Wait for Approval."
 4.  **Phase 4: Implementation:** Write the code.
 5.  **Phase 5: Validation:** Run `[DATA_TEST_GEN]` to guide user in testing the new feature.
-
 #### 🟠 Type: CHANGE (Logic Modification)
 1.  **Phase 1: Understanding:** Run `[DEEP_DIVE]` to map current logic. **(Mandatory)**.
     - *Transition:* "Phase 1 Complete. Reply 'NEXT' to Plan."
@@ -356,14 +370,12 @@ If you identify that a requested feature or bug fix belongs in a different/new f
     - *Transition:* "Wait for Approval."
 3.  **Phase 3: Implementation:** Update the code (Delete old logic, Insert new logic).
 4.  **Phase 4: Validation:** Run `[DATA_TEST_GEN]` to verify the change against real data.
-
 #### 🔴 Type: FIX (Bug Fix)
 1.  **Phase 1: Investigation:** Run `[DEEP_DIVE]` to understand expected behavior.
     - *Transition:* "Phase 1 Complete. Do we need logs? Reply 'PROBE' for Debugging or 'PLAN' if you see the fix."
 2.  **Phase 2 (Optional): Probe:** If selected, run `[DEBUG_PROBE]` to inspect runtime values.
 3.  **Phase 3: Blueprint:** Create a surgical correction plan.
 4.  **Phase 4: Resolution:** Apply the fix and remove any debug probes.
-
 **Execution Rule:**
 - **One Step at a Time:** Never execute multiple phases in a single response.
 - **Maintain Context:** At the start of each new phase, briefly summarize: *"Resuming [WORKFLOW: X] - Phase Y..."*

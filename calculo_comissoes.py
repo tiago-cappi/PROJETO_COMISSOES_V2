@@ -3010,7 +3010,8 @@ class CalculoComissao:
             log.flush()
         
         for caso in getattr(self, "casos_cross_selling_detectados", []) or []:
-            processo = caso.get("processo")
+            processo_raw = caso.get("processo")
+            processo = str(processo_raw).strip()
             gerente_padrao = caso.get("consultor")
             linha_do_processo = caso.get("linha")
             taxa = caso.get("taxa", 0.0)
@@ -3025,12 +3026,12 @@ class CalculoComissao:
                     (
                         d.get("decision")
                         for d in self.decisoes_passadas
-                        if d.get("processo") == processo
+                        if str(d.get("processo", "")).strip() == processo
                     ),
                     None,
                 )
                 if decisao_encontrada:
-                    decisao = decisao_encontrada
+                    decisao = str(decisao_encontrada).strip()
 
             if decisao is None:  # Fallback se não veio da API
                 decisao = self.params.get("cross_selling_default_option", "A")
@@ -3180,10 +3181,13 @@ class CalculoComissao:
             colaboradores_para_comissionar = combined
 
             # Verificar se este processo foi detectado como cross-selling
-            processo_atual = (
+            processo_atual_raw = (
                 item_faturado.get("Processo")
                 if "Processo" in item_faturado.index
                 else None
+            )
+            processo_atual = (
+                str(processo_atual_raw).strip() if processo_atual_raw is not None else None
             )
             cs_info = self.cross_selling_decisions.get(processo_atual, None)
 
@@ -4111,7 +4115,7 @@ class CalculoComissao:
                 if s.startswith("forn"):
                     detalhes_cols.append(f"moeda_{s}")
 
-            colunas_resultado = ["comissao_potencial_maxima", "comissao_calculada", "observacao"]
+            colunas_resultado = ["comissao_potencial_maxima", "comissao_calculada", "observacao", "cross_selling_decision"]
             ordem_final = (
                 colunas_principais
                 + colunas_contexto

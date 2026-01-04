@@ -7,16 +7,16 @@ import './cellRenderers.css';
  * Cell Renderers - Display formatted values in read mode
  */
 
-// Helper to determine color intensity based on percentage
+// Helper to determine color intensity based on percentage (RED scale)
 const getPercentColor = (value) => {
   const num = parseFloat(value);
   if (isNaN(num)) return 'inherit';
   
-  // Scale from light gray (0%) to deep green (100%)
+  // Scale from light pink (0%) to deep red (100%)
   const intensity = Math.min(100, Math.max(0, num));
-  const hue = 142; // Green hue
+  const hue = 0; // Red hue
   const saturation = 70;
-  const lightness = 85 - (intensity * 0.4); // 85% at 0, 45% at 100
+  const lightness = 90 - (intensity * 0.45); // 90% at 0, 45% at 100
   
   return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 };

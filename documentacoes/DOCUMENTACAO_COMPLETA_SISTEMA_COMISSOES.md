@@ -93,8 +93,8 @@ Ambos os fluxos aplicam **Fatores de Correção (FC)** baseados no desempenho do
    └──────────────────┘                                      ┌──────────────────┐
                                                              │  Saldos          │
    ┌──────────────────┐                                      │  Negativos       │
-   │ Devoluções       │─────────────────────────────────────▶│  (Reconciliação  │
-   │ [FUTURO]         │                                      │   + Devoluções)  │
+   │ Devoluções.xlsx  │─────────────────────────────────────▶│  (Reconciliação  │
+   │                  │                                      │   + Devoluções)  │
    └──────────────────┘                                      └──────────────────┘
 ```
 
@@ -664,31 +664,169 @@ O sistema gera saldos negativos de **duas fontes**:
 | **Reconciliação** | Colaboradores que recebem por recebimento | Quando processo é faturado e FCMP < 1.0 |
 | **Devoluções** | TODOS os colaboradores do item devolvido | Quando cliente devolve um item |
 
-### 9.2 Devoluções de Itens (Implementação Futura)
+### 9.2 Devoluções de Itens (✅ Implementado)
 
 #### 9.2.1 Arquivo de Devoluções
 
-Novo arquivo de entrada contendo:
-- Número da NF original
-- Código do item devolvido
-- Data da devolução
-- Valor devolvido
+**Localização:** `dados_entrada/Devoluções.xlsx`
 
-#### 9.2.2 Lógica de Estorno
+**Estrutura do Arquivo:**
 
-**Regra Crítica:** Apenas o **item específico** devolvido gera estorno, **NÃO** o processo inteiro.
+| Coluna | Tipo | Descrição |
+|--------|------|-----------|
+| `Código Operação` | Texto | Identificador interno da operação de devolução |
+| `Data de Entrada` | Data | Data em que a devolução foi registrada no sistema |
+| `Valor Produtos` | Numérico | Valor total dos produtos devolvidos (em R$) |
+| `Num docorigem` | Texto | **CHAVE DE VINCULAÇÃO** - Número da NF original que gerou a venda |
 
-**Processo:**
-1. Identificar o item devolvido através do Número NF
-2. Consultar o **Banco de Dados Histórico de Comissões**
-3. Recuperar a comissão **exata** que foi paga originalmente para cada colaborador
-4. Esta comissão (com o FC aplicado na época) se torna saldo negativo
+**Observações Importantes:**
+- Aproximadamente 50% dos registros podem não ter `Num docorigem` preenchido
+- Registros sem `Num docorigem` são **ignorados automaticamente** (não há como vincular à venda original)
+- O sistema loga quantos registros foram ignorados por falta desta informação
 
-#### 9.2.3 Características do Estorno
+#### 9.2.2 Módulo de Processamento
 
-- **Valor:** Comissão original paga (com FC do mês de faturamento)
-- **Período:** Registrado no mês de apuração em que a devolução ocorreu (não retroativo)
-- **Distribuição:** Cada colaborador que recebeu comissão pelo item recebe débito proporcional
+**Localização:** `src/devolucao/`
+
+**Arquivos do Módulo:**
+
+| Arquivo | Responsabilidade |
+|---------|------------------|
+| `devolucao_loader.py` | Carrega e filtra `Devoluções.xlsx` por mês/ano de apuração |
+| `devolucao_calculator.py` | Calcula fator de devolução e estornos proporcionais |
+| `devolucao_processor.py` | Orquestra todo o fluxo de processamento |
+| `__init__.py` | Exports públicos do módulo |
+
+#### 9.2.3 Fluxo de Processamento
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        FLUXO DE DEVOLUÇÕES                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+1. CARREGAMENTO (DevolucaoLoader)
+   │
+   ├── Lê arquivo: dados_entrada/Devoluções.xlsx
+   ├── Filtra por Data de Entrada = mês/ano de apuração
+   ├── Remove registros sem Num docorigem (com log)
+   ├── Remove registros com valor ≤ 0
+   └── Agrupa múltiplas devoluções da mesma NF (soma valores)
+   │
+   ▼
+2. VINCULAÇÃO COM ANÁLISE COMERCIAL
+   │
+   ├── Busca Num docorigem → Numero NF na Análise Comercial
+   ├── Extrai número do Processo vinculado
+   └── Obtém Valor Realizado total do processo original
+   │
+   ▼
+3. CONSULTA BANCO HISTÓRICO (HISTORICO_COMISSOES_MASTER.xlsx)
+   │
+   ├── Busca comissões pagas do Processo
+   ├── Filtra por Tipo_Comissao = "FATURAMENTO" ou "RECEBIMENTO"
+   └── Recupera todos os colaboradores que receberam comissão
+   │
+   ▼
+4. CÁLCULO DO ESTORNO PROPORCIONAL (DevolucaoCalculator)
+   │
+   ├── Fator_Devolução = Valor_Devolvido / Valor_Realizado_Processo
+   ├── Para cada colaborador do processo:
+   │   └── Estorno = Comissão_Histórica × Fator_Devolução × (-1)
+   └── O estorno é NEGATIVO (débito)
+   │
+   ▼
+5. PERSISTÊNCIA NO BANCO DE DADOS
+   │
+   ├── Salva no HISTORICO_COMISSOES_MASTER.xlsx
+   ├── Tipo_Comissao = "DEVOLUCAO"
+   ├── Origem_Correcao = "DEVOLUCAO"
+   ├── Processo_Referencia = Processo original
+   └── Fator_Devolucao = Fator calculado
+```
+
+#### 9.2.4 Fórmulas de Cálculo
+
+**Fator de Devolução:**
+```
+Fator_Devolução = Valor_Devolvido / Valor_Realizado_Processo
+```
+
+**Estorno por Colaborador:**
+```
+Estorno = Comissão_Histórica_Paga × Fator_Devolução × (-1)
+```
+
+**Exemplo Prático:**
+
+| Dado | Valor |
+|------|-------|
+| Valor Realizado do Processo | R$ 100.000,00 |
+| Valor Devolvido | R$ 25.000,00 |
+| Fator de Devolução | 0,25 (25%) |
+| Comissão paga ao Vendedor | R$ 2.000,00 |
+| Comissão paga ao Gerente | R$ 500,00 |
+| **Estorno Vendedor** | R$ -500,00 |
+| **Estorno Gerente** | R$ -125,00 |
+
+#### 9.2.5 Regra de Proporcionalidade
+
+**Regra Crítica:** O estorno é **PROPORCIONAL** ao valor devolvido, **NÃO** item-específico.
+
+**Justificativa:**
+- O arquivo de devoluções contém apenas o valor total devolvido por NF
+- Não há granularidade de item (SKU) disponível na fonte de dados
+- A proporcionalidade garante equidade: se 25% do valor foi devolvido, 25% da comissão é estornada
+
+#### 9.2.6 Características do Estorno
+
+| Característica | Descrição |
+|----------------|-----------|
+| **Valor** | Proporcional ao percentual devolvido sobre o valor realizado |
+| **Período** | Registrado no mês de apuração da devolução (não retroativo) |
+| **Distribuição** | Cada colaborador que recebeu comissão pelo processo recebe débito proporcional |
+| **Tipo** | `DEVOLUCAO` (novo tipo de comissão no banco de dados) |
+| **Sinal** | Sempre NEGATIVO (débito) |
+
+#### 9.2.7 Integração no Fluxo Principal
+
+**Momento de Execução:** O processamento de devoluções ocorre **APÓS**:
+1. ✅ Cálculo de comissões de faturamento
+2. ✅ Cálculo de comissões de recebimento (se aplicável)
+3. ✅ Salvamento das comissões no banco de dados master
+
+**Método:** `_processar_devolucoes()` em `calculo_comissoes.py`
+
+**Chamada Automática:** O processamento é executado automaticamente ao final do cálculo principal, sem necessidade de ação manual.
+
+#### 9.2.8 Colunas Adicionadas ao Banco de Dados Histórico
+
+Para suportar o rastreamento de devoluções, as seguintes colunas foram adicionadas ao schema do `HISTORICO_COMISSOES_MASTER.xlsx`:
+
+| Coluna | Tipo | Descrição |
+|--------|------|-----------|
+| `Numero_NF` | Texto | Número da NF para vinculação com devoluções |
+| `Origem_Correcao` | Texto | Origem do registro: `NORMAL`, `RECONCILIACAO`, `DEVOLUCAO` |
+| `Processo_Referencia` | Texto | Processo original (para estornos) |
+| `Fator_Devolucao` | Numérico | Fator proporcional aplicado (0.0 a 1.0) |
+
+#### 9.2.9 Logs e Rastreabilidade
+
+O módulo gera logs detalhados durante o processamento:
+
+```
+[DEVOLUÇÕES] Iniciando processamento de devoluções...
+[DEVOLUÇÕES] Período de apuração: 12/2025
+[DEVOLUÇÕES] Análise Comercial carregada: 5000 registros
+[DEVOLUCAO] Devoluções carregadas: 150 linhas originais, 75 sem doc origem ignoradas, 45 devoluções válidas para 12/2025
+[DEVOLUCAO] Processando devolução: NF 123456, Valor R$ 25.000,00
+[DEVOLUCAO] Processo vinculado: PROC-2024-001, Valor Realizado: R$ 100.000,00
+[DEVOLUCAO] Fator de devolução: 0.2500
+[DEVOLUCAO] Estorno gerado para colaborador JOAO SILVA: R$ -500.00
+[DEVOLUÇÕES] ✓ Processamento concluído com sucesso!
+[DEVOLUÇÕES]   - Estornos gerados: 120
+[DEVOLUÇÕES]   - Processos afetados: 45
+[DEVOLUÇÕES]   - Valor total estornado: R$ 15.230,50
+```
 
 ### 9.3 Consolidação de Saldos Negativos
 
@@ -869,11 +1007,17 @@ Converter metas de fornecedores definidas em moedas estrangeiras para Reais, per
 
 **Funcionalidade:** Linhas expansíveis (agrupamento) para drill-down.
 
-### 13.7 Processamento de Devoluções
+### 13.7 Processamento de Devoluções (✅ Implementado)
 
-**Descrição:** Já documentado na seção 9.2.
+**Descrição:** Documentação completa na seção 9.2.
 
-**Novo Upload:** Arquivo de devoluções com NF, item, data.
+**Arquivo de Entrada:** `dados_entrada/Devoluções.xlsx`
+
+**Módulo:** `src/devolucao/` (loader, calculator, processor)
+
+**Execução:** Automática ao final do cálculo de comissões.
+
+**Resultado:** Registros com `Tipo_Comissao = DEVOLUCAO` e valores negativos no banco histórico.
 
 ### 13.8 Dashboard de Saldos Negativos
 

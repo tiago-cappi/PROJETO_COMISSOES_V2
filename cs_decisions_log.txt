@@ -3,5 +3,5 @@ Total de casos detectados: 1
 
 
 Caso: processo=TESTE, consultor=André Camargo, linha=Hidrologia, taxa=1.0
-Taxa final aplicada: 1.0, Decisão: B
-Decisão criada: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'B', 'timestamp': '2025-12-19T10:05:47.864506'}
+Taxa final aplicada: 1.0, Decisão: A
+Decisão criada: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'A', 'timestamp': '2025-12-19T11:26:26.948656'}

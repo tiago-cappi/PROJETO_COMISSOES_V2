@@ -22,7 +22,7 @@ MASTER_DB_COLUMNS = [
     "Usuario_Execucao",
     "Mes_Referencia",
     "Ano_Referencia",
-    "Tipo_Comissao",  # FATURAMENTO, ADIANTAMENTO, REGULAR, RECONCILIACAO
+    "Tipo_Comissao",  # FATURAMENTO, ADIANTAMENTO, REGULAR, RECONCILIACAO, DEVOLUCAO
     
     # Identificação do processo e colaborador
     "Processo",
@@ -47,6 +47,14 @@ MASTER_DB_COLUMNS = [
     "Documento",
     "Data_Pagamento",
     "Tipo_Pagamento",  # ANTECIPACAO, REGULAR
+    
+    # Identificação de NF (para vínculo com devoluções)
+    "Numero_NF",  # Número da Nota Fiscal do faturamento
+    
+    # Campos de controle de devoluções
+    "Origem_Correcao",  # DEVOLUCAO, RECONCILIACAO ou vazio
+    "Processo_Referencia",  # Processo original (para devoluções)
+    "Fator_Devolucao",  # Fator aplicado na devolução (0.0 a 1.0)
     
     # Observações
     "Observacao",
@@ -328,6 +336,18 @@ class MasterDBManager:
             "DATA_PAGAMENTO": "Data_Pagamento",
             "tipo_pagamento": "Tipo_Pagamento",
             "TIPO_PAGAMENTO": "Tipo_Pagamento",
+            # Colunas de identificação de NF (para vínculo com devoluções)
+            "numero_nf": "Numero_NF",
+            "NUMERO_NF": "Numero_NF",
+            "Numero NF": "Numero_NF",
+            # Colunas de controle de devoluções
+            "origem_correcao": "Origem_Correcao",
+            "ORIGEM_CORRECAO": "Origem_Correcao",
+            "processo_referencia": "Processo_Referencia",
+            "PROCESSO_REFERENCIA": "Processo_Referencia",
+            "fator_devolucao": "Fator_Devolucao",
+            "FATOR_DEVOLUCAO": "Fator_Devolucao",
+            # Observação
             "observacao": "Observacao",
             "OBSERVACAO": "Observacao",
         }

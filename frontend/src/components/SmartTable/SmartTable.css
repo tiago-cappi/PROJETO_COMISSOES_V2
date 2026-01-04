@@ -21,7 +21,7 @@
 }
 
 .smart-table__badge {
-  background-color: #faad14;
+  background-color: #1E64A5;
   color: #fff;
   font-size: 12px;
   padding: 2px 8px;
@@ -31,11 +31,11 @@
 
 /* Row states */
 .smart-table__row--new {
-  background-color: #f6ffed !important;
+  background-color: #e6f4ff !important;
 }
 
 .smart-table__row--new:hover > td {
-  background-color: #d9f7be !important;
+  background-color: #bae0ff !important;
 }
 
 .smart-table__row--modified {

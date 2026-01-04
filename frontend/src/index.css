@@ -16,3 +16,62 @@ code {
   box-sizing: border-box;
 }
 
+/* ================= Tema Corporativo Azul - Sidebar ================= */
+
+/* Cor de fundo do Sider */
+.ant-layout-sider {
+  background: #164875 !important;
+}
+
+/* Trigger do collapse */
+.ant-layout-sider-trigger {
+  background: #1E64A5 !important;
+}
+
+/* Menu dentro do Sider */
+.ant-layout-sider .ant-menu {
+  background: transparent !important;
+}
+
+.ant-layout-sider .ant-menu-item {
+  color: rgba(255, 255, 255, 0.85) !important;
+  margin: 4px 8px !important;
+  border-radius: 6px !important;
+}
+
+.ant-layout-sider .ant-menu-item:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+.ant-layout-sider .ant-menu-item-selected {
+  background: #ffffff !important;
+  color: #1E64A5 !important;
+}
+
+.ant-layout-sider .ant-menu-item-selected .anticon {
+  color: #1E64A5 !important;
+}
+
+.ant-layout-sider .ant-menu-item .anticon {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.ant-layout-sider .ant-menu-item:hover .anticon {
+  color: #ffffff !important;
+}
+
+/* Submenu title */
+.ant-layout-sider .ant-menu-submenu-title {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.ant-layout-sider .ant-menu-submenu-title:hover {
+  color: #ffffff !important;
+}
+
+/* Remove bordas indesejadas */
+.ant-layout-sider .ant-menu-inline {
+  border-right: none !important;
+}
+

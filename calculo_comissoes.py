@@ -76,6 +76,9 @@ from src.utils.logging import ValidationLogger
 # Novos serviços de câmbio centralizados
 from src.currency import RateFetcher, RateStorage, RateValidator, RateCalculator
 
+# Módulo de processamento de devoluções
+from src.devolucao import DevolucaoProcessor
+
 # Flag simples de verbosidade (NÃO muda cálculo)
 LOG_VERBOSE = os.getenv("COMISSOES_VERBOSE", "0") == "1"
 # NOVO: Flag específica para debug de rentabilidade (pode ser ativada independentemente)
@@ -3379,6 +3382,7 @@ class CalculoComissao:
                     "cod_produto": item_faturado["Código Produto"],
                     "descricao_produto": item_faturado["Descrição Produto"],
                     "processo": item_faturado["Processo"],
+                    "numero_nf": item_faturado.get("Numero NF", ""),  # Para vínculo com devoluções
                     **contexto_item,
                     "faturamento_item": faturamento_item,
                     "taxa_rateio_aplicada": taxa_rateio,
@@ -3659,6 +3663,102 @@ class CalculoComissao:
         except Exception as e:
             _info(f"[MASTER_DB] ERRO inesperado: {str(e)}")
             self._log_validacao("ERRO", f"Erro inesperado no banco de dados: {str(e)}", {})
+
+    def _processar_devolucoes(self):
+        """
+        Processa devoluções do período e gera saldos negativos de comissão.
+        
+        Este método deve ser chamado APÓS:
+        1. Cálculo de comissões de faturamento
+        2. Cálculo de comissões de recebimento (se aplicável)
+        3. Salvamento das comissões no banco de dados master
+        
+        Fluxo:
+        1. Carrega devoluções filtradas pelo mês/ano de apuração
+        2. Vincula com Análise Comercial via Numero NF
+        3. Consulta comissões históricas pagas
+        4. Calcula estorno proporcional
+        5. Salva registros negativos no banco de dados master
+        """
+        _info("")
+        _info("=" * 60)
+        _info("[DEVOLUÇÕES] Iniciando processamento de devoluções...")
+        _info("=" * 60)
+        
+        try:
+            # Obter mês/ano do cálculo
+            mes = getattr(self, "mes", None)
+            ano = getattr(self, "ano", None)
+            
+            # Tentar extrair dos params
+            if mes is None or ano is None:
+                if isinstance(self.params, dict):
+                    raw_mes = self.params.get("mes_apuracao")
+                    raw_ano = self.params.get("ano_apuracao")
+                    mes = int(raw_mes) if raw_mes not in (None, "", False) else None
+                    ano = int(raw_ano) if raw_ano not in (None, "", False) else None
+            
+            # Se não encontrou, tentar extrair do nome do arquivo de saída
+            if mes is None or ano is None:
+                global NOME_ARQUIVO_SAIDA
+                if NOME_ARQUIVO_SAIDA:
+                    import re
+                    match = re.search(r'_(\d{1,2})_(\d{4})\.xlsx', NOME_ARQUIVO_SAIDA)
+                    if match:
+                        mes = int(match.group(1))
+                        ano = int(match.group(2))
+            
+            # Se ainda não encontrou, usar data atual como fallback
+            if mes is None or ano is None:
+                from datetime import datetime
+                now = datetime.now()
+                mes = mes or now.month
+                ano = ano or now.year
+            
+            _info(f"[DEVOLUÇÕES] Período de apuração: {mes:02d}/{ano}")
+            
+            # Obter df_analise_comercial do self.data
+            df_analise_comercial = self.data.get("ANALISE_COMERCIAL", pd.DataFrame())
+            
+            if df_analise_comercial.empty:
+                _info("[DEVOLUÇÕES] Nenhum dado de Análise Comercial disponível. Pulando processamento de devoluções.")
+                return
+            
+            _info(f"[DEVOLUÇÕES] Análise Comercial carregada: {len(df_analise_comercial)} registros")
+            
+            # Instanciar e executar o processador de devoluções
+            processor = DevolucaoProcessor(
+                df_analise_comercial=df_analise_comercial,
+                master_db_path="."
+            )
+            
+            resultado = processor.processar(mes=mes, ano=ano)
+            
+            # Exibir resultado
+            if resultado.get("sucesso", False):
+                total_estornos = resultado.get("total_estornos", 0)
+                processos_afetados = resultado.get("processos_afetados", 0)
+                valor_total = resultado.get("valor_total_estornado", 0)
+                
+                _info(f"[DEVOLUÇÕES] ✓ Processamento concluído com sucesso!")
+                _info(f"[DEVOLUÇÕES]   - Estornos gerados: {total_estornos}")
+                _info(f"[DEVOLUÇÕES]   - Processos afetados: {processos_afetados}")
+                _info(f"[DEVOLUÇÕES]   - Valor total estornado: R$ {abs(valor_total):,.2f}")
+            else:
+                msg_erro = resultado.get("mensagem", "Erro desconhecido")
+                _info(f"[DEVOLUÇÕES] ⚠ Processamento finalizado: {msg_erro}")
+                
+        except ImportError as e:
+            _info(f"[DEVOLUÇÕES] Módulo de devoluções não disponível: {str(e)}")
+            _info("[DEVOLUÇÕES] Pulando processamento de devoluções.")
+        except Exception as e:
+            _info(f"[DEVOLUÇÕES] ERRO inesperado: {str(e)}")
+            self._log_validacao("AVISO", f"Erro no processamento de devoluções: {str(e)}", {})
+        
+        _info("=" * 60)
+        _info("[DEVOLUÇÕES] Processamento de devoluções finalizado.")
+        _info("=" * 60)
+        _info("")
 
     def _gerar_detalhamento_pdf(self):
         """Gera um PDF detalhando o cálculo de cada comissão."""
@@ -5108,6 +5208,17 @@ class CalculoComissao:
             _info(f"\n[MASTER_DB] AVISO: Falha ao salvar no banco de dados master: {e}")
             self._log_validacao(
                 "AVISO", f"Falha ao salvar no banco de dados master: {e}", {}
+            )
+
+        # === INTEGRAÇÃO: Processamento de Devoluções ===
+        # Executado APÓS o salvamento de comissões de faturamento e recebimento
+        try:
+            _info("\n[DEVOLUÇÃO] Iniciando processamento de devoluções...")
+            self._processar_devolucoes()
+        except Exception as e:
+            _info(f"\n[DEVOLUÇÃO] AVISO: Falha ao processar devoluções: {e}")
+            self._log_validacao(
+                "AVISO", f"Falha ao processar devoluções: {e}", {}
             )
 
         _info(

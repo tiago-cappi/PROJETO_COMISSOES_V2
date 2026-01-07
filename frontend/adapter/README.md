@@ -65,6 +65,7 @@ Documentação: `http://localhost:8000/docs`
 - `POST /upload/fin_adcli` - fin_adcli_pg_m3.xls
 - `POST /upload/fin_conci` - fin_conci_adcli_m3.xls
 - `POST /upload/analise_financeira` - Análise Financeira.xlsx (salvo em `dados_entrada/`)
+- `POST /upload/devolucoes` - Devoluções.xlsx (salvo em `dados_entrada/`)
 
 ### Execução
 - `POST /calcular?mes=MM&ano=AAAA` - Inicia cálculo

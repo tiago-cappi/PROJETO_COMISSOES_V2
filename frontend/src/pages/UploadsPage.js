@@ -13,6 +13,7 @@ const UploadsPage = () => {
   const [uploadStates, setUploadStates] = useState({
     analise: { status: 'idle', filename: null },
     analiseFinanceira: { status: 'idle', filename: null },
+    devolucoes: { status: 'idle', filename: null },
   });
 
   const handleUpload = async (tipo, file) => {
@@ -29,6 +30,9 @@ const UploadsPage = () => {
           break;
         case 'analiseFinanceira':
           response = await uploadAPI.analiseFinanceira(file);
+          break;
+        case 'devolucoes':
+          response = await uploadAPI.devolucoes(file);
           break;
         default:
           throw new Error('Tipo de upload inválido');
@@ -73,6 +77,13 @@ const UploadsPage = () => {
       descricao: 'Pagamentos Regulares do Mês',
       accept: '.xlsx',
       icon: <FileExcelOutlined style={{ fontSize: 48, color: '#52c41a' }} />,
+    },
+    {
+      key: 'devolucoes',
+      title: 'Devoluções.xlsx',
+      descricao: 'Devoluções do período (xlsx)',
+      accept: '.xlsx',
+      icon: <FileExcelOutlined style={{ fontSize: 48, color: '#fa541c' }} />,
     },
   ];
 

@@ -776,6 +776,24 @@ async def upload_analise_financeira(file: UploadFile = File(...)):
     return {"success": True, "filename": "Análise Financeira.xlsx"}
 
 
+@app.post("/upload/devolucoes")
+async def upload_devolucoes(file: UploadFile = File(...)):
+    """Upload do arquivo Devoluções.xlsx"""
+    if not file.filename or not file.filename.endswith(".xlsx"):
+        raise HTTPException(status_code=400, detail="Formato inválido. Use .xlsx")
+
+    # Criar diretório dados_entrada se não existir
+    dados_entrada_dir = Path(ROBO_ROOT_PATH) / "dados_entrada"
+    dados_entrada_dir.mkdir(exist_ok=True)
+
+    filepath = dados_entrada_dir / "Devoluções.xlsx"
+    async with aiofiles.open(filepath, "wb") as f:
+        content = await file.read()
+        await f.write(content)
+
+    return {"success": True, "filename": "Devoluções.xlsx"}
+
+
 # ==================== ENDPOINTS - EXECUÇÃO ====================
 
 # Dicionário para armazenar processos ativos

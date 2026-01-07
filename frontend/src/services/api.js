@@ -160,6 +160,14 @@ export const uploadAPI = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
+
+  devolucoes: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/upload/devolucoes', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
   
   // DESABILITADO - Não mais necessário no novo robô
   // finAdcli: (file) => {

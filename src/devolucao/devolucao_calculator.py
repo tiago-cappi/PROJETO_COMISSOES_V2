@@ -95,6 +95,10 @@ class DevolucaoCalculator:
         """
         saldos_negativos = []
         
+        # Garantir conversão para float
+        valor_devolvido = float(valor_devolvido) if valor_devolvido else 0.0
+        valor_realizado = float(valor_realizado) if valor_realizado else 0.0
+        
         # Calcular fator de devolução
         fator = self.calcular_fator_devolucao(valor_devolvido, valor_realizado)
         
@@ -145,10 +149,35 @@ class DevolucaoCalculator:
             )
             return []
         
-        # Iterar sobre cada linha de comissão histórica
-        for _, row in comissoes_historicas.iterrows():
+        # CORREÇÃO: Agrupar comissões por colaborador ANTES de iterar
+        # Cada colaborador deve ter apenas 1 registro de devolução por processo,
+        # com o estorno calculado sobre a SOMA de todas as suas comissões no processo.
+        
+        # Preparar DataFrame para agrupamento
+        df_trabalho = comissoes_historicas.copy()
+        df_trabalho["_comissao_num"] = pd.to_numeric(df_trabalho[col_comissao], errors="coerce").fillna(0)
+        
+        # Agrupar por colaborador, somando comissões e mantendo primeiro valor das outras colunas
+        agg_dict = {"_comissao_num": "sum"}
+        if col_cargo:
+            agg_dict[col_cargo] = "first"
+        if col_id:
+            agg_dict[col_id] = "first"
+        if col_linha:
+            agg_dict[col_linha] = "first"
+        
+        df_agrupado = df_trabalho.groupby(col_colaborador, as_index=False).agg(agg_dict)
+        
+        logger.info(
+            f"[DEVOLUCAO] Processo {processo}: "
+            f"{len(comissoes_historicas)} registros históricos -> "
+            f"{len(df_agrupado)} colaboradores únicos"
+        )
+        
+        # Iterar sobre colaboradores agrupados (1 registro por colaborador)
+        for _, row in df_agrupado.iterrows():
             nome_colaborador = row.get(col_colaborador, "")
-            comissao_original = float(row.get(col_comissao, 0) or 0)
+            comissao_original = float(row.get("_comissao_num", 0) or 0)
             
             if comissao_original <= 0:
                 continue
@@ -171,6 +200,7 @@ class DevolucaoCalculator:
                 
                 # Valores
                 "valor_base": valor_devolvido,  # Valor devolvido como base
+                "valor_realizado": valor_realizado,  # Valor realizado do processo
                 "comissao_original": comissao_original,
                 "fator_devolucao": fator,
                 "comissao_calculada": comissao_estorno,  # NEGATIVO

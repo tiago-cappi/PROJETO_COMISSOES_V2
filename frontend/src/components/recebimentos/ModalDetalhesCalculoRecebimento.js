@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Modal,
   Collapse,
@@ -9,7 +9,12 @@ import {
   Space,
   Typography,
   Divider,
-  Tree,
+  Spin,
+  Segmented,
+  Drawer,
+  Button,
+  Card,
+  Progress,
 } from 'antd';
 import {
   InfoCircleOutlined,
@@ -17,21 +22,406 @@ import {
   CheckCircleOutlined,
   WarningOutlined,
   DollarOutlined,
+  ArrowLeftOutlined,
 } from '@ant-design/icons';
+
+import { recebimentoAPI } from '../../services/api';
 
 const { Panel } = Collapse;
 const { Text, Title } = Typography;
+
+const VIEW_MODE = {
+  BASICO: 'BASICO',
+  AUDITORIA: 'AUDITORIA',
+};
+
+const formatCurrencyBR = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
+const formatPercent = (value) => `${((value || 0) * 100).toFixed(2)}%`;
 
 /**
  * Modal para exibir detalhes completos do cálculo de um pagamento.
  * 4 Seções: Informações Gerais, TCMP, FCMP, Cálculo Final.
  */
 const ModalDetalhesCalculoRecebimento = ({ visible, onClose, pagamento }) => {
+  const [pagamentoDetalhado, setPagamentoDetalhado] = useState(null);
+  const [loadingDetalhes, setLoadingDetalhes] = useState(false);
+  const [erroDetalhes, setErroDetalhes] = useState(null);
+  const [viewMode, setViewMode] = useState(VIEW_MODE.BASICO);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerTitle, setDrawerTitle] = useState('');
+  const [drawerContent, setDrawerContent] = useState(null);
+
+  const [auditoriaData, setAuditoriaData] = useState(null);
+  const [loadingAuditoria, setLoadingAuditoria] = useState(false);
+  const [erroAuditoria, setErroAuditoria] = useState(null);
+  const [expandedTcmpKeys, setExpandedTcmpKeys] = useState([]);
+  const [expandedFcmpKeys, setExpandedFcmpKeys] = useState([]);
+
+  const pagamentoView = pagamentoDetalhado || pagamento;
+
+  const deveBuscarDetalhes = useMemo(() => {
+    if (!visible) return false;
+    if (!pagamento?.id) return false;
+
+    const hasTcmp = Object.prototype.hasOwnProperty.call(pagamento, 'tcmp_detalhes');
+    const hasFcmp = Object.prototype.hasOwnProperty.call(pagamento, 'fcmp_detalhes');
+    return !(hasTcmp && hasFcmp);
+  }, [visible, pagamento]);
+
+  useEffect(() => {
+    if (!visible) return;
+    if (!pagamento) return;
+    setErroDetalhes(null);
+    setPagamentoDetalhado(null);
+    setViewMode(VIEW_MODE.BASICO);
+    setDrawerOpen(false);
+    setDrawerTitle('');
+    setDrawerContent(null);
+    setAuditoriaData(null);
+    setErroAuditoria(null);
+    setExpandedTcmpKeys([]);
+    setExpandedFcmpKeys([]);
+
+    if (!deveBuscarDetalhes) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoadingDetalhes(true);
+        const resp = await recebimentoAPI.getDetalhesPagamento(pagamento.id);
+        if (cancelled) return;
+        setPagamentoDetalhado(resp?.data || null);
+      } catch (e) {
+        if (cancelled) return;
+        setErroDetalhes(e?.message || 'Falha ao carregar detalhes do pagamento');
+      } finally {
+        if (!cancelled) setLoadingDetalhes(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [visible, pagamento?.id, deveBuscarDetalhes]);
+
+  useEffect(() => {
+    if (!visible) return;
+    if (viewMode !== VIEW_MODE.AUDITORIA) return;
+    const processo = (pagamentoDetalhado || pagamento)?.processo;
+    if (!processo) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoadingAuditoria(true);
+        setErroAuditoria(null);
+        const resp = await recebimentoAPI.getAuditoriaProcesso(processo);
+        if (cancelled) return;
+        setAuditoriaData(resp?.data || null);
+      } catch (e) {
+        if (cancelled) return;
+        setErroAuditoria(e?.message || 'Falha ao carregar auditoria do processo');
+      } finally {
+        if (!cancelled) setLoadingAuditoria(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [visible, viewMode, pagamentoDetalhado, pagamento]);
+
   if (!pagamento) return null;
 
-  const isAdiantamento = pagamento.tipo === 'ADIANTAMENTO' || pagamento.tipo === 'Antecipação';
-  const tcmpDetalhes = pagamento.tcmp_detalhes || [];
-  const fcmpDetalhes = pagamento.fcmp_detalhes || [];
+  const isAdiantamento = pagamentoView.tipo === 'ADIANTAMENTO' || pagamentoView.tipo === 'Antecipação';
+  const tcmpDetalhes = pagamentoView.tcmp_detalhes || [];
+  const fcmpDetalhes = pagamentoView.fcmp_detalhes || [];
+
+  const openDrawer = (title, content) => {
+    setDrawerTitle(title);
+    setDrawerContent(content);
+    setDrawerOpen(true);
+  };
+
+  const buildCardEquation = (label, equation, substitution, result) => (
+    <Card size="small" title={label}>
+      <Space direction="vertical" size={4} style={{ width: '100%' }}>
+        <Text><strong>Equação:</strong> <span style={{ fontFamily: 'monospace' }}>{equation}</span></Text>
+        {substitution ? <Text type="secondary"><strong>Substituindo:</strong> <span style={{ fontFamily: 'monospace' }}>{substitution}</span></Text> : null}
+        {result ? <Alert type="success" showIcon message={result} /> : null}
+      </Space>
+    </Card>
+  );
+
+  const openDrawerTcmpItem = ({ itemNome, colaborador, record, totalValorColab }) => {
+    const valor = record?.valor || 0;
+    const peso = record?.peso || (totalValorColab > 0 ? (valor / totalValorColab) : 0);
+    const taxa = record?.taxa || 0;
+    const taxaRateio = record?.taxa_rateio;
+    const fatiaCargo = record?.fatia_cargo;
+    const taxaTemDecomposicao = taxaRateio !== undefined && fatiaCargo !== undefined;
+    const taxaCalc = taxaTemDecomposicao ? (taxaRateio * fatiaCargo) : null;
+    const parcial = taxa * peso;
+
+    openDrawer(
+      `TCMP · ${itemNome} · ${colaborador}`,
+      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+        <Card size="small" title="📌 Visão geral">
+          <Descriptions bordered size="small" column={1}>
+            <Descriptions.Item label="Colaborador"><strong>{colaborador}</strong></Descriptions.Item>
+            <Descriptions.Item label="Item"><strong>{itemNome}</strong></Descriptions.Item>
+            <Descriptions.Item label="Valor do item"><strong>{formatCurrencyBR(valor)}</strong></Descriptions.Item>
+            <Descriptions.Item label="Taxa do item"><strong>{formatPercent(taxa)}</strong></Descriptions.Item>
+            <Descriptions.Item label="Peso"><strong>{formatPercent(peso)}</strong></Descriptions.Item>
+            <Descriptions.Item label="Contribuição (Taxa × Peso)"><strong>{formatPercent(parcial)}</strong></Descriptions.Item>
+          </Descriptions>
+        </Card>
+
+        {taxaTemDecomposicao ? (
+          <Card size="small" title="🧮 Como foi calculada a Taxa do item">
+            <Space direction="vertical" size={8} style={{ width: '100%' }}>
+              <Space wrap>
+                <Tag color="blue">Taxa Rateio: {formatPercent(taxaRateio)}</Tag>
+                <Tag color="cyan">Fatia Cargo: {formatPercent(fatiaCargo)}</Tag>
+                <Tag color="green">Taxa Efetiva: {formatPercent(taxaCalc)}</Tag>
+              </Space>
+              {buildCardEquation(
+                'Equação',
+                'Taxa_Item = Taxa_Rateio × Fatia_Cargo',
+                `Taxa_Item = ${formatPercent(taxaRateio)} × ${formatPercent(fatiaCargo)} = ${formatPercent(taxaCalc)}`,
+                `Taxa do item = ${formatPercent(taxaCalc)}`
+              )}
+            </Space>
+          </Card>
+        ) : (
+          <Alert
+            type="info"
+            showIcon
+            message="Detalhe da taxa"
+            description="Este item não possui taxa_rateio/fatia_cargo no estado. Exibindo a taxa final disponível."
+          />
+        )}
+
+        {buildCardEquation(
+          '⚖️ Como foi calculado o Peso',
+          'Peso = Valor_Item / Σ(Valor_Item)',
+          `Peso = ${formatCurrencyBR(valor)} / ${formatCurrencyBR(totalValorColab)} = ${formatPercent(peso)}`,
+          `Peso = ${formatPercent(peso)}`
+        )}
+
+        {buildCardEquation(
+          '✅ Contribuição no TCMP',
+          'TCMP_Parcial = Taxa_Item × Peso',
+          `TCMP_Parcial = ${formatPercent(taxa)} × ${formatPercent(peso)} = ${formatPercent(parcial)}`,
+          `TCMP Parcial = ${formatPercent(parcial)}`
+        )}
+      </Space>
+    );
+  };
+
+  const openDrawerFcmpItem = ({ itemNome, colaborador, record, totalValorColab }) => {
+    const valor = record?.valor || 0;
+    const peso = record?.peso || (totalValorColab > 0 ? (valor / totalValorColab) : 0);
+    const fc = record?.fc ?? 1;
+    const metas = Array.isArray(record?.metas) ? record.metas : [];
+    const somaComponentes = metas.reduce((acc, m) => acc + (m.peso || 0) * (m.componente_fc || 0), 0);
+    const contrib = fc * peso;
+
+    openDrawer(
+      `FCMP · ${itemNome} · ${colaborador}`,
+      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+        <Card size="small" title="📌 Visão geral">
+          <Descriptions bordered size="small" column={1}>
+            <Descriptions.Item label="Colaborador"><strong>{colaborador}</strong></Descriptions.Item>
+            <Descriptions.Item label="Item"><strong>{itemNome}</strong></Descriptions.Item>
+            <Descriptions.Item label="Valor realizado do item"><strong>{formatCurrencyBR(valor)}</strong></Descriptions.Item>
+            <Descriptions.Item label="FC do item"><strong>{fc.toFixed(4)}</strong></Descriptions.Item>
+            <Descriptions.Item label="Peso"><strong>{formatPercent(peso)}</strong></Descriptions.Item>
+            <Descriptions.Item label="Contribuição (FC × Peso)"><strong>{contrib.toFixed(4)}</strong></Descriptions.Item>
+          </Descriptions>
+        </Card>
+
+        <Card size="small" title="🎯 Metas consideradas (peso > 0)">
+          {metas.length === 0 ? (
+            <Alert
+              type="info"
+              showIcon
+              message="Sem detalhamento de metas"
+              description="O estado não retornou a composição das metas (fc_detalhes.componentes) para este item/colaborador."
+            />
+          ) : (
+            <Table
+              size="small"
+              bordered
+              pagination={false}
+              dataSource={metas.map((m, idx) => ({ ...m, key: idx }))}
+              columns={[
+                { title: 'Meta', dataIndex: 'nome_meta', key: 'nome_meta', ellipsis: true },
+                {
+                  title: 'Peso',
+                  dataIndex: 'peso',
+                  key: 'peso',
+                  width: 90,
+                  align: 'center',
+                  render: (v) => formatPercent(v),
+                },
+                {
+                  title: '% Cumprimento',
+                  dataIndex: 'atingimento',
+                  key: 'atingimento',
+                  width: 160,
+                  render: (v) => (
+                    <Space direction="vertical" size={0} style={{ width: '100%' }}>
+                      <Text style={{ fontSize: 12 }}>{formatPercent(v)}</Text>
+                      <Progress percent={Math.max(0, Math.min(200, (v || 0) * 100))} showInfo={false} />
+                    </Space>
+                  ),
+                },
+                {
+                  title: 'FC da meta',
+                  dataIndex: 'componente_fc',
+                  key: 'componente_fc',
+                  width: 110,
+                  align: 'center',
+                  render: (v) => <strong>{(v || 0).toFixed(4)}</strong>,
+                },
+              ]}
+            />
+          )}
+        </Card>
+
+        {metas.length > 0 ? buildCardEquation(
+          '🧮 Como foi calculado o FC do item',
+          'FC_Item = Σ (Peso_Meta × FC_Meta)',
+          `FC_Item = ${metas.map((m) => `(${formatPercent(m.peso)}×${(m.componente_fc || 0).toFixed(4)})`).join(' + ')} = ${somaComponentes.toFixed(4)}`,
+          `FC do item = ${fc.toFixed(4)}`
+        ) : null}
+
+        {buildCardEquation(
+          '⚖️ Como foi calculado o Peso',
+          'Peso = Valor_Item / Σ(Valor_Item)',
+          `Peso = ${formatCurrencyBR(valor)} / ${formatCurrencyBR(totalValorColab)} = ${formatPercent(peso)}`,
+          `Peso = ${formatPercent(peso)}`
+        )}
+
+        {buildCardEquation(
+          '✅ Contribuição no FCMP',
+          'Parcela = FC_Item × Peso',
+          `Parcela = ${fc.toFixed(4)} × ${formatPercent(peso)} = ${contrib.toFixed(4)}`,
+          `Parcela = ${contrib.toFixed(4)}`
+        )}
+      </Space>
+    );
+  };
+
+  const openDrawerTotalSelector = ({ tipo, titulo, totaisPorColab, parcelasPorColab }) => {
+    const colaboradores = Object.keys(totaisPorColab || {});
+    openDrawer(
+      titulo,
+      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+        <Alert
+          type="info"
+          showIcon
+          message="Selecione um colaborador para auditar o TOTAL"
+          description="O TCMP/FCMP final é calculado individualmente por colaborador."
+        />
+
+        <Table
+          size="small"
+          bordered
+          pagination={false}
+          dataSource={colaboradores.map((c) => ({ key: c, colaborador: c, ...(totaisPorColab[c] || {}) }))}
+          columns={[
+            { title: 'Colaborador', dataIndex: 'colaborador', key: 'colaborador', ellipsis: true },
+            {
+              title: tipo === 'TCMP' ? 'TCMP Final' : 'FCMP Final',
+              dataIndex: tipo === 'TCMP' ? 'tcmp_final' : 'fcmp_final',
+              key: 'final',
+              width: 120,
+              align: 'center',
+              render: (v) => <strong>{tipo === 'TCMP' ? formatPercent(v) : (v ?? 1).toFixed(4)}</strong>,
+            },
+          ]}
+          onRow={(record) => ({
+            onClick: () => {
+              const colab = record.colaborador;
+              const tot = totaisPorColab?.[colab] || {};
+              const parcelas = parcelasPorColab?.[colab] || [];
+
+              const denominador = tot.denominador || tot.total_valor || 0;
+              const numerador = tot.numerador || parcelas.reduce((acc, p) => acc + (p.produto || 0), 0);
+              const finalVal = tipo === 'TCMP' ? (tot.tcmp_final || 0) : (tot.fcmp_final ?? 1);
+
+              openDrawer(
+                `${tipo} TOTAL · ${colab}`,
+                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                  <Card size="small" title="📌 Fórmula completa">
+                    <Text>
+                      <strong>{tipo}</strong> = Σ({tipo === 'TCMP' ? 'Taxa_Item × Valor_Item' : 'FC_Item × Valor_Item'}) / Σ(Valor_Item)
+                    </Text>
+                  </Card>
+
+                  <Card size="small" title="🧾 Parcelas (por item)">
+                    <Table
+                      size="small"
+                      bordered
+                      pagination={false}
+                      dataSource={parcelas.map((p, idx) => ({ ...p, key: idx }))}
+                      columns={[
+                        { title: 'Item', dataIndex: 'item', key: 'item', ellipsis: true },
+                        {
+                          title: tipo === 'TCMP' ? 'Taxa' : 'FC',
+                          dataIndex: tipo === 'TCMP' ? 'taxa' : 'fc',
+                          key: 'coef',
+                          width: 90,
+                          align: 'center',
+                          render: (v) => (tipo === 'TCMP' ? formatPercent(v) : (v ?? 1).toFixed(4)),
+                        },
+                        {
+                          title: 'Valor',
+                          dataIndex: 'valor',
+                          key: 'valor',
+                          width: 120,
+                          align: 'right',
+                          render: (v) => formatCurrencyBR(v),
+                        },
+                        {
+                          title: 'Produto',
+                          dataIndex: 'produto',
+                          key: 'produto',
+                          width: 120,
+                          align: 'right',
+                          render: (v) => formatCurrencyBR(v),
+                        },
+                      ]}
+                      summary={() => (
+                        <Table.Summary fixed>
+                          <Table.Summary.Row>
+                            <Table.Summary.Cell index={0}><strong>TOTAL</strong></Table.Summary.Cell>
+                            <Table.Summary.Cell index={1} align="center">-</Table.Summary.Cell>
+                            <Table.Summary.Cell index={2} align="right"><strong>{formatCurrencyBR(denominador)}</strong></Table.Summary.Cell>
+                            <Table.Summary.Cell index={3} align="right"><strong>{formatCurrencyBR(numerador)}</strong></Table.Summary.Cell>
+                          </Table.Summary.Row>
+                        </Table.Summary>
+                      )}
+                    />
+                  </Card>
+
+                  {buildCardEquation(
+                    '✅ Resultado',
+                    `${tipo} = Numerador / Denominador`,
+                    `${tipo} = ${formatCurrencyBR(numerador)} / ${formatCurrencyBR(denominador)}`,
+                    tipo === 'TCMP' ? `${tipo} Final = ${formatPercent(finalVal)}` : `${tipo} Final = ${(finalVal ?? 1).toFixed(4)}`
+                  )}
+                </Space>
+              );
+            },
+            style: { cursor: 'pointer' },
+          })}
+        />
+      </Space>
+    );
+  };
 
   // ==================== SEÇÃO A: INFORMAÇÕES GERAIS ====================
   const renderInformacoesGerais = () => (
@@ -42,18 +432,18 @@ const ModalDetalhesCalculoRecebimento = ({ visible, onClose, pagamento }) => {
         </Tag>
       </Descriptions.Item>
       <Descriptions.Item label="Processo">
-        <strong style={{ fontSize: 16, color: '#1890ff' }}>{pagamento.processo}</strong>
+        <strong style={{ fontSize: 16, color: '#1890ff' }}>{pagamentoView.processo}</strong>
       </Descriptions.Item>
       <Descriptions.Item label="Colaborador">
-        <strong>{pagamento.nome_colaborador}</strong>
+        <strong>{pagamentoView.nome_colaborador}</strong>
       </Descriptions.Item>
-      <Descriptions.Item label="Cargo">{pagamento.cargo || '-'}</Descriptions.Item>
+      <Descriptions.Item label="Cargo">{pagamentoView.cargo || '-'}</Descriptions.Item>
       <Descriptions.Item label="Data Pagamento">
-        {pagamento.data_pagamento ? new Date(pagamento.data_pagamento).toLocaleDateString('pt-BR') : '-'}
+        {pagamentoView.data_pagamento ? new Date(pagamentoView.data_pagamento).toLocaleDateString('pt-BR') : '-'}
       </Descriptions.Item>
       <Descriptions.Item label="Valor Base">
         <strong style={{ fontSize: 16 }}>
-          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(pagamento.valor_pago || 0)}
+          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(pagamentoView.valor_pago || 0)}
         </strong>
       </Descriptions.Item>
     </Descriptions>
@@ -61,6 +451,23 @@ const ModalDetalhesCalculoRecebimento = ({ visible, onClose, pagamento }) => {
 
   // ==================== SEÇÃO B: TCMP ====================
   const renderTCMP = () => {
+    if (erroDetalhes) {
+      return (
+        <Alert
+          message="Não foi possível carregar os detalhes do TCMP"
+          description={erroDetalhes}
+          type="warning"
+          showIcon
+        />
+      );
+    }
+    if (loadingDetalhes && (!tcmpDetalhes || tcmpDetalhes.length === 0)) {
+      return (
+        <div style={{ padding: 12, textAlign: 'center' }}>
+          <Spin tip="Carregando detalhes do TCMP..." />
+        </div>
+      );
+    }
     if (!tcmpDetalhes || tcmpDetalhes.length === 0) {
       return (
         <Alert
@@ -112,71 +519,147 @@ const ModalDetalhesCalculoRecebimento = ({ visible, onClose, pagamento }) => {
     const totalValor = tcmpDetalhes.reduce((acc, d) => acc + (d.valor || 0), 0);
     const tcmpFinal = tcmpDetalhes.reduce((acc, d) => acc + (d.tcmp_parcial || 0), 0);
 
+    if (viewMode === VIEW_MODE.BASICO) {
+      return (
+        <div>
+          <Descriptions bordered column={2} size="small">
+            <Descriptions.Item label="Itens no cálculo">{tcmpDetalhes.length}</Descriptions.Item>
+            <Descriptions.Item label="Valor Total">
+              <strong>
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalValor)}
+              </strong>
+            </Descriptions.Item>
+            <Descriptions.Item label="TCMP Final" span={2}>
+              <strong style={{ fontSize: 16, color: '#1890ff' }}>{(tcmpFinal * 100).toFixed(2)}%</strong>
+            </Descriptions.Item>
+          </Descriptions>
+          <Alert
+            style={{ marginTop: 12 }}
+            type="info"
+            showIcon
+            message="Modo Básico"
+            description="Troque para 'Auditoria' para ver o passo a passo (itens, pesos e somatório)."
+          />
+        </div>
+      );
+    }
+
+    // Auditoria (processo inteiro, por item -> colaboradores)
+    if (loadingAuditoria) {
+      return (
+        <div style={{ padding: 12, textAlign: 'center' }}>
+          <Spin tip="Carregando auditoria do processo..." />
+        </div>
+      );
+    }
+    if (erroAuditoria) {
+      return <Alert type="warning" showIcon message="Falha ao carregar auditoria" description={erroAuditoria} />;
+    }
+    if (!auditoriaData?.tcmp?.itens) {
+      return <Alert type="info" showIcon message="Auditoria não disponível" />;
+    }
+
+    const itens = auditoriaData.tcmp.itens || [];
+    const itemRows = [...itens].map((it) => ({
+      key: it.item,
+      item: it.item,
+      valor: it.valor,
+      taxa: it.taxa,
+      peso: it.peso,
+      tcmp_parcial: (it.taxa || 0) * (it.peso || 0),
+      colaboradores: it.colaboradores || [],
+    }));
+
+    const totalValorItens = itemRows.reduce((acc, r) => acc + (r.valor || 0), 0);
+    const numeradorItens = itemRows.reduce((acc, r) => acc + (r.taxa || 0) * (r.valor || 0), 0);
+    const taxaTotal = totalValorItens > 0 ? (numeradorItens / totalValorItens) : 0;
+
+    itemRows.push({
+      key: '__TOTAL__',
+      item: 'TOTAL',
+      __isTotal: true,
+      valor: totalValorItens,
+      taxa: taxaTotal,
+      peso: 1,
+      tcmp_parcial: taxaTotal,
+    });
+
+    const columnsItem = [
+      { title: 'Item', dataIndex: 'item', key: 'item', ellipsis: true },
+      { title: 'Valor Item', dataIndex: 'valor', key: 'valor', align: 'right', render: (v) => formatCurrencyBR(v) },
+      { title: 'Taxa Item', dataIndex: 'taxa', key: 'taxa', align: 'center', render: (v) => formatPercent(v) },
+      { title: 'Peso', dataIndex: 'peso', key: 'peso', align: 'center', render: (v) => formatPercent(v) },
+      { title: 'Contribuição (TCMP Parcial)', dataIndex: 'tcmp_parcial', key: 'tcmp_parcial', align: 'center', render: (v) => <strong>{formatPercent(v)}</strong> },
+    ];
+
+    const renderColaboradoresTable = (row) => {
+      const colaboradores = row.colaboradores || [];
+      return (
+        <Table
+          size="small"
+          bordered
+          pagination={false}
+          dataSource={colaboradores.map((c, idx) => ({ ...c, key: `${row.item}-${c.colaborador}-${idx}` }))}
+          columns={[
+            { title: 'Colaborador', dataIndex: 'colaborador', key: 'colaborador', ellipsis: true },
+            { title: 'Valor', dataIndex: 'valor', key: 'valor', align: 'right', render: (v) => formatCurrencyBR(v) },
+            { title: 'Taxa', dataIndex: 'taxa', key: 'taxa', align: 'center', render: (v) => formatPercent(v) },
+            { title: 'Peso', dataIndex: 'peso', key: 'peso', align: 'center', render: (v) => formatPercent(v) },
+            {
+              title: 'TCMP Parcial',
+              dataIndex: 'tcmp_parcial',
+              key: 'tcmp_parcial',
+              align: 'center',
+              render: (v, r) => <strong>{formatPercent((v ?? ((r.taxa || 0) * (r.peso || 0))))}</strong>,
+            },
+          ]}
+          onRow={(record) => ({
+            onClick: () => {
+              const totalValorColab = auditoriaData?.tcmp?.totais_por_colaborador?.[record.colaborador]?.total_valor || 0;
+              openDrawerTcmpItem({ itemNome: row.item, colaborador: record.colaborador, record, totalValorColab });
+            },
+            style: { cursor: 'pointer' },
+          })}
+        />
+      );
+    };
+
     return (
       <div>
         <Alert
-          message={
-            <div>
-              <strong>Como foi calculado:</strong>
-              <br />
-              <code>TCMP = Σ (Taxa_Item × Valor_Item) / Valor_Total</code>
-            </div>
-          }
+          message={<div><strong>Fórmula:</strong> <code>{auditoriaData.tcmp.formula}</code></div>}
           type="info"
           showIcon
-          style={{ marginBottom: 16 }}
+          style={{ marginBottom: 12 }}
         />
+
         <Table
-          columns={colunasTCMP}
-          dataSource={tcmpDetalhes.map((d, idx) => ({ ...d, key: idx }))}
+          columns={columnsItem}
+          dataSource={itemRows}
           pagination={false}
           size="small"
           bordered
           expandable={{
-            expandedRowRender: (record) => {
-              if (record.taxa_rateio !== undefined && record.fatia_cargo !== undefined) {
-                return (
-                  <div style={{ padding: '8px 16px', backgroundColor: '#f9f9f9', borderRadius: 4 }}>
-                    <Space direction="vertical" size={0}>
-                      <Text strong style={{ fontSize: 12, color: '#666' }}>Decomposição da Taxa:</Text>
-                      <Space align="center" style={{ marginTop: 4 }}>
-                        <Tag color="blue">Taxa Rateio: {(record.taxa_rateio * 100).toFixed(2)}%</Tag>
-                        <Text type="secondary">×</Text>
-                        <Tag color="cyan">Fatia Cargo: {(record.fatia_cargo * 100).toFixed(2)}%</Tag>
-                        <Text type="secondary">=</Text>
-                        <Tag color="green">Taxa Efetiva: {(record.taxa * 100).toFixed(2)}%</Tag>
-                      </Space>
-                    </Space>
-                  </div>
-                );
-              }
-              return null;
-            },
-            rowExpandable: (record) => record.taxa_rateio !== undefined && record.fatia_cargo !== undefined,
+            expandedRowKeys: expandedTcmpKeys,
+            onExpandedRowsChange: (keys) => setExpandedTcmpKeys(keys),
+            rowExpandable: (record) => !record.__isTotal,
+            expandedRowRender: (record) => renderColaboradoresTable(record),
           }}
-          summary={() => (
-            <Table.Summary fixed>
-              <Table.Summary.Row style={{ backgroundColor: '#fafafa' }}>
-                <Table.Summary.Cell index={0}>
-                  <strong>TOTAL</strong>
-                </Table.Summary.Cell>
-                <Table.Summary.Cell index={1} align="right">
-                  <strong>
-                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalValor)}
-                  </strong>
-                </Table.Summary.Cell>
-                <Table.Summary.Cell index={2} align="center">-</Table.Summary.Cell>
-                <Table.Summary.Cell index={3} align="center">
-                  <strong>100%</strong>
-                </Table.Summary.Cell>
-                <Table.Summary.Cell index={4} align="center">
-                  <strong style={{ fontSize: 16, color: '#1890ff' }}>
-                    {(tcmpFinal * 100).toFixed(2)}%
-                  </strong>
-                </Table.Summary.Cell>
-              </Table.Summary.Row>
-            </Table.Summary>
-          )}
+          onRow={(record) => ({
+            onClick: () => {
+              if (record.__isTotal) {
+                openDrawerTotalSelector({
+                  tipo: 'TCMP',
+                  titulo: 'TCMP TOTAL (por colaborador)',
+                  totaisPorColab: auditoriaData?.tcmp?.totais_por_colaborador,
+                  parcelasPorColab: auditoriaData?.tcmp?.parcelas_por_colaborador,
+                });
+                return;
+              }
+              setExpandedTcmpKeys((prev) => (prev.includes(record.key) ? prev.filter((k) => k !== record.key) : [...prev, record.key]));
+            },
+            style: { cursor: 'pointer' },
+          })}
         />
       </div>
     );
@@ -184,6 +667,23 @@ const ModalDetalhesCalculoRecebimento = ({ visible, onClose, pagamento }) => {
 
   // ==================== SEÇÃO C: FCMP ====================
   const renderFCMP = () => {
+    if (erroDetalhes) {
+      return (
+        <Alert
+          message="Não foi possível carregar os detalhes do FCMP"
+          description={erroDetalhes}
+          type="warning"
+          showIcon
+        />
+      );
+    }
+    if (loadingDetalhes && (!fcmpDetalhes || fcmpDetalhes.length === 0)) {
+      return (
+        <div style={{ padding: 12, textAlign: 'center' }}>
+          <Spin tip="Carregando detalhes do FCMP..." />
+        </div>
+      );
+    }
     if (isAdiantamento) {
       return (
         <Alert
@@ -267,69 +767,154 @@ const ModalDetalhesCalculoRecebimento = ({ visible, onClose, pagamento }) => {
     const totalComissao = fcmpDetalhes.reduce((acc, d) => acc + (d.comissao || 0), 0);
     const fcmpFinal = fcmpDetalhes.reduce((acc, d) => acc + (d.fcmp_parcial || 0), 0);
 
+    if (viewMode === VIEW_MODE.BASICO) {
+      return (
+        <div>
+          <Descriptions bordered column={2} size="small">
+            <Descriptions.Item label="Itens no cálculo">{fcmpDetalhes.length}</Descriptions.Item>
+            <Descriptions.Item label="FCMP Final">
+              <strong style={{ color: fcmpFinal > 1 ? '#52c41a' : fcmpFinal < 1 ? '#ff4d4f' : '#000' }}>
+                {fcmpFinal.toFixed(4)}
+              </strong>
+            </Descriptions.Item>
+          </Descriptions>
+          <Alert
+            style={{ marginTop: 12 }}
+            type="info"
+            showIcon
+            message="Modo Básico"
+            description="Troque para 'Auditoria' para ver o passo a passo e clicar em um item para ver o FC detalhado por meta."
+          />
+        </div>
+      );
+    }
+
+    // Auditoria (processo inteiro, por item -> colaboradores)
+    if (loadingAuditoria) {
+      return (
+        <div style={{ padding: 12, textAlign: 'center' }}>
+          <Spin tip="Carregando auditoria do processo..." />
+        </div>
+      );
+    }
+    if (erroAuditoria) {
+      return <Alert type="warning" showIcon message="Falha ao carregar auditoria" description={erroAuditoria} />;
+    }
+    if (!auditoriaData?.fcmp) {
+      return <Alert type="info" showIcon message="Auditoria não disponível" />;
+    }
+
+    if (auditoriaData.fcmp.calculado === false) {
+      return (
+        <Alert
+          message="FCMP ainda não calculado (Processo não faturado)"
+          description="Enquanto o processo não estiver FATURADO, o FCMP permanece 1.0000. A auditoria detalhada de metas será disponível após o faturamento."
+          type="warning"
+          showIcon
+          icon={<WarningOutlined />}
+        />
+      );
+    }
+
+    const itens = auditoriaData.fcmp.itens || [];
+    const itemRows = [...itens].map((it) => ({
+      key: it.item,
+      item: it.item,
+      valor: it.valor,
+      fc: it.fc,
+      peso: it.peso,
+      fcmp_parcial: (it.fc ?? 1) * (it.peso || 0),
+      colaboradores: it.colaboradores || [],
+    }));
+
+    const totalValorItens = itemRows.reduce((acc, r) => acc + (r.valor || 0), 0);
+    const numeradorItens = itemRows.reduce((acc, r) => acc + ((r.fc ?? 1) * (r.valor || 0)), 0);
+    const fcTotal = totalValorItens > 0 ? (numeradorItens / totalValorItens) : 1;
+
+    itemRows.push({
+      key: '__TOTAL__',
+      item: 'TOTAL',
+      __isTotal: true,
+      valor: totalValorItens,
+      fc: fcTotal,
+      peso: 1,
+      fcmp_parcial: fcTotal,
+    });
+
+    const columnsItem = [
+      { title: 'Item', dataIndex: 'item', key: 'item', ellipsis: true },
+      { title: 'FC do item', dataIndex: 'fc', key: 'fc', align: 'center', render: (v) => (v ?? 1).toFixed(4) },
+      { title: 'Peso', dataIndex: 'peso', key: 'peso', align: 'center', render: (v) => formatPercent(v) },
+      { title: 'Contribuição (FCMP Parcial)', dataIndex: 'fcmp_parcial', key: 'fcmp_parcial', align: 'center', render: (v) => <strong>{(v ?? 0).toFixed(4)}</strong> },
+    ];
+
+    const renderColaboradoresTable = (row) => {
+      const colaboradores = row.colaboradores || [];
+      return (
+        <Table
+          size="small"
+          bordered
+          pagination={false}
+          dataSource={colaboradores.map((c, idx) => ({ ...c, key: `${row.item}-${c.colaborador}-${idx}` }))}
+          columns={[
+            { title: 'Colaborador', dataIndex: 'colaborador', key: 'colaborador', ellipsis: true },
+            { title: 'FC', dataIndex: 'fc', key: 'fc', align: 'center', render: (v) => (v ?? 1).toFixed(4) },
+            { title: 'Peso', dataIndex: 'peso', key: 'peso', align: 'center', render: (v) => formatPercent(v) },
+            {
+              title: 'FCMP Parcial',
+              dataIndex: 'fcmp_parcial',
+              key: 'fcmp_parcial',
+              align: 'center',
+              render: (v, r) => <strong>{((v ?? ((r.fc ?? 1) * (r.peso || 0))) || 0).toFixed(4)}</strong>,
+            },
+          ]}
+          onRow={(record) => ({
+            onClick: () => {
+              const totalValorColab = auditoriaData?.fcmp?.totais_por_colaborador?.[record.colaborador]?.total_valor || 0;
+              openDrawerFcmpItem({ itemNome: row.item, colaborador: record.colaborador, record, totalValorColab });
+            },
+            style: { cursor: 'pointer' },
+          })}
+        />
+      );
+    };
+
     return (
       <div>
         <Alert
-          message={
-            <div>
-              <strong>Como foi calculado:</strong>
-              <br />
-              <code>FCMP = Σ (FC_Item × Comissão_Item) / Comissão_Total</code>
-            </div>
-          }
+          message={<div><strong>Fórmula:</strong> <code>{auditoriaData.fcmp.formula}</code></div>}
           type="info"
           showIcon
-          style={{ marginBottom: 16 }}
+          style={{ marginBottom: 12 }}
         />
+
         <Table
-          columns={colunasFCMP}
-          dataSource={fcmpDetalhes.map((d, idx) => ({ ...d, key: idx }))}
+          columns={columnsItem}
+          dataSource={itemRows}
           pagination={false}
           size="small"
           bordered
           expandable={{
-            expandedRowRender: (record) => {
-              if (record.fc_detalhes) {
-                return (
-                  <div style={{ padding: '8px 16px', backgroundColor: '#f9f9f9', borderRadius: 4 }}>
-                    <Text strong style={{ fontSize: 12, color: '#666' }}>Detalhes do Fator de Correção:</Text>
-                    <div style={{ marginTop: 4 }}>
-                      <pre style={{ fontSize: 11, margin: 0, whiteSpace: 'pre-wrap' }}>
-                        {typeof record.fc_detalhes === 'object' 
-                          ? JSON.stringify(record.fc_detalhes, null, 2) 
-                          : record.fc_detalhes}
-                      </pre>
-                    </div>
-                  </div>
-                );
-              }
-              return null;
-            },
-            rowExpandable: (record) => !!record.fc_detalhes,
+            expandedRowKeys: expandedFcmpKeys,
+            onExpandedRowsChange: (keys) => setExpandedFcmpKeys(keys),
+            rowExpandable: (record) => !record.__isTotal,
+            expandedRowRender: (record) => renderColaboradoresTable(record),
           }}
-          summary={() => (
-            <Table.Summary fixed>
-              <Table.Summary.Row style={{ backgroundColor: '#fafafa' }}>
-                <Table.Summary.Cell index={0}>
-                  <strong>TOTAL</strong>
-                </Table.Summary.Cell>
-                <Table.Summary.Cell index={1} align="right">
-                  <strong>
-                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalComissao)}
-                  </strong>
-                </Table.Summary.Cell>
-                <Table.Summary.Cell index={2} align="center">-</Table.Summary.Cell>
-                <Table.Summary.Cell index={3} align="center">
-                  <strong>100%</strong>
-                </Table.Summary.Cell>
-                <Table.Summary.Cell index={4} align="center">
-                  <strong style={{ fontSize: 16, color: fcmpFinal > 1 ? '#52c41a' : fcmpFinal < 1 ? '#ff4d4f' : '#000' }}>
-                    {fcmpFinal.toFixed(4)}
-                  </strong>
-                </Table.Summary.Cell>
-              </Table.Summary.Row>
-            </Table.Summary>
-          )}
+          onRow={(record) => ({
+            onClick: () => {
+              if (record.__isTotal) {
+                openDrawerTotalSelector({
+                  tipo: 'FCMP',
+                  titulo: 'FCMP TOTAL (por colaborador)',
+                  totaisPorColab: auditoriaData?.fcmp?.totais_por_colaborador,
+                  parcelasPorColab: auditoriaData?.fcmp?.parcelas_por_colaborador,
+                });
+                return;
+              }
+              setExpandedFcmpKeys((prev) => (prev.includes(record.key) ? prev.filter((k) => k !== record.key) : [...prev, record.key]));
+            },
+            style: { cursor: 'pointer' },
+          })}
         />
       </div>
     );
@@ -337,10 +922,10 @@ const ModalDetalhesCalculoRecebimento = ({ visible, onClose, pagamento }) => {
 
   // ==================== SEÇÃO D: CÁLCULO FINAL ====================
   const renderCalculoFinal = () => {
-    const valorPago = pagamento.valor_pago || 0;
-    const tcmp = pagamento.tcmp || 0;
-    const fcmp = pagamento.fcmp || 1.0;
-    const comissaoFinal = pagamento.comissao_calculada || 0;
+    const valorPago = pagamentoView.valor_pago || 0;
+    const tcmp = pagamentoView.tcmp || 0;
+    const fcmp = pagamentoView.fcmp || 1.0;
+    const comissaoFinal = pagamentoView.comissao_calculada || 0;
 
     return (
       <div style={{ padding: 16, backgroundColor: '#f0f2f5', borderRadius: 4 }}>
@@ -393,7 +978,7 @@ const ModalDetalhesCalculoRecebimento = ({ visible, onClose, pagamento }) => {
       title={
         <Space>
           <DollarOutlined />
-          <span>Detalhes do Cálculo - {pagamento.processo}</span>
+          <span>Detalhes do Cálculo - {pagamentoView.processo}</span>
         </Space>
       }
       open={visible}
@@ -402,6 +987,24 @@ const ModalDetalhesCalculoRecebimento = ({ visible, onClose, pagamento }) => {
       width={900}
       destroyOnClose
     >
+      <div style={{ marginBottom: 12 }}>
+        <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+          <Segmented
+            value={viewMode}
+            onChange={(v) => setViewMode(v)}
+            options={[
+              { label: 'Básico', value: VIEW_MODE.BASICO },
+              { label: 'Auditoria', value: VIEW_MODE.AUDITORIA },
+            ]}
+          />
+          {drawerOpen && (
+            <Button icon={<ArrowLeftOutlined />} onClick={() => setDrawerOpen(false)}>
+              Fechar Detalhe do Item
+            </Button>
+          )}
+        </Space>
+      </div>
+
       <Collapse defaultActiveKey={['1', '2', '3', '4']} accordion={false}>
         <Panel
           header={
@@ -451,6 +1054,16 @@ const ModalDetalhesCalculoRecebimento = ({ visible, onClose, pagamento }) => {
           {renderCalculoFinal()}
         </Panel>
       </Collapse>
+
+      <Drawer
+        title={drawerTitle}
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        width={520}
+        destroyOnClose
+      >
+        {drawerContent || <Alert type="info" showIcon message="Nenhum detalhe disponível." />}
+      </Drawer>
     </Modal>
   );
 };

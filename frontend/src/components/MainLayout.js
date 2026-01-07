@@ -53,14 +53,9 @@ const MainLayout = ({ children }) => {
       label: 'Executar Cálculo',
     },
     {
-      key: '/resultados',
+      key: '/comissoes',
       icon: <BarChartOutlined />,
-      label: 'Resultados',
-    },
-    {
-      key: '/recebimentos',
-      icon: <DollarCircleOutlined />,
-      label: 'Recebimentos',
+      label: 'Comissões',
     },
     {
       key: '/estado-processos',

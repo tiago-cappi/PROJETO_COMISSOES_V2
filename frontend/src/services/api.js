@@ -60,19 +60,31 @@ api.interceptors.response.use(
       responseData: error.response?.data,
     });
 
+    const wrapAndReject = (message) => {
+      const wrapped = new Error(message);
+      // Preservar contexto do Axios para debug no frontend.
+      wrapped.cause = error;
+      wrapped.config = error.config;
+      wrapped.request = error.request;
+      wrapped.response = error.response;
+      wrapped.code = error.code;
+      wrapped.isAxiosError = error.isAxiosError;
+      return Promise.reject(wrapped);
+    };
+
     if (error.response) {
       // Erro da API
       const message = error.response.data?.detail || error.response.data?.message || 'Erro desconhecido';
-      throw new Error(message);
-    } else if (error.request) {
+      return wrapAndReject(message);
+    }
+    if (error.request) {
       // Erro de rede ou timeout
       if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-        throw new Error('Timeout: A requisição demorou muito para responder. Tente novamente.');
+        return wrapAndReject('Timeout: A requisição demorou muito para responder. Tente novamente.');
       }
-      throw new Error('Erro de conexão. Verifique se o servidor está rodando.');
-    } else {
-      throw error;
+      return wrapAndReject('Erro de conexão. Verifique se o servidor está rodando.');
     }
+    return Promise.reject(error);
   }
 );
 
@@ -182,11 +194,13 @@ export const execucaoAPI2 = {
     api.post('/api/executar-prescan', { mes, ano }, {
       timeout: 30000, // 30 segundos de timeout para pré-scan
     }),
-  executarCalculo: (mes, ano, decisoes) =>
+  executarCalculo: (mes, ano, decisoes, opcoes = {}) =>
     api.post('/api/executar-calculo', {
       mes,
       ano,
       decisoes_cross_selling: decisoes || [],
+      limpar_historico_master: !!opcoes.limparHistoricoMaster,
+      limpar_estado_processos_recebimento: !!opcoes.limparEstadoProcessosRecebimento,
     }, {
       timeout: 600000, // 10 minutos de timeout para cálculo completo
     }),
@@ -256,6 +270,12 @@ export const recebimentoAPI = {
    */
   getDetalhesPagamento: (id) => 
     api.get(`/resultado/recebimento/pagamento/${id}/detalhes`),
+
+  /**
+   * Obtém auditoria completa do processo (todos os colaboradores), agrupada por item.
+   */
+  getAuditoriaProcesso: (processo) =>
+    api.get(`/resultado/recebimento/processo/${encodeURIComponent(processo)}/auditoria`),
   
   /**
    * Download do Excel de recebimentos do mês/ano.
@@ -305,6 +325,63 @@ export const monitorAPI = {
     }
     const queryString = queryParams.toString();
     return api.get(`/api/monitor/estado-raw${queryString ? `?${queryString}` : ''}`);
+  },
+};
+
+// ==================== HISTÓRICO (MASTER DB) ====================
+
+export const historicoAPI = {
+  getUltimoPeriodoExecutado: () => api.get('/api/execucao/ultimo-periodo'),
+
+  getMaster: (params = {}) => {
+    const {
+      mes,
+      ano,
+      tipo_comissao,
+      nome_colaborador,
+      processo,
+      page = 1,
+      size = 50,
+      sort_by,
+      sort_order,
+    } = params;
+
+    const queryParams = new URLSearchParams();
+    if (mes) queryParams.append('mes', String(mes));
+    if (ano) queryParams.append('ano', String(ano));
+    if (tipo_comissao) queryParams.append('tipo_comissao', tipo_comissao);
+    if (nome_colaborador) queryParams.append('nome_colaborador', nome_colaborador);
+    if (processo) queryParams.append('processo', processo);
+    queryParams.append('page', String(page));
+    queryParams.append('size', String(size));
+    if (sort_by) queryParams.append('sort_by', sort_by);
+    if (sort_order) queryParams.append('sort_order', sort_order);
+
+    return api.get(`/api/historico/master?${queryParams.toString()}`);
+  },
+
+  getSaldosNegativos: (mes, ano, origem = 'ALL', size_itens = 2000) => {
+    const queryParams = new URLSearchParams({
+      mes: String(mes),
+      ano: String(ano),
+      origem: String(origem),
+      size_itens: String(size_itens),
+    });
+    return api.get(`/api/historico/saldos-negativos?${queryParams.toString()}`);
+  },
+
+  getResumoFinalColaboradores: (mes, ano) => {
+    const queryParams = new URLSearchParams({ mes: String(mes), ano: String(ano) });
+    return api.get(`/api/historico/resumo-final-colaboradores?${queryParams.toString()}`);
+  },
+
+  getResumoFinalColaboradorDetalhes: (mes, ano, nome_colaborador) => {
+    const queryParams = new URLSearchParams({
+      mes: String(mes),
+      ano: String(ano),
+      nome_colaborador: String(nome_colaborador),
+    });
+    return api.get(`/api/historico/resumo-final-colaborador/detalhes?${queryParams.toString()}`);
   },
 };
 

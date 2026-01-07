@@ -292,7 +292,7 @@ If you identify that a requested feature or bug fix belongs in a different/new f
 **Trigger:** Active **ONLY** when the user begins the message with the tag `[DATA_TEST_GEN] <logic_to_verify>`.
 **Context (Current Project Specifics):**
 - The user wants to verify logic using REAL data from specific project files.
-- **Target Files:** `dados_entrada/Analise_Comercial_Completa.xlsx`, `dados_entrada/Análise Financeria.xlsx`, `config/REGRAS_COMISSOES.xlsx`, `dados_entrada/rentabilidades/`.
+- **Target Files:** `dados_entrada/Analise_Comercial_Completa.xlsx`, `dados_entrada/Análise Financeria.xlsx`, `config/REGRAS_COMISSOES.xlsx`, `dados_entrada/rentabilidades/`, `dados_entrada/Devoluções.xlsx`.
 **Workflow:**
 1.  **Scenario Design:**
     - Analyze the logic to be tested.

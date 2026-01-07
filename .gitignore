@@ -18,6 +18,9 @@ cache_taxas_cambio.json
 # Arquivos de saída gerados
 Detalhamento_Comissoes_*.pdf
 
+# Backups automáticos do Master DB (não versionar)
+data/banco_dados/backups/*.xlsx
+
 # Arquivos de sistema
 .DS_Store
 Thumbs.db

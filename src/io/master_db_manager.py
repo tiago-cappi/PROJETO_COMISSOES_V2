@@ -231,6 +231,39 @@ class MasterDBManager:
                 column_mapping=column_mapping,
             )
 
+            # === DEDUPLICAÇÃO: Remover registros antigos que serão substituídos ===
+            # Para FATURAMENTO: Chave inclui Cod_Produto
+            # Para REGULAR/DEVOLUCAO: Cod_Produto é NaN, então não incluímos
+            if tipo_comissao == "FATURAMENTO":
+                chave_cols = ["Processo", "Nome_Colaborador", "Cod_Produto", "Tipo_Comissao", "Mes_Referencia", "Ano_Referencia"]
+            else:
+                # REGULAR e DEVOLUCAO não têm Cod_Produto, usam chave mais simples
+                chave_cols = ["Processo", "Nome_Colaborador", "Tipo_Comissao", "Mes_Referencia", "Ano_Referencia"]
+            
+            # Verificar se todas as colunas existem em ambos DataFrames
+            colunas_master = set(df_master.columns) if not df_master.empty else set()
+            colunas_new = set(df_new.columns) if not df_new.empty else set()
+            chave_valida = all(c in colunas_master and c in colunas_new for c in chave_cols)
+            
+            if chave_valida and not df_master.empty and not df_new.empty:
+                # Criar chave composta para identificar duplicatas
+                # Preencher NaN com string vazia antes de criar a chave
+                df_master["_chave_dup"] = df_master[chave_cols].fillna("").astype(str).agg("|".join, axis=1)
+                df_new["_chave_dup"] = df_new[chave_cols].fillna("").astype(str).agg("|".join, axis=1)
+                
+                # Remover do master os registros que existem no new (serão substituídos)
+                chaves_novas = set(df_new["_chave_dup"])
+                registros_antes = len(df_master)
+                df_master = df_master[~df_master["_chave_dup"].isin(chaves_novas)]
+                registros_removidos = registros_antes - len(df_master)
+                
+                if registros_removidos > 0:
+                    logger.info(f"[MASTER_DB] Deduplicação: {registros_removidos} registro(s) antigo(s) substituído(s)")
+                
+                # Remover coluna temporária
+                df_master = df_master.drop(columns=["_chave_dup"])
+                df_new = df_new.drop(columns=["_chave_dup"])
+
             # Concatenar
             df_combined = pd.concat([df_master, df_new], ignore_index=True)
 
@@ -416,7 +449,8 @@ class MasterDBManager:
         if tipo_comissao is not None:
             df = df[df["Tipo_Comissao"] == tipo_comissao]
         if processo is not None:
-            df = df[df["Processo"].astype(str).str.contains(str(processo), case=False, na=False)]
+            # Usar igualdade exata para evitar match parcial (ex: "TESTE" em "TESTE2")
+            df = df[df["Processo"].astype(str).str.strip().str.upper() == str(processo).strip().upper()]
         if colaborador is not None:
             df = df[df["Nome_Colaborador"].astype(str).str.contains(colaborador, case=False, na=False)]
 

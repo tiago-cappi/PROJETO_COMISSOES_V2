@@ -152,11 +152,11 @@ class DevolucaoProcessor:
         mask_processo = df_comercial[col_processo].astype(str).str.strip() == processo
         linhas_processo = df_comercial[mask_processo]
         
-        valor_realizado_total = linhas_processo[col_valor].sum()
+        valor_realizado_total = pd.to_numeric(linhas_processo[col_valor], errors="coerce").fillna(0).sum()
         
         logger.info(
             f"[DEVOLUCAO] NF {numero_nf} -> Processo {processo} | "
-            f"Valor Realizado Total: R$ {valor_realizado_total:.2f}"
+            f"Valor Realizado Total: R$ {float(valor_realizado_total):.2f}"
         )
         
         return processo, valor_realizado_total

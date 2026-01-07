@@ -5,9 +5,8 @@ import MainLayout from './components/MainLayout';
 import RegrasPage from './pages/RegrasPage';
 import UploadsPage from './pages/UploadsPage';
 import ExecutarPage from './pages/ExecutarPage';
-import ResultadosPage from './pages/ResultadosPage';
+import ComissoesPage from './pages/ComissoesPage';
 import CambioPage from './pages/CambioPage';
-import RecebimentosPage from './pages/RecebimentosPage';
 import EstadoProcessosPage from './pages/EstadoProcessosPage';
 import DadosEntradaPage from './pages/DadosEntradaPage';
 
@@ -27,8 +26,7 @@ function App() {
             <Route path="/uploads" element={<UploadsPage />} />
             <Route path="/dados-entrada" element={<DadosEntradaPage />} />
             <Route path="/executar" element={<ExecutarPage />} />
-            <Route path="/resultados" element={<ResultadosPage />} />
-            <Route path="/recebimentos" element={<RecebimentosPage />} />
+            <Route path="/comissoes" element={<ComissoesPage />} />
             <Route path="/estado-processos" element={<EstadoProcessosPage />} />
             <Route path="/cambio" element={<CambioPage />} />
           </Routes>

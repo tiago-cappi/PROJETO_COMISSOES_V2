@@ -3,6 +3,7 @@ import {
   Card,
   Form,
   InputNumber,
+  Checkbox,
   Button,
   Progress,
   Typography,
@@ -13,6 +14,8 @@ import {
   message,
   Drawer,
   Input,
+  Row,
+  Col,
 } from 'antd';
 import {
   PlayCircleOutlined,
@@ -40,7 +43,12 @@ const ExecutarPage = () => {
   const [csCases, setCsCases] = useState([]);
   const navigate = useNavigate();
   const pollingRef = useRef(null);
-  const lastParamsRef = useRef({ mes: null, ano: null });
+  const lastParamsRef = useRef({
+    mes: null,
+    ano: null,
+    limparHistoricoMaster: false,
+    limparEstadoProcessosRecebimento: false,
+  });
   const elapsedTimeRef = useRef(0);
   const elapsedIntervalRef = useRef(null);
   const [debugVisible, setDebugVisible] = useState(false);
@@ -100,7 +108,12 @@ const ExecutarPage = () => {
 
   const handleCalcular = async (values) => {
     const { mes, ano } = values;
-    lastParamsRef.current = { mes, ano };
+    lastParamsRef.current = {
+      mes,
+      ano,
+      limparHistoricoMaster: !!values.limparHistoricoMaster,
+      limparEstadoProcessosRecebimento: !!values.limparEstadoProcessosRecebimento,
+    };
 
     console.log('[DEBUG] Iniciando handleCalcular', { mes, ano });
 
@@ -227,7 +240,12 @@ const ExecutarPage = () => {
   };
 
   const runFinalExecution = async (decisions) => {
-    const { mes, ano } = lastParamsRef.current || {};
+    const {
+      mes,
+      ano,
+      limparHistoricoMaster,
+      limparEstadoProcessosRecebimento,
+    } = lastParamsRef.current || {};
     if (!mes || !ano) {
       console.error('[DEBUG] runFinalExecution: parâmetros ausentes', { mes, ano });
       message.error('Parâmetros de mês e ano não informados.');
@@ -246,8 +264,17 @@ const ExecutarPage = () => {
 
     const startTime = Date.now();
     try {
-      console.log('[DEBUG] Chamando executarCalculo...', { mes, ano, decisions });
-      await execucaoAPI2.executarCalculo(mes, ano, decisions);
+      console.log('[DEBUG] Chamando executarCalculo...', {
+        mes,
+        ano,
+        decisions,
+        limparHistoricoMaster,
+        limparEstadoProcessosRecebimento,
+      });
+      await execucaoAPI2.executarCalculo(mes, ano, decisions, {
+        limparHistoricoMaster,
+        limparEstadoProcessosRecebimento,
+      });
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
       console.log('[DEBUG] Cálculo concluído com sucesso', { elapsed: `${elapsed}s` });
 
@@ -331,33 +358,61 @@ const ExecutarPage = () => {
       <Card style={{ marginTop: 24 }}>
         <Form
           form={form}
-          layout="inline"
+          layout="vertical"
           onFinish={handleCalcular}
           initialValues={{
             mes: new Date().getMonth() + 1,
             ano: new Date().getFullYear(),
+            limparHistoricoMaster: false,
+            limparEstadoProcessosRecebimento: false,
           }}
         >
+          <Row gutter={16}>
+            <Col xs={24} sm={12} md={4}>
+              <Form.Item
+                label="Mês"
+                name="mes"
+                rules={[
+                  { required: true, message: 'Selecione o mês' },
+                  { type: 'number', min: 1, max: 12 },
+                ]}
+              >
+                <InputNumber min={1} max={12} style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={12} md={4}>
+              <Form.Item
+                label="Ano"
+                name="ano"
+                rules={[
+                  { required: true, message: 'Selecione o ano' },
+                  { type: 'number', min: 2000, max: 2100 },
+                ]}
+              >
+                <InputNumber min={2000} max={2100} style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+          </Row>
+
           <Form.Item
-            label="Mês"
-            name="mes"
-            rules={[
-              { required: true, message: 'Selecione o mês' },
-              { type: 'number', min: 1, max: 12 },
-            ]}
+            name="limparHistoricoMaster"
+            valuePropName="checked"
+            style={{ marginBottom: 8 }}
           >
-            <InputNumber min={1} max={12} />
+            <Checkbox>
+              Limpar histórico de comissões (Master DB) antes do cálculo
+            </Checkbox>
           </Form.Item>
 
           <Form.Item
-            label="Ano"
-            name="ano"
-            rules={[
-              { required: true, message: 'Selecione o ano' },
-              { type: 'number', min: 2000, max: 2100 },
-            ]}
+            name="limparEstadoProcessosRecebimento"
+            valuePropName="checked"
+            style={{ marginBottom: 24 }}
           >
-            <InputNumber min={2000} max={2100} />
+            <Checkbox>
+              Limpar Estado_Processos_Recebimento antes do cálculo
+            </Checkbox>
           </Form.Item>
 
           <Form.Item>

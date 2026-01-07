@@ -84,9 +84,10 @@ app = FastAPI(
 )
 
 # ==================== ROUTERS ====================
-from routers import monitor_router
+from routers import monitor_router, historico_router
 
 app.include_router(monitor_router)
+app.include_router(historico_router)
 
 # CORS
 app.add_middleware(
@@ -148,6 +149,31 @@ def get_resultado_path() -> Optional[Path]:
     # Ordenar por data de modificação (mais recente primeiro)
     files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
     return files[0]
+
+
+@app.get("/api/execucao/ultimo-periodo")
+async def get_ultimo_periodo_executado():
+    """Retorna mês/ano inferidos do arquivo de resultado mais recente."""
+    resultado_path = get_resultado_path()
+    if not resultado_path:
+        raise HTTPException(status_code=404, detail="Nenhum arquivo de resultado encontrado")
+
+    filename = resultado_path.name
+    # Padrões suportados:
+    # - Calculo_Comissoes_MM_AAAA.xlsx
+    # - Comissoes_Calculadas_MM_AAAA.xlsx
+    import re
+
+    match = re.search(r"_(\d{1,2})_(\d{4})\.xlsx$", filename)
+    if not match:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Não foi possível inferir mês/ano do arquivo: {filename}",
+        )
+
+    mes = int(match.group(1))
+    ano = int(match.group(2))
+    return {"mes": mes, "ano": ano, "arquivo": filename}
 
 
 def read_excel_sheet(filepath: Path, sheet_name: str) -> pd.DataFrame:
@@ -941,6 +967,8 @@ class ExecCalculoRequest(BaseModel):
     mes: int
     ano: int
     decisoes_cross_selling: Optional[List[Dict[str, Any]]] = None
+    limpar_historico_master: bool = False
+    limpar_estado_processos_recebimento: bool = False
 
 
 from contextlib import contextmanager
@@ -1115,6 +1143,40 @@ async def executar_calculo(payload: ExecCalculoRequest):
         from calculo_comissoes import CalculoComissao
 
         with _cwd(ROBO_ROOT_PATH):
+            # (Opcional) Limpeza para cenários de teste
+            try:
+                if payload.limpar_historico_master:
+                    master_path = (Path(ROBO_ROOT_PATH) / "data" / "banco_dados" / "HISTORICO_COMISSOES_MASTER.xlsx").resolve()
+                    master_hash = Path(f"{str(master_path)}.hash")
+
+                    if master_path.exists():
+                        try:
+                            os.chmod(master_path, 0o666)
+                        except Exception:
+                            pass
+                        master_path.unlink(missing_ok=True)
+
+                    if master_hash.exists():
+                        try:
+                            os.chmod(master_hash, 0o666)
+                        except Exception:
+                            pass
+                        master_hash.unlink(missing_ok=True)
+
+                if payload.limpar_estado_processos_recebimento:
+                    estado_xlsx = (Path(ROBO_ROOT_PATH) / "Estado_Processos_Recebimento.xlsx").resolve()
+                    estado_csv = (Path(ROBO_ROOT_PATH) / "Estado_Processos_Recebimento.csv").resolve()
+
+                    for p in (estado_xlsx, estado_csv):
+                        if p.exists():
+                            try:
+                                os.chmod(p, 0o666)
+                            except Exception:
+                                pass
+                            p.unlink(missing_ok=True)
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Falha ao limpar arquivos antes do cálculo: {e}")
+
             # Preparar dados do mês/ano antes da execução
             try:
                 import preparar_dados_mensais
@@ -1851,6 +1913,285 @@ async def obter_detalhes_calculo_recebimento(
             status_code=500,
             detail=f"Erro ao obter detalhes: {str(e)}"
         )
+
+
+@app.get("/resultado/recebimento/processo/{processo}/auditoria")
+async def obter_auditoria_processo_recebimento(processo: str):
+    """Retorna auditoria completa de TCMP/FCMP do processo (todos os colaboradores), agrupada por item."""
+    estado_path = Path(ROBO_ROOT_PATH) / "Estado_Processos_Recebimento.xlsx"
+
+    if not estado_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Arquivo de estado não encontrado: {estado_path}"
+        )
+
+    def _safe_float(v, default=0.0):
+        try:
+            if v is None:
+                return default
+            return float(v)
+        except Exception:
+            return default
+
+    def _parse_json(v):
+        if not v or v == "{}":
+            return {}
+        if isinstance(v, dict):
+            return v
+        try:
+            return json.loads(v)
+        except Exception:
+            return {}
+
+    def _build_item_nome(item: dict) -> str:
+        grupo = str(item.get("grupo", "") or "").strip()
+        subgrupo = str(item.get("subgrupo", "") or "").strip()
+        tipo = str(item.get("tipo_mercadoria", "") or "").strip()
+        base = " - ".join([p for p in [grupo, subgrupo] if p])
+        if tipo:
+            return f"{base} ({tipo})" if base else f"({tipo})"
+        return base or str(item.get("item", "") or "").strip() or "Item"
+
+    def _normalize_fc_componentes(fc_detalhes: dict):
+        if not isinstance(fc_detalhes, dict):
+            return []
+        componentes = fc_detalhes.get("componentes")
+        if not isinstance(componentes, list):
+            return []
+
+        out = []
+        for comp in componentes:
+            if not isinstance(comp, dict):
+                continue
+            peso = _safe_float(comp.get("peso"), 0.0)
+            if peso <= 0:
+                continue
+            out.append({
+                "nome_meta": comp.get("nome_meta"),
+                "peso": peso,
+                "realizado": comp.get("realizado"),
+                "meta": comp.get("meta"),
+                "atingimento": _safe_float(comp.get("atingimento"), 0.0),
+                "componente_fc": _safe_float(comp.get("componente_fc"), 0.0),
+            })
+        return out
+
+    try:
+        df_estado = read_excel_sheet(str(estado_path), "ESTADO")
+        df_processo = df_estado[df_estado["PROCESSO"].astype(str).str.strip() == str(processo).strip()]
+        if df_processo.empty:
+            raise HTTPException(status_code=404, detail=f"Processo {processo} não encontrado no estado")
+
+        processo_data = df_processo.iloc[0]
+
+        status_processo = str(
+            processo_data.get("STATUS_PROCESSO")
+            or processo_data.get("status_processo")
+            or ""
+        ).strip()
+
+        tcmp_detalhes = _parse_json(processo_data.get("TCMP_DETALHES_JSON", "{}"))
+        fcmp_detalhes = _parse_json(processo_data.get("FCMP_DETALHES_JSON", "{}"))
+
+        colaboradores = sorted(set(list(tcmp_detalhes.keys()) + list(fcmp_detalhes.keys())))
+
+        # Build TCMP: item -> colaboradores
+        tcmp_items_map = {}
+        tcmp_totais_por_colab = {}
+        tcmp_parcelas_por_colab = {}
+
+        for colab in colaboradores:
+            colab_tcmp = tcmp_detalhes.get(colab, {}) or {}
+            itens_data = colab_tcmp.get("itens", {})
+            total_valor = _safe_float(colab_tcmp.get("total_valor"), 0.0)
+
+            parcelas = []
+
+            def _add_tcmp_item(item_nome: str, dados: dict):
+                nonlocal total_valor
+                valor = _safe_float(dados.get("valor"), 0.0)
+                taxa = _safe_float(dados.get("taxa"), 0.0)
+                peso = _safe_float(dados.get("peso"), 0.0)
+                if (peso == 0.0) and total_valor > 0 and valor > 0:
+                    peso = valor / total_valor
+                tcmp_parcial = _safe_float(dados.get("tcmp_parcial"), 0.0)
+                if tcmp_parcial == 0.0:
+                    tcmp_parcial = taxa * peso
+                taxa_rateio = _safe_float(dados.get("taxa_rateio"), 0.0)
+                fatia_cargo = _safe_float(dados.get("fatia_cargo"), 0.0)
+
+                if item_nome not in tcmp_items_map:
+                    tcmp_items_map[item_nome] = {"item": item_nome, "colaboradores": []}
+                tcmp_items_map[item_nome]["colaboradores"].append({
+                    "colaborador": colab,
+                    "valor": valor,
+                    "taxa": taxa,
+                    "peso": peso,
+                    "tcmp_parcial": tcmp_parcial,
+                    "taxa_rateio": taxa_rateio,
+                    "fatia_cargo": fatia_cargo,
+                })
+                parcelas.append({"item": item_nome, "taxa": taxa, "valor": valor, "produto": taxa * valor})
+
+            if isinstance(itens_data, dict):
+                for item_nome, dados in itens_data.items():
+                    if isinstance(dados, dict):
+                        _add_tcmp_item(str(item_nome), dados)
+            elif isinstance(itens_data, list):
+                for item in itens_data:
+                    if not isinstance(item, dict):
+                        continue
+                    _add_tcmp_item(_build_item_nome(item), item)
+
+            # infer total_valor if missing
+            if total_valor <= 0:
+                total_valor = sum(p.get("valor", 0.0) for p in parcelas)
+
+            numerador = sum(p.get("produto", 0.0) for p in parcelas)
+            denominador = total_valor
+            tcmp_final = _safe_float(colab_tcmp.get("tcmp_final"), 0.0)
+            if tcmp_final == 0.0 and denominador > 0:
+                tcmp_final = numerador / denominador
+
+            tcmp_totais_por_colab[colab] = {
+                "total_valor": total_valor,
+                "tcmp_final": tcmp_final,
+                "numerador": numerador,
+                "denominador": denominador,
+            }
+            tcmp_parcelas_por_colab[colab] = parcelas
+
+        # Add aggregated fields for TCMP top-level table
+        tcmp_itens = []
+        tcmp_total_processo_valor = 0.0
+        for item_nome, entry in tcmp_items_map.items():
+            valor_total_item = sum(_safe_float(c.get("valor"), 0.0) for c in entry["colaboradores"])
+            tcmp_total_processo_valor += valor_total_item
+            numerador_item = sum(_safe_float(c.get("taxa"), 0.0) * _safe_float(c.get("valor"), 0.0) for c in entry["colaboradores"])
+            taxa_media = (numerador_item / valor_total_item) if valor_total_item > 0 else 0.0
+            tcmp_itens.append({
+                "item": item_nome,
+                "valor": valor_total_item,
+                "taxa": taxa_media,
+                "peso": 0.0,
+                "colaboradores": entry["colaboradores"],
+            })
+        for it in tcmp_itens:
+            it["peso"] = (it["valor"] / tcmp_total_processo_valor) if tcmp_total_processo_valor > 0 else 0.0
+        tcmp_itens.sort(key=lambda x: x.get("valor", 0.0), reverse=True)
+
+        # Build FCMP: item -> colaboradores
+        fcmp_items_map = {}
+        fcmp_totais_por_colab = {}
+        fcmp_parcelas_por_colab = {}
+
+        fcmp_calculado = status_processo.strip().upper() == "FATURADO"
+
+        for colab in colaboradores:
+            colab_fcmp = fcmp_detalhes.get(colab, {}) or {}
+            itens_data = colab_fcmp.get("itens", {})
+            total_valor = _safe_float(colab_fcmp.get("total_valor"), 0.0)
+            parcelas = []
+
+            def _add_fcmp_item(item_nome: str, dados: dict):
+                nonlocal total_valor
+                valor = _safe_float(dados.get("valor"), 0.0)
+                fc = _safe_float(dados.get("fc"), 1.0)
+                peso = _safe_float(dados.get("peso"), 0.0)
+                if (peso == 0.0) and total_valor > 0 and valor > 0:
+                    peso = valor / total_valor
+                fcmp_parcial = _safe_float(dados.get("fcmp_parcial"), 0.0)
+                if fcmp_parcial == 0.0:
+                    fcmp_parcial = fc * peso
+                fc_detalhes = dados.get("fc_detalhes", {}) if isinstance(dados, dict) else {}
+
+                if item_nome not in fcmp_items_map:
+                    fcmp_items_map[item_nome] = {"item": item_nome, "colaboradores": []}
+                fcmp_items_map[item_nome]["colaboradores"].append({
+                    "colaborador": colab,
+                    "valor": valor,
+                    "fc": 1.0 if not fcmp_calculado else fc,
+                    "peso": peso,
+                    "fcmp_parcial": 0.0 if not fcmp_calculado else fcmp_parcial,
+                    "fc_detalhes": fc_detalhes,
+                    "metas": _normalize_fc_componentes(fc_detalhes),
+                })
+                parcelas.append({"item": item_nome, "fc": (1.0 if not fcmp_calculado else fc), "valor": valor, "produto": (1.0 if not fcmp_calculado else fc) * valor})
+
+            if isinstance(itens_data, dict):
+                for item_nome, dados in itens_data.items():
+                    if isinstance(dados, dict):
+                        _add_fcmp_item(str(item_nome), dados)
+            elif isinstance(itens_data, list):
+                for item in itens_data:
+                    if not isinstance(item, dict):
+                        continue
+                    _add_fcmp_item(_build_item_nome(item), item)
+
+            if total_valor <= 0:
+                total_valor = sum(p.get("valor", 0.0) for p in parcelas)
+
+            numerador = sum(p.get("produto", 0.0) for p in parcelas)
+            denominador = total_valor
+            fcmp_final = _safe_float(colab_fcmp.get("fcmp_final"), 0.0)
+            if not fcmp_calculado:
+                fcmp_final = 1.0
+            elif fcmp_final == 0.0 and denominador > 0:
+                fcmp_final = numerador / denominador
+
+            fcmp_totais_por_colab[colab] = {
+                "total_valor": total_valor,
+                "fcmp_final": fcmp_final,
+                "numerador": numerador,
+                "denominador": denominador,
+            }
+            fcmp_parcelas_por_colab[colab] = parcelas
+
+        fcmp_itens = []
+        fcmp_total_processo_valor = 0.0
+        for item_nome, entry in fcmp_items_map.items():
+            valor_total_item = sum(_safe_float(c.get("valor"), 0.0) for c in entry["colaboradores"])
+            fcmp_total_processo_valor += valor_total_item
+            numerador_item = sum(_safe_float(c.get("fc"), 1.0) * _safe_float(c.get("valor"), 0.0) for c in entry["colaboradores"])
+            fc_medio = (numerador_item / valor_total_item) if valor_total_item > 0 else (1.0 if not fcmp_calculado else 0.0)
+            fcmp_itens.append({
+                "item": item_nome,
+                "valor": valor_total_item,
+                "fc": fc_medio,
+                "peso": 0.0,
+                "colaboradores": entry["colaboradores"],
+            })
+        for it in fcmp_itens:
+            it["peso"] = (it["valor"] / fcmp_total_processo_valor) if fcmp_total_processo_valor > 0 else 0.0
+        fcmp_itens.sort(key=lambda x: x.get("valor", 0.0), reverse=True)
+
+        print(f"[adapter] /resultado/recebimento/processo/{processo}/auditoria -> colaboradores={len(colaboradores)}, tcmp_itens={len(tcmp_itens)}, fcmp_itens={len(fcmp_itens)}")
+
+        return {
+            "processo": str(processo),
+            "status_processo": status_processo,
+            "tcmp": {
+                "formula": "TCMP = Σ (Taxa_Item × Valor_Item) / Σ (Valor_Item)",
+                "itens": tcmp_itens,
+                "totais_por_colaborador": tcmp_totais_por_colab,
+                "parcelas_por_colaborador": tcmp_parcelas_por_colab,
+            },
+            "fcmp": {
+                "formula": "FCMP = Σ (FC_Item × Valor_Item) / Σ (Valor_Item)",
+                "calculado": fcmp_calculado,
+                "itens": fcmp_itens,
+                "totais_por_colaborador": fcmp_totais_por_colab,
+                "parcelas_por_colaborador": fcmp_parcelas_por_colab,
+            },
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erro ao obter auditoria do processo: {str(e)}")
 
 
 # ==================== ENDPOINTS - DADOS DE ENTRADA ====================

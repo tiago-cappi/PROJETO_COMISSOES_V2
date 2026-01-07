@@ -3718,7 +3718,8 @@ class CalculoComissao:
             _info(f"[DEVOLUÇÕES] Período de apuração: {mes:02d}/{ano}")
             
             # Obter df_analise_comercial do self.data
-            df_analise_comercial = self.data.get("ANALISE_COMERCIAL", pd.DataFrame())
+            # NOTA: A chave correta é "ANALISE_COMERCIAL_COMPLETA" (não "ANALISE_COMERCIAL")
+            df_analise_comercial = self.data.get("ANALISE_COMERCIAL_COMPLETA", pd.DataFrame())
             
             if df_analise_comercial.empty:
                 _info("[DEVOLUÇÕES] Nenhum dado de Análise Comercial disponível. Pulando processamento de devoluções.")
@@ -3727,25 +3728,28 @@ class CalculoComissao:
             _info(f"[DEVOLUÇÕES] Análise Comercial carregada: {len(df_analise_comercial)} registros")
             
             # Instanciar e executar o processador de devoluções
+            # NOTA: base_path é o caminho raiz do projeto (onde fica dados_entrada/ e data/)
             processor = DevolucaoProcessor(
+                base_path=".",
                 df_analise_comercial=df_analise_comercial,
-                master_db_path="."
             )
             
-            resultado = processor.processar(mes=mes, ano=ano)
+            resultado = processor.processar(mes=mes, ano=ano, salvar_no_banco=True)
             
             # Exibir resultado
-            if resultado.get("sucesso", False):
-                total_estornos = resultado.get("total_estornos", 0)
-                processos_afetados = resultado.get("processos_afetados", 0)
-                valor_total = resultado.get("valor_total_estornado", 0)
-                
+            saldos_gerados = resultado.get("saldos_negativos_gerados", 0)
+            total_estorno = resultado.get("total_estorno", 0)
+            processos_afetados = resultado.get("devolucoes_processadas", 0)
+            
+            if saldos_gerados > 0:
                 _info(f"[DEVOLUÇÕES] ✓ Processamento concluído com sucesso!")
-                _info(f"[DEVOLUÇÕES]   - Estornos gerados: {total_estornos}")
+                _info(f"[DEVOLUÇÕES]   - Estornos gerados: {saldos_gerados}")
                 _info(f"[DEVOLUÇÕES]   - Processos afetados: {processos_afetados}")
-                _info(f"[DEVOLUÇÕES]   - Valor total estornado: R$ {abs(valor_total):,.2f}")
+                _info(f"[DEVOLUÇÕES]   - Valor total estornado: R$ {abs(total_estorno):,.2f}")
             else:
-                msg_erro = resultado.get("mensagem", "Erro desconhecido")
+                avisos = resultado.get("avisos", [])
+                erros = resultado.get("erros", [])
+                msg_erro = "; ".join(erros) if erros else ("; ".join(avisos) if avisos else "Nenhuma devolução processada")
                 _info(f"[DEVOLUÇÕES] ⚠ Processamento finalizado: {msg_erro}")
                 
         except ImportError as e:

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import {
   Modal,
   Collapse,
@@ -39,6 +39,30 @@ const formatCurrencyBR = (value) => new Intl.NumberFormat('pt-BR', { style: 'cur
 const formatPercent = (value) => `${((value || 0) * 100).toFixed(2)}%`;
 
 /**
+ * Formata valor de meta de acordo com o tipo.
+ * Metas de rentabilidade são exibidas como % (já vêm em decimal).
+ * Metas de faturamento são exibidas como R$.
+ * Metas de conversão/retenção são exibidas como %.
+ */
+const formatMetaValue = (value, metaNome) => {
+  if (value === null || value === undefined) return '-';
+  const nome = (metaNome || '').toLowerCase();
+  // Metas que são valores monetários
+  if (nome.includes('faturamento')) {
+    return formatCurrencyBR(value);
+  }
+  // Metas que são percentuais (rentabilidade, conversão, retenção)
+  if (nome.includes('rentabilidade') || nome.includes('conversão') || nome.includes('conversao') || nome.includes('retenção') || nome.includes('retencao')) {
+    // Se valor > 1, assumir que já está em % (ex: 15 = 15%)
+    // Se valor <= 1, assumir que está em decimal (ex: 0.15 = 15%)
+    const pct = value > 1 ? value : value * 100;
+    return `${pct.toFixed(2)}%`;
+  }
+  // Fallback: exibir número formatado
+  return typeof value === 'number' ? value.toLocaleString('pt-BR', { maximumFractionDigits: 4 }) : String(value);
+};
+
+/**
  * Modal para exibir detalhes completos do cálculo de um pagamento.
  * 4 Seções: Informações Gerais, TCMP, FCMP, Cálculo Final.
  */
@@ -55,6 +79,12 @@ const ModalDetalhesCalculoRecebimento = ({ visible, onClose, pagamento }) => {
   const [loadingAuditoria, setLoadingAuditoria] = useState(false);
   const [erroAuditoria, setErroAuditoria] = useState(null);
   const [expandedTcmpKeys, setExpandedTcmpKeys] = useState([]);
+  // Stack para navegação aninhada no drawer (permite voltar ao nível anterior)
+  const [drawerStack, setDrawerStack] = useState([]);
+  // Ref para manter valor atual do stack (evita problemas de closure)
+  const drawerStackRef = useRef([]);
+  const drawerTitleRef = useRef('');
+  const drawerContentRef = useRef(null);
   const [expandedFcmpKeys, setExpandedFcmpKeys] = useState([]);
 
   const pagamentoView = pagamentoDetalhado || pagamento;
@@ -77,6 +107,7 @@ const ModalDetalhesCalculoRecebimento = ({ visible, onClose, pagamento }) => {
     setDrawerOpen(false);
     setDrawerTitle('');
     setDrawerContent(null);
+    setDrawerStack([]);
     setAuditoriaData(null);
     setErroAuditoria(null);
     setExpandedTcmpKeys([]);
@@ -138,9 +169,38 @@ const ModalDetalhesCalculoRecebimento = ({ visible, onClose, pagamento }) => {
   const fcmpDetalhes = pagamentoView.fcmp_detalhes || [];
 
   const openDrawer = (title, content) => {
+    drawerTitleRef.current = title;
+    drawerContentRef.current = content;
+    drawerStackRef.current = [];
     setDrawerTitle(title);
     setDrawerContent(content);
+    setDrawerStack([]);
     setDrawerOpen(true);
+  };
+
+  // Navegar para um novo nível no drawer (push na pilha)
+  const pushDrawer = (title, content) => {
+    // Salvar estado atual na pilha usando refs (evita problemas de closure)
+    const newStack = [...drawerStackRef.current, { title: drawerTitleRef.current, content: drawerContentRef.current }];
+    drawerStackRef.current = newStack;
+    drawerTitleRef.current = title;
+    drawerContentRef.current = content;
+    setDrawerStack(newStack);
+    setDrawerTitle(title);
+    setDrawerContent(content);
+  };
+
+  // Voltar ao nível anterior no drawer (pop da pilha)
+  const popDrawer = () => {
+    if (drawerStackRef.current.length === 0) return;
+    const prev = drawerStackRef.current[drawerStackRef.current.length - 1];
+    const newStack = drawerStackRef.current.slice(0, -1);
+    drawerStackRef.current = newStack;
+    drawerTitleRef.current = prev.title;
+    drawerContentRef.current = prev.content;
+    setDrawerStack(newStack);
+    setDrawerTitle(prev.title);
+    setDrawerContent(prev.content);
   };
 
   const buildCardEquation = (label, equation, substitution, result) => (
@@ -241,7 +301,7 @@ const ModalDetalhesCalculoRecebimento = ({ visible, onClose, pagamento }) => {
           </Descriptions>
         </Card>
 
-        <Card size="small" title="🎯 Metas consideradas (peso > 0)">
+        <Card size="small" title="🎯 Metas consideradas (peso > 0)" extra={<Text type="secondary" style={{ fontSize: 11 }}>Clique em uma meta para ver detalhes</Text>}>
           {metas.length === 0 ? (
             <Alert
               type="info"
@@ -286,6 +346,11 @@ const ModalDetalhesCalculoRecebimento = ({ visible, onClose, pagamento }) => {
                   render: (v) => <strong>{(v || 0).toFixed(4)}</strong>,
                 },
               ]}
+              onRow={(record) => ({
+                onClick: () => openDrawerMetaDetalhe({ metaData: record, itemNome, colaborador }),
+                style: { cursor: 'pointer' },
+              })}
+              rowClassName={() => 'clickable-row'}
             />
           )}
         </Card>
@@ -310,6 +375,160 @@ const ModalDetalhesCalculoRecebimento = ({ visible, onClose, pagamento }) => {
           `Parcela = ${fc.toFixed(4)} × ${formatPercent(peso)} = ${contrib.toFixed(4)}`,
           `Parcela = ${contrib.toFixed(4)}`
         )}
+      </Space>
+    );
+  };
+
+  /**
+   * Abre detalhe de uma meta específica (terceira camada de auditoria).
+   * Mostra o passo a passo do cálculo do atingimento da meta.
+   */
+  const openDrawerMetaDetalhe = ({ metaData, itemNome, colaborador }) => {
+    const nomeMeta = metaData?.nome_meta || 'Meta';
+    const peso = metaData?.peso || 0;
+    const realizado = metaData?.realizado;
+    const meta = metaData?.meta;
+    const atingimento = metaData?.atingimento || 0;
+    const atingimentoCap = metaData?.atingimento_cap;
+    const componenteFc = metaData?.componente_fc || 0;
+
+    // Verificar se há cap aplicado (atingimento_cap diferente de atingimento)
+    const temCap = atingimentoCap !== undefined && atingimentoCap !== null && Math.abs(atingimentoCap - atingimento) > 0.0001;
+    const capUsado = temCap ? atingimentoCap : atingimento;
+
+    // Verificar se temos dados suficientes para mostrar o cálculo
+    const temDadosCalculo = realizado !== undefined && realizado !== null && meta !== undefined && meta !== null;
+
+    pushDrawer(
+      `📊 ${nomeMeta}`,
+      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+        <Button icon={<ArrowLeftOutlined />} onClick={popDrawer} style={{ marginBottom: 8 }}>
+          Voltar para FC do Item
+        </Button>
+
+        <Card size="small" title="📌 Visão Geral">
+          <Descriptions bordered size="small" column={1}>
+            <Descriptions.Item label="Meta"><strong>{nomeMeta}</strong></Descriptions.Item>
+            <Descriptions.Item label="Colaborador"><strong>{colaborador}</strong></Descriptions.Item>
+            <Descriptions.Item label="Item"><strong>{itemNome}</strong></Descriptions.Item>
+            <Descriptions.Item label="Peso da Meta"><strong>{formatPercent(peso)}</strong></Descriptions.Item>
+          </Descriptions>
+        </Card>
+
+        <Card size="small" title="📊 Dados Utilizados">
+          {temDadosCalculo ? (
+            <Descriptions bordered size="small" column={1}>
+              <Descriptions.Item label="Valor Realizado">
+                <strong style={{ color: '#1890ff', fontSize: 16 }}>
+                  {formatMetaValue(realizado, nomeMeta)}
+                </strong>
+              </Descriptions.Item>
+              <Descriptions.Item label="Meta Estabelecida">
+                <strong style={{ fontSize: 16 }}>
+                  {formatMetaValue(meta, nomeMeta)}
+                </strong>
+              </Descriptions.Item>
+            </Descriptions>
+          ) : (
+            <Alert
+              type="warning"
+              showIcon
+              message="Dados não disponíveis"
+              description="O estado não retornou os valores de 'realizado' e 'meta' para este componente. Apenas o atingimento final está disponível."
+            />
+          )}
+        </Card>
+
+        <Card size="small" title="🧮 Cálculo do Atingimento">
+          <Space direction="vertical" size={8} style={{ width: '100%' }}>
+            <Text><strong>Fórmula:</strong> <span style={{ fontFamily: 'monospace' }}>Atingimento = Realizado / Meta</span></Text>
+            {temDadosCalculo ? (
+              <>
+                <Text type="secondary">
+                  <strong>Substituindo:</strong>{' '}
+                  <span style={{ fontFamily: 'monospace' }}>
+                    Atingimento = {formatMetaValue(realizado, nomeMeta)} / {formatMetaValue(meta, nomeMeta)}
+                  </span>
+                </Text>
+                <Alert
+                  type="success"
+                  showIcon
+                  message={
+                    <span>
+                      <strong>Atingimento = {formatPercent(atingimento)}</strong>
+                      {atingimento >= 1 ? ' ✅ Meta atingida!' : ' ⚠️ Meta não atingida'}
+                    </span>
+                  }
+                />
+              </>
+            ) : (
+              <Alert type="info" showIcon message={`Atingimento = ${formatPercent(atingimento)}`} />
+            )}
+          </Space>
+        </Card>
+
+        {temCap && (
+          <Card size="small" title="⚠️ Aplicação do Cap (Limite Máximo)">
+            <Space direction="vertical" size={8} style={{ width: '100%' }}>
+              <Alert
+                type="warning"
+                showIcon
+                icon={<WarningOutlined />}
+                message="O atingimento foi limitado pelo cap máximo configurado"
+              />
+              <Text>
+                <strong>Fórmula:</strong>{' '}
+                <span style={{ fontFamily: 'monospace' }}>Atingimento_Cap = min(Atingimento, Cap_Máximo)</span>
+              </Text>
+              <Text type="secondary">
+                <strong>Aplicando:</strong>{' '}
+                <span style={{ fontFamily: 'monospace' }}>
+                  Atingimento_Cap = min({formatPercent(atingimento)}, {formatPercent(atingimentoCap / atingimento * atingimentoCap)}) = {formatPercent(atingimentoCap)}
+                </span>
+              </Text>
+              <Space wrap>
+                <Tag color="orange">Atingimento Original: {formatPercent(atingimento)}</Tag>
+                <Tag color="green">Atingimento Aplicado: {formatPercent(atingimentoCap)}</Tag>
+              </Space>
+            </Space>
+          </Card>
+        )}
+
+        <Card size="small" title="✅ Contribuição no FC do Item">
+          <Space direction="vertical" size={8} style={{ width: '100%' }}>
+            <Text>
+              <strong>Fórmula:</strong>{' '}
+              <span style={{ fontFamily: 'monospace' }}>Componente_FC = Peso × Atingimento{temCap ? '_Cap' : ''}</span>
+            </Text>
+            <Text type="secondary">
+              <strong>Substituindo:</strong>{' '}
+              <span style={{ fontFamily: 'monospace' }}>
+                Componente_FC = {formatPercent(peso)} × {formatPercent(capUsado)} = {componenteFc.toFixed(4)}
+              </span>
+            </Text>
+            <Alert
+              type="success"
+              showIcon
+              icon={<CheckCircleOutlined />}
+              message={
+                <span style={{ fontSize: 16 }}>
+                  <strong>Contribuição desta meta no FC = {componenteFc.toFixed(4)}</strong>
+                </span>
+              }
+            />
+          </Space>
+        </Card>
+
+        <Card size="small" title="📋 Resumo do Cálculo">
+          <div style={{ backgroundColor: '#f5f5f5', padding: 12, borderRadius: 4, fontFamily: 'monospace', fontSize: 12 }}>
+            <div>1. Atingimento = Realizado / Meta = {formatPercent(atingimento)}</div>
+            {temCap && <div>2. Atingimento_Cap = min({formatPercent(atingimento)}, Cap) = {formatPercent(atingimentoCap)}</div>}
+            <div>{temCap ? '3' : '2'}. Componente_FC = Peso × Atingimento{temCap ? '_Cap' : ''}</div>
+            <div style={{ marginTop: 8, fontWeight: 'bold', color: '#52c41a' }}>
+              → Componente_FC = {formatPercent(peso)} × {formatPercent(capUsado)} = {componenteFc.toFixed(4)}
+            </div>
+          </div>
+        </Card>
       </Space>
     );
   };

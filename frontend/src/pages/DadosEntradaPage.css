@@ -1,0 +1,439 @@
+/* ===============================================================
+   DadosEntradaPage - Modern File Browser Design (Concept B)
+   =============================================================== */
+
+/* Page Container */
+.dados-entrada-page {
+  padding: 24px;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+/* Page Header */
+.dados-entrada-page__header {
+  margin-bottom: 24px;
+}
+
+.dados-entrada-page__title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+}
+
+.dados-entrada-page__subtitle {
+  font-size: 15px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Tabs Navigation */
+.dados-entrada-page__tabs {
+  margin-bottom: 24px;
+}
+
+.dados-entrada-page__tabs .ant-tabs-nav {
+  margin-bottom: 0;
+}
+
+.dados-entrada-page__tabs .ant-tabs-tab {
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  transition: all 0.2s ease;
+}
+
+.dados-entrada-page__tabs .ant-tabs-tab:hover {
+  color: #1E64A5;
+}
+
+.dados-entrada-page__tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #1E64A5;
+  font-weight: 600;
+}
+
+.dados-entrada-page__tabs .ant-tabs-ink-bar {
+  background: linear-gradient(90deg, #1E64A5 0%, #2563eb 100%);
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+}
+
+.dados-entrada-page__tabs .ant-tabs-content-holder {
+  background: transparent;
+}
+
+/* Tab Icon */
+.tab-icon {
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+/* File Browser Container */
+.file-browser {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+  min-height: 600px;
+  transition: grid-template-columns 0.3s ease;
+}
+
+.file-browser--collapsed {
+  grid-template-columns: 60px 1fr;
+}
+
+@media (max-width: 1024px) {
+  .file-browser {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* File List Sidebar */
+.file-list {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  height: fit-content;
+  max-height: calc(100vh - 200px);
+  display: flex;
+  flex-direction: column;
+}
+
+.file-list__header {
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.file-list__toggle {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #64748b;
+  transition: all 0.2s ease;
+}
+
+.file-list__toggle:hover {
+  background: #f1f5f9;
+  color: #1E64A5;
+  border-color: #1E64A5;
+}
+
+.file-list--collapsed {
+  width: 60px;
+}
+
+.file-list--collapsed .file-list__header {
+  padding: 16px 14px;
+  justify-content: center;
+}
+
+.file-list--collapsed .file-list__items {
+  display: none;
+}
+
+.file-list__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.file-list__count {
+  background: #1E64A5;
+  color: #fff;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.file-list__items {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+/* File Card */
+.file-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  margin: 4px 0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+  background: #fff;
+}
+
+.file-card:hover {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  transform: translateX(4px);
+}
+
+.file-card--active {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border-color: #1E64A5;
+}
+
+.file-card--active:hover {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+}
+
+.file-card__icon {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.file-card__icon--xlsx {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  color: #16a34a;
+}
+
+.file-card__icon--csv {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #d97706;
+}
+
+.file-card__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.file-card__name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-card__type {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.file-card__arrow {
+  color: #cbd5e1;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.file-card:hover .file-card__arrow {
+  color: #1E64A5;
+  transform: translateX(4px);
+}
+
+.file-card--active .file-card__arrow {
+  color: #1E64A5;
+}
+
+/* Content Area */
+.file-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Empty State */
+.file-content__empty {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  padding: 80px 40px;
+  text-align: center;
+}
+
+.file-content__empty-icon {
+  font-size: 64px;
+  color: #cbd5e1;
+  margin-bottom: 20px;
+}
+
+.file-content__empty-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #334155;
+  margin: 0 0 8px 0;
+}
+
+.file-content__empty-text {
+  font-size: 15px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Folder Rentabilidades */
+.folder-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  margin: 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+  border: 2px solid #e9d5ff;
+}
+
+.folder-card:hover {
+  background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+  border-color: #c084fc;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(192, 132, 252, 0.2);
+}
+
+.folder-card--open {
+  background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
+  border-color: #7c3aed;
+}
+
+.folder-card--open:hover {
+  background: linear-gradient(135deg, #6d28d9 0%, #7c3aed 100%);
+}
+
+.folder-card__icon {
+  font-size: 28px;
+  color: #a855f7;
+}
+
+.folder-card--open .folder-card__icon {
+  color: #fff;
+}
+
+.folder-card__info {
+  flex: 1;
+}
+
+.folder-card__name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #581c87;
+  margin: 0;
+}
+
+.folder-card--open .folder-card__name {
+  color: #fff;
+}
+
+.folder-card__count {
+  font-size: 13px;
+  color: #9333ea;
+  margin-top: 2px;
+}
+
+.folder-card--open .folder-card__count {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.folder-card__arrow {
+  color: #a855f7;
+  font-size: 16px;
+  transition: transform 0.3s ease;
+}
+
+.folder-card--open .folder-card__arrow {
+  color: #fff;
+  transform: rotate(90deg);
+}
+
+/* Rentabilidades Files Collapse */
+.rentabilidades-files {
+  padding: 8px;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rentabilidades-files .file-card {
+  margin-left: 20px;
+  border-left: 3px solid #e9d5ff;
+  border-radius: 0 10px 10px 0;
+}
+
+.rentabilidades-files .file-card--active {
+  border-left-color: #8b5cf6;
+}
+
+/* Loading Skeleton */
+.file-list__loading {
+  padding: 16px;
+}
+
+.skeleton-card {
+  height: 66px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Divider */
+.file-list__divider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 12px 8px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .file-browser {
+    grid-template-columns: 1fr;
+  }
+  
+  .file-list {
+    max-height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dados-entrada-page {
+    padding: 16px;
+  }
+  
+  .dados-entrada-page__title {
+    font-size: 22px;
+  }
+}

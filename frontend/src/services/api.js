@@ -414,4 +414,29 @@ export const dadosEntradaAPI = {
   },
   
   salvarArquivo: (nomeArquivo, dados) => api.post(`/dados-entrada/arquivo/${nomeArquivo}`, { dados }),
+  
+  // Rentabilidades (subpasta)
+  listarRentabilidades: () => api.get('/dados-entrada/rentabilidades'),
+  
+  lerRentabilidade: (nomeArquivo, params = {}) => {
+    const { page = 1, size = 20, sortBy, sortOrder, filters, allPages = false } = params;
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+    });
+    if (sortBy) {
+      queryParams.append('sort_by', sortBy);
+      queryParams.append('sort_order', sortOrder || 'asc');
+    }
+    if (filters) {
+      queryParams.append('filters', JSON.stringify(filters));
+    }
+    if (allPages) {
+      queryParams.append('all_pages', 'true');
+    }
+    return api.get(`/dados-entrada/rentabilidades/${nomeArquivo}?${queryParams.toString()}`);
+  },
+  
+  salvarRentabilidade: (nomeArquivo, dados) => 
+    api.post(`/dados-entrada/rentabilidades/${nomeArquivo}`, { dados }),
 };

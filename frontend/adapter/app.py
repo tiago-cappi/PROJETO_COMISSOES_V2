@@ -2280,6 +2280,96 @@ async def ler_arquivo_entrada(
 class SalvarArquivoRequest(BaseModel):
     dados: List[Dict[str, Any]]
 
+@app.get("/dados-entrada/rentabilidades")
+async def listar_arquivos_rentabilidades():
+    """Lista arquivos na subpasta dados_entrada/rentabilidades"""
+    path = get_dados_entrada_path() / "rentabilidades"
+    if not path.exists():
+        return {"arquivos": []}
+    
+    arquivos = []
+    for p in sorted(path.glob("*"), reverse=True):  # Ordenar por nome (mais recentes primeiro)
+        if p.is_file() and p.suffix.lower() in [".xlsx", ".csv"]:
+            arquivos.append(p.name)
+    return {"arquivos": arquivos}
+
+
+@app.get("/dados-entrada/rentabilidades/{nome_arquivo}")
+async def ler_arquivo_rentabilidade(
+    nome_arquivo: str,
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=1000),
+    sort_by: Optional[str] = None,
+    sort_order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
+    filters: Optional[str] = None,
+    all_pages: bool = Query(False),
+):
+    """Lê um arquivo de rentabilidade (CSV ou Excel)"""
+    path = get_dados_entrada_path() / "rentabilidades" / nome_arquivo
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Arquivo de rentabilidade não encontrado")
+    
+    try:
+        if path.suffix.lower() == ".csv":
+            try:
+                df = pd.read_csv(path, dtype=str, keep_default_na=False, encoding="utf-8", sep=";")
+            except:
+                df = pd.read_csv(path, dtype=str, keep_default_na=False, encoding="latin-1", sep=";")
+        else:
+            df = pd.read_excel(path, dtype=str, keep_default_na=False)
+            
+        # Aplicar filtros
+        if filters:
+            try:
+                filter_dict = json.loads(filters)
+                for col, value in filter_dict.items():
+                    if col in df.columns and value:
+                        df = df[df[col].astype(str).str.contains(str(value), case=False, na=False)]
+            except Exception:
+                pass
+
+        # Ordenação
+        if sort_by and sort_by in df.columns:
+            ascending = sort_order == "asc"
+            df = df.sort_values(by=sort_by, ascending=ascending)
+
+        total = len(df)
+        if all_pages:
+            df_page = df
+        else:
+            start = (page - 1) * size
+            end = start + size
+            df_page = df.iloc[start:end]
+
+        return {
+            "data": df_page.to_dict(orient="records"),
+            "total": total,
+            "page": page if not all_pages else 1,
+            "size": len(df_page) if all_pages else size,
+            "columns": list(df.columns),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao ler arquivo: {str(e)}")
+
+
+@app.post("/dados-entrada/rentabilidades/{nome_arquivo}")
+async def salvar_arquivo_rentabilidade(nome_arquivo: str, request: SalvarArquivoRequest):
+    """Salva alterações no arquivo de rentabilidade"""
+    path = get_dados_entrada_path() / "rentabilidades" / nome_arquivo
+    
+    try:
+        df = pd.DataFrame(request.dados)
+        
+        if path.suffix.lower() == ".csv":
+            df.to_csv(path, index=False, sep=";", encoding="utf-8-sig")
+        else:
+            df.to_excel(path, index=False)
+            
+        return {"message": "Arquivo de rentabilidade salvo com sucesso"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao salvar arquivo: {str(e)}")
+
+
 @app.post("/dados-entrada/arquivo/{nome_arquivo}")
 async def salvar_arquivo_entrada(nome_arquivo: str, request: SalvarArquivoRequest):
     """Salva alterações no arquivo de dados de entrada"""

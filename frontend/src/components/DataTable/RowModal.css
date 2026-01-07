@@ -1,0 +1,338 @@
+/* ===============================================================
+   RowModal - Elegant Card Modal Design (Concept B)
+   =============================================================== */
+
+/* Modal Overlay */
+.row-modal .ant-modal-content {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.row-modal .ant-modal-header {
+  padding: 0;
+  border-bottom: none;
+}
+
+.row-modal .ant-modal-body {
+  padding: 0;
+}
+
+.row-modal .ant-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #f1f5f9;
+  background: #fafbfc;
+}
+
+/* Header */
+.row-modal__header {
+  background: linear-gradient(135deg, #1E64A5 0%, #164875 100%);
+  padding: 24px 28px;
+  color: #fff;
+}
+
+.row-modal__header--add {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+}
+
+.row-modal__title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.row-modal__title-icon {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.row-modal__subtitle {
+  margin-top: 6px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Content */
+.row-modal__content {
+  padding: 24px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* Sections */
+.row-modal__section {
+  margin-bottom: 24px;
+}
+
+.row-modal__section:last-child {
+  margin-bottom: 0;
+}
+
+.row-modal__section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.row-modal__section-icon {
+  font-size: 14px;
+  color: #94a3b8;
+}
+
+/* Fields Grid */
+.row-modal__fields {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 600px) {
+  .row-modal__fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Field Item */
+.row-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.row-modal__field--full {
+  grid-column: 1 / -1;
+}
+
+.row-modal__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* View Mode Value */
+.row-modal__value {
+  font-size: 15px;
+  color: #1e293b;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+}
+
+.row-modal__value--empty {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.row-modal__value--money {
+  color: #059669;
+  font-weight: 600;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.row-modal__value--money-negative {
+  color: #dc2626;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.row-modal__value--percent {
+  font-weight: 600;
+}
+
+.row-modal__value--percent-low {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.row-modal__value--percent-medium {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #d97706;
+}
+
+.row-modal__value--percent-high {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #059669;
+}
+
+.row-modal__value--date {
+  color: #6366f1;
+  font-weight: 500;
+}
+
+.row-modal__value--number {
+  font-family: 'SF Mono', 'Consolas', monospace;
+  color: #374151;
+}
+
+/* Edit Mode Input */
+.row-modal__input {
+  width: 100%;
+}
+
+.row-modal__input .ant-input,
+.row-modal__input .ant-input-number,
+.row-modal__input .ant-picker {
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  padding: 8px 12px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.row-modal__input .ant-input:focus,
+.row-modal__input .ant-input-number:focus,
+.row-modal__input .ant-picker-focused {
+  border-color: #1E64A5;
+  box-shadow: 0 0 0 3px rgba(30, 100, 165, 0.1);
+}
+
+.row-modal__input .ant-input-number {
+  width: 100%;
+}
+
+.row-modal__input .ant-input-number-input {
+  padding: 8px 12px;
+}
+
+/* Footer Actions */
+.row-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.row-modal__btn {
+  height: 40px;
+  padding: 0 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.row-modal__btn--primary {
+  background: linear-gradient(135deg, #1E64A5 0%, #164875 100%);
+  border: none;
+  color: #fff;
+}
+
+.row-modal__btn--primary:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1E64A5 100%);
+  color: #fff;
+}
+
+.row-modal__btn--add {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+}
+
+.row-modal__btn--add:hover {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+}
+
+/* Animation */
+.row-modal .ant-modal {
+  animation: modalFadeIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scrollbar styling */
+.row-modal__content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.row-modal__content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.row-modal__content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.row-modal__content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Quick Info Bar (for view mode) */
+.row-modal__quick-info {
+  display: flex;
+  gap: 24px;
+  padding: 16px 24px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.row-modal__quick-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.row-modal__quick-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #94a3b8;
+}
+
+.row-modal__quick-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* Row index badge */
+.row-modal__index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-left: auto;
+}

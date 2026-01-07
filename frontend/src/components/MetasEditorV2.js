@@ -8,7 +8,8 @@ import {
     Statistic,
     Row,
     Col,
-    message
+    message,
+    Button
 } from 'antd';
 import { 
     DollarOutlined, 
@@ -16,9 +17,11 @@ import {
     TeamOutlined,
     ShopOutlined,
     AimOutlined,
-    BankOutlined
+    BankOutlined,
+    ThunderboltOutlined
 } from '@ant-design/icons';
 import SmartTable from './SmartTable';
+import MetasAplicacaoBulkModal from './MetasAplicacaoBulkModal';
 import { regrasAPI } from '../services/api';
 import './MetasEditor.css';
 
@@ -31,24 +34,15 @@ const SHEETS_CONFIG = {
     METAS_APLICACAO: {
         label: 'Metas de Aplicação',
         icon: <AimOutlined />,
-        description: 'Metas de faturamento por linha e tipo de mercadoria',
-        contextCols: ['linha', 'tipo_mercadoria'],
+        description: 'Metas de faturamento e conversão por hierarquia de produto',
+        contextCols: ['linha', 'grupo', 'subgrupo', 'tipo_mercadoria'],
         schema: {
             linha: { label: 'Linha', type: 'text', width: 120 },
+            grupo: { label: 'Grupo', type: 'text', width: 140 },
+            subgrupo: { label: 'Subgrupo', type: 'text', width: 140 },
             tipo_mercadoria: { label: 'Tipo Mercadoria', type: 'text', width: 150 },
-            meta_anual: { label: 'Meta Anual', type: 'money', width: 130 },
-            meta_jan: { label: 'Jan', type: 'money', width: 100 },
-            meta_fev: { label: 'Fev', type: 'money', width: 100 },
-            meta_mar: { label: 'Mar', type: 'money', width: 100 },
-            meta_abr: { label: 'Abr', type: 'money', width: 100 },
-            meta_mai: { label: 'Mai', type: 'money', width: 100 },
-            meta_jun: { label: 'Jun', type: 'money', width: 100 },
-            meta_jul: { label: 'Jul', type: 'money', width: 100 },
-            meta_ago: { label: 'Ago', type: 'money', width: 100 },
-            meta_set: { label: 'Set', type: 'money', width: 100 },
-            meta_out: { label: 'Out', type: 'money', width: 100 },
-            meta_nov: { label: 'Nov', type: 'money', width: 100 },
-            meta_dez: { label: 'Dez', type: 'money', width: 100 },
+            tipo_meta: { label: 'Tipo Meta', type: 'text', width: 120 },
+            valor_meta: { label: 'Valor Meta', type: 'money', width: 130 },
         }
     },
     METAS_INDIVIDUAIS: {
@@ -214,7 +208,7 @@ const MetasStats = ({ sheetKey, config }) => {
 /**
  * Editor genérico de aba de metas usando SmartTable
  */
-const MetasSheetEditor = ({ sheetKey, config }) => {
+const MetasSheetEditor = ({ sheetKey, config, onBulkApplyClick }) => {
     // API adapter para SmartTable
     const apiAdapter = useMemo(() => ({
         read: (id, params) => regrasAPI.lerAba(id, params),
@@ -227,7 +221,18 @@ const MetasSheetEditor = ({ sheetKey, config }) => {
                 <div className="metas-sheet-info">
                     <Text type="secondary">{config.description}</Text>
                 </div>
-                <MetasStats sheetKey={sheetKey} config={config} />
+                <Space>
+                    {sheetKey === 'METAS_APLICACAO' && (
+                        <Button
+                            type="primary"
+                            icon={<ThunderboltOutlined />}
+                            onClick={onBulkApplyClick}
+                        >
+                            Aplicar em Massa
+                        </Button>
+                    )}
+                    <MetasStats sheetKey={sheetKey} config={config} />
+                </Space>
             </div>
             
             <SmartTable
@@ -248,8 +253,18 @@ const MetasSheetEditor = ({ sheetKey, config }) => {
  * - Formatação de percentuais (%)
  * - Estatísticas resumidas por aba
  * - Modo leitura/edição
+ * - Aplicação em massa para Metas de Aplicação
  */
 const MetasEditorV2 = () => {
+    const [bulkModalOpen, setBulkModalOpen] = useState(false);
+    const [refreshKey, setRefreshKey] = useState(0);
+
+    const handleBulkApplySuccess = () => {
+        setBulkModalOpen(false);
+        setRefreshKey((k) => k + 1);
+        message.success('Metas aplicadas com sucesso!');
+    };
+
     const items = Object.entries(SHEETS_CONFIG).map(([key, config]) => ({
         key,
         label: (
@@ -258,17 +273,32 @@ const MetasEditorV2 = () => {
                 {config.label}
             </Space>
         ),
-        children: <MetasSheetEditor sheetKey={key} config={config} />,
+        children: (
+            <MetasSheetEditor
+                key={`${key}-${refreshKey}`}
+                sheetKey={key}
+                config={config}
+                onBulkApplyClick={() => setBulkModalOpen(true)}
+            />
+        ),
     }));
 
     return (
-        <Card className="metas-editor-card">
-            <Tabs 
-                items={items} 
-                type="card"
-                className="metas-tabs"
+        <>
+            <Card className="metas-editor-card">
+                <Tabs 
+                    items={items} 
+                    type="card"
+                    className="metas-tabs"
+                />
+            </Card>
+
+            <MetasAplicacaoBulkModal
+                open={bulkModalOpen}
+                onCancel={() => setBulkModalOpen(false)}
+                onSuccess={handleBulkApplySuccess}
             />
-        </Card>
+        </>
     );
 };
 

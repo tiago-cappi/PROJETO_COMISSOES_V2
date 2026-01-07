@@ -743,18 +743,106 @@ class CalculoComissao:
         print("=" * 80 + "\n")
 
     def _get_meta(self, tipo_meta, chave):
-        """Busca o valor da meta correspondente."""
+        """Busca o valor da meta correspondente.
+        
+        Para faturamento_linha e conversao_linha, utiliza busca hierárquica:
+        1. Match exato: (linha, grupo, subgrupo, tipo_mercadoria)
+        2. Fallback 1: (linha, grupo, subgrupo, qualquer tipo)
+        3. Fallback 2: (linha, grupo, qualquer subgrupo, qualquer tipo)
+        4. Fallback 3: (linha, qualquer grupo, qualquer subgrupo, qualquer tipo)
+        """
         try:
             if tipo_meta in ["faturamento_linha", "conversao_linha"]:
                 df = self.data["METAS_APLICACAO"]
                 tipo_meta_busca = tipo_meta.replace("_linha", "")
-                linha, tipo_mercadoria = chave
-                valor = df[
-                    (df["linha"] == linha)
-                    & (df["tipo_mercadoria"] == tipo_mercadoria)
-                    & (df["tipo_meta"] == tipo_meta_busca)
-                ]["valor_meta"].iloc[0]
-                return valor
+                linha, grupo, subgrupo, tipo_mercadoria = chave
+                
+                # Normalizar valores para busca
+                linha_norm = str(linha).strip() if linha is not None and not pd.isna(linha) else ""
+                grupo_norm = str(grupo).strip() if grupo is not None and not pd.isna(grupo) else ""
+                subgrupo_norm = str(subgrupo).strip() if subgrupo is not None and not pd.isna(subgrupo) else ""
+                tipo_norm = str(tipo_mercadoria).strip() if tipo_mercadoria is not None and not pd.isna(tipo_mercadoria) else ""
+                
+                # Normalizar colunas do DataFrame para busca
+                df_norm = df.copy()
+                df_norm["linha_norm"] = df_norm["linha"].astype(str).str.strip()
+                df_norm["grupo_norm"] = df_norm["grupo"].fillna("").astype(str).str.strip()
+                df_norm["subgrupo_norm"] = df_norm["subgrupo"].fillna("").astype(str).str.strip()
+                df_norm["tipo_mercadoria_norm"] = df_norm["tipo_mercadoria"].astype(str).str.strip()
+                
+                # Busca hierárquica: do mais específico para o mais genérico
+                # Nível 1: Match exato (linha + grupo + subgrupo + tipo_mercadoria)
+                filtro = (
+                    (df_norm["linha_norm"] == linha_norm)
+                    & (df_norm["grupo_norm"] == grupo_norm)
+                    & (df_norm["subgrupo_norm"] == subgrupo_norm)
+                    & (df_norm["tipo_mercadoria_norm"] == tipo_norm)
+                    & (df_norm["tipo_meta"] == tipo_meta_busca)
+                )
+                candidatos = df_norm[filtro]
+                if len(candidatos) > 0:
+                    return candidatos["valor_meta"].iloc[0]
+                
+                # Nível 2: linha + grupo + subgrupo (qualquer tipo_mercadoria)
+                filtro = (
+                    (df_norm["linha_norm"] == linha_norm)
+                    & (df_norm["grupo_norm"] == grupo_norm)
+                    & (df_norm["subgrupo_norm"] == subgrupo_norm)
+                    & (df_norm["tipo_mercadoria_norm"] == "")
+                    & (df_norm["tipo_meta"] == tipo_meta_busca)
+                )
+                candidatos = df_norm[filtro]
+                if len(candidatos) > 0:
+                    return candidatos["valor_meta"].iloc[0]
+                
+                # Nível 3: linha + grupo (qualquer subgrupo e tipo_mercadoria)
+                filtro = (
+                    (df_norm["linha_norm"] == linha_norm)
+                    & (df_norm["grupo_norm"] == grupo_norm)
+                    & (df_norm["subgrupo_norm"] == "")
+                    & (df_norm["tipo_mercadoria_norm"] == "")
+                    & (df_norm["tipo_meta"] == tipo_meta_busca)
+                )
+                candidatos = df_norm[filtro]
+                if len(candidatos) > 0:
+                    return candidatos["valor_meta"].iloc[0]
+                
+                # Nível 4: linha + tipo_mercadoria (qualquer grupo e subgrupo) - compatibilidade retroativa
+                filtro = (
+                    (df_norm["linha_norm"] == linha_norm)
+                    & (df_norm["grupo_norm"] == "")
+                    & (df_norm["subgrupo_norm"] == "")
+                    & (df_norm["tipo_mercadoria_norm"] == tipo_norm)
+                    & (df_norm["tipo_meta"] == tipo_meta_busca)
+                )
+                candidatos = df_norm[filtro]
+                if len(candidatos) > 0:
+                    return candidatos["valor_meta"].iloc[0]
+                
+                # Nível 5: apenas linha (qualquer grupo, subgrupo e tipo_mercadoria)
+                filtro = (
+                    (df_norm["linha_norm"] == linha_norm)
+                    & (df_norm["grupo_norm"] == "")
+                    & (df_norm["subgrupo_norm"] == "")
+                    & (df_norm["tipo_mercadoria_norm"] == "")
+                    & (df_norm["tipo_meta"] == tipo_meta_busca)
+                )
+                candidatos = df_norm[filtro]
+                if len(candidatos) > 0:
+                    return candidatos["valor_meta"].iloc[0]
+                
+                # Não encontrou em nenhum nível
+                self._log_validacao(
+                    "AVISO",
+                    f"Meta de {tipo_meta_busca} não encontrada para hierarquia completa",
+                    {
+                        "linha": linha_norm,
+                        "grupo": grupo_norm,
+                        "subgrupo": subgrupo_norm,
+                        "tipo_mercadoria": tipo_norm,
+                    },
+                )
+                return None
             elif tipo_meta in ["faturamento_individual", "conversao_individual"]:
                 df = self.data["METAS_INDIVIDUAIS"]
                 tipo_meta_busca = tipo_meta.replace("_individual", "")
@@ -1096,11 +1184,11 @@ class CalculoComissao:
         metas_config = {
             "faturamento_linha": (
                 "faturamento_linha",
-                (item_context["linha"], item_context["tipo_mercadoria"]),
+                tuple(item_context.values()),  # (linha, grupo, subgrupo, tipo_mercadoria)
             ),
             "conversao_linha": (
                 "conversao_linha",
-                (item_context["linha"], item_context["tipo_mercadoria"]),
+                tuple(item_context.values()),  # (linha, grupo, subgrupo, tipo_mercadoria)
             ),
             "faturamento_individual": ("faturamento_individual", nome_colab),
             "conversao_individual": ("conversao_individual", nome_colab),

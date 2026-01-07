@@ -6,7 +6,7 @@ import { regrasAPI } from '../services/api';
 const { Option } = Select;
 
 const SHEETS = [
-  { key: 'METAS_APLICACAO', label: 'Metas de Aplicação', ctx: ['linha', 'tipo_mercadoria'] },
+  { key: 'METAS_APLICACAO', label: 'Metas de Aplicação', ctx: ['linha', 'grupo', 'subgrupo', 'tipo_mercadoria'] },
   { key: 'METAS_INDIVIDUAIS', label: 'Metas Individuais', ctx: ['nome_colaborador'] },
   { key: 'META_RENTABILIDADE', label: 'Metas de Rentabilidade', ctx: ['linha', 'grupo', 'subgrupo', 'tipo_mercadoria'] },
   { key: 'METAS_FORNECEDORES', label: 'Metas de Fornecedores', ctx: ['linha', 'fornecedor', 'moeda'] },

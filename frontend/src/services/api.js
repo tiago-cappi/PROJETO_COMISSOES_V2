@@ -130,6 +130,19 @@ export const regrasAPI = {
   aplicarMassa: (nomeAba, request) =>
     api.post(`/regras/aba/${nomeAba}/apply-bulk`, request),
 
+  // ===== Metas de Aplicação - Aplicação em Massa =====
+  metasAplicacaoHierarchyOptions: () =>
+    api.post('/api/metas-aplicacao/hierarchy-options'),
+
+  metasAplicacaoFilteredOptions: (escopo) =>
+    api.post('/api/metas-aplicacao/filtered-options', escopo),
+
+  metasAplicacaoHierarchyCombinations: (escopo) =>
+    api.post('/api/metas-aplicacao/hierarchy-combinations', escopo),
+
+  metasAplicacaoBulkApply: (request) =>
+    api.post('/api/metas-aplicacao/bulk-apply', request),
+
   // ===== Gerenciamento de Regras =====
   getPesosMetas: () => api.get('/api/regras/pesos-metas'),
   updatePesosMetas: (data) => api.post('/api/regras/pesos-metas', data),

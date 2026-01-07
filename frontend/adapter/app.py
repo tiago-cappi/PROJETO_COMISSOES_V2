@@ -418,7 +418,227 @@ async def aplicar_massa_regras(nome_aba: str, request: BulkApplyRequest):
         return {"success": True, "total_afetadas": len(df_filtered)}
 
 
-# ==================== ENDPOINTS - GERENCIAMENTO DE REGRAS (PESOS_METAS / CONFIG_COMISSAO) ====================
+# ==================== ENDPOINTS - METAS DE APLICAÇÃO EM MASSA ====================
+
+
+class MetasAplicacaoHierarchyRequest(BaseModel):
+    """Request para buscar combinações da hierarquia"""
+    linha: Optional[str] = None
+    grupo: Optional[str] = None
+    subgrupo: Optional[str] = None
+    tipo_mercadoria: Optional[str] = None
+
+
+class MetasAplicacaoBulkApplyRequest(BaseModel):
+    """Request para aplicar metas em massa"""
+    combinacoes: List[Dict[str, str]]  # Lista de {linha, grupo, subgrupo, tipo_mercadoria}
+    tipo_meta: str  # 'faturamento' ou 'conversao'
+    valor_meta: float
+
+
+@app.post("/api/metas-aplicacao/hierarchy-options")
+async def get_hierarchy_options():
+    """Retorna opções únicas para cada nível da hierarquia"""
+    regras_path = get_regras_path()
+    if not regras_path.exists():
+        raise HTTPException(
+            status_code=404, detail="Arquivo Regras_Comissoes.xlsx não encontrado"
+        )
+    
+    try:
+        df = read_excel_sheet(regras_path, "HIERARQUIA")
+        
+        # Normalizar colunas
+        for col in ["linha", "grupo", "subgrupo", "tipo_mercadoria"]:
+            if col in df.columns:
+                df[col] = df[col].fillna("").astype(str).str.strip()
+        
+        # Extrair valores únicos ordenados
+        options = {
+            "linhas": sorted(df["linha"].unique().tolist()) if "linha" in df.columns else [],
+            "grupos": sorted(df["grupo"].unique().tolist()) if "grupo" in df.columns else [],
+            "subgrupos": sorted(df["subgrupo"].unique().tolist()) if "subgrupo" in df.columns else [],
+            "tipos_mercadoria": sorted(df["tipo_mercadoria"].unique().tolist()) if "tipo_mercadoria" in df.columns else [],
+        }
+        
+        # Remover strings vazias
+        for key in options:
+            options[key] = [v for v in options[key] if v]
+        
+        return options
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Erro ao ler HIERARQUIA: {str(e)}"
+        )
+
+
+@app.post("/api/metas-aplicacao/hierarchy-combinations")
+async def get_hierarchy_combinations(request: MetasAplicacaoHierarchyRequest):
+    """Retorna combinações da HIERARQUIA que correspondem ao filtro"""
+    regras_path = get_regras_path()
+    if not regras_path.exists():
+        raise HTTPException(
+            status_code=404, detail="Arquivo Regras_Comissoes.xlsx não encontrado"
+        )
+    
+    try:
+        df = read_excel_sheet(regras_path, "HIERARQUIA")
+        
+        # Normalizar colunas
+        for col in ["linha", "grupo", "subgrupo", "tipo_mercadoria"]:
+            if col in df.columns:
+                df[col] = df[col].fillna("").astype(str).str.strip()
+        
+        # Aplicar filtros
+        mask = pd.Series([True] * len(df))
+        
+        if request.linha:
+            mask = mask & (df["linha"] == request.linha.strip())
+        if request.grupo:
+            mask = mask & (df["grupo"] == request.grupo.strip())
+        if request.subgrupo:
+            mask = mask & (df["subgrupo"] == request.subgrupo.strip())
+        if request.tipo_mercadoria:
+            mask = mask & (df["tipo_mercadoria"] == request.tipo_mercadoria.strip())
+        
+        df_filtered = df[mask]
+        
+        # Selecionar colunas relevantes e remover duplicatas
+        cols = ["linha", "grupo", "subgrupo", "tipo_mercadoria"]
+        df_result = df_filtered[cols].drop_duplicates()
+        
+        combinacoes = df_result.to_dict(orient="records")
+        
+        return {
+            "combinacoes": combinacoes,
+            "total": len(combinacoes)
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Erro ao buscar combinações: {str(e)}"
+        )
+
+
+@app.post("/api/metas-aplicacao/filtered-options")
+async def get_filtered_hierarchy_options(request: MetasAplicacaoHierarchyRequest):
+    """Retorna opções filtradas baseadas na seleção atual (cascata)"""
+    regras_path = get_regras_path()
+    if not regras_path.exists():
+        raise HTTPException(
+            status_code=404, detail="Arquivo Regras_Comissoes.xlsx não encontrado"
+        )
+    
+    try:
+        df = read_excel_sheet(regras_path, "HIERARQUIA")
+        
+        # Normalizar colunas
+        for col in ["linha", "grupo", "subgrupo", "tipo_mercadoria"]:
+            if col in df.columns:
+                df[col] = df[col].fillna("").astype(str).str.strip()
+        
+        # Aplicar filtros progressivos
+        if request.linha:
+            df = df[df["linha"] == request.linha.strip()]
+        if request.grupo:
+            df = df[df["grupo"] == request.grupo.strip()]
+        if request.subgrupo:
+            df = df[df["subgrupo"] == request.subgrupo.strip()]
+        
+        # Extrair valores únicos das colunas filtradas
+        options = {
+            "linhas": sorted([v for v in df["linha"].unique().tolist() if v]),
+            "grupos": sorted([v for v in df["grupo"].unique().tolist() if v]),
+            "subgrupos": sorted([v for v in df["subgrupo"].unique().tolist() if v]),
+            "tipos_mercadoria": sorted([v for v in df["tipo_mercadoria"].unique().tolist() if v]),
+        }
+        
+        return options
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Erro ao filtrar opções: {str(e)}"
+        )
+
+
+@app.post("/api/metas-aplicacao/bulk-apply")
+async def bulk_apply_metas_aplicacao(request: MetasAplicacaoBulkApplyRequest):
+    """Aplica metas em massa para as combinações especificadas"""
+    regras_path = get_regras_path()
+    if not regras_path.exists():
+        raise HTTPException(
+            status_code=404, detail="Arquivo Regras_Comissoes.xlsx não encontrado"
+        )
+    
+    # Validar tipo_meta
+    if request.tipo_meta not in ["faturamento", "conversao"]:
+        raise HTTPException(
+            status_code=400, detail="tipo_meta deve ser 'faturamento' ou 'conversao'"
+        )
+    
+    if not request.combinacoes:
+        raise HTTPException(
+            status_code=400, detail="Nenhuma combinação fornecida"
+        )
+    
+    try:
+        # Ler aba METAS_APLICACAO atual
+        df_metas = read_excel_sheet(regras_path, "METAS_APLICACAO")
+        
+        # Normalizar colunas
+        for col in ["linha", "grupo", "subgrupo", "tipo_mercadoria", "tipo_meta"]:
+            if col in df_metas.columns:
+                df_metas[col] = df_metas[col].fillna("").astype(str).str.strip()
+        
+        criados = 0
+        atualizados = 0
+        
+        for comb in request.combinacoes:
+            linha = str(comb.get("linha", "")).strip()
+            grupo = str(comb.get("grupo", "")).strip()
+            subgrupo = str(comb.get("subgrupo", "")).strip()
+            tipo_merc = str(comb.get("tipo_mercadoria", "")).strip()
+            
+            # Verificar se já existe
+            mask = (
+                (df_metas["linha"] == linha) &
+                (df_metas["grupo"] == grupo) &
+                (df_metas["subgrupo"] == subgrupo) &
+                (df_metas["tipo_mercadoria"] == tipo_merc) &
+                (df_metas["tipo_meta"] == request.tipo_meta)
+            )
+            
+            if mask.any():
+                # Atualizar existente
+                df_metas.loc[mask, "valor_meta"] = request.valor_meta
+                atualizados += 1
+            else:
+                # Criar novo registro
+                new_row = pd.DataFrame([{
+                    "linha": linha,
+                    "grupo": grupo,
+                    "subgrupo": subgrupo,
+                    "tipo_mercadoria": tipo_merc,
+                    "tipo_meta": request.tipo_meta,
+                    "valor_meta": request.valor_meta,
+                }])
+                df_metas = pd.concat([df_metas, new_row], ignore_index=True)
+                criados += 1
+        
+        # Salvar
+        write_excel_sheet(regras_path, "METAS_APLICACAO", df_metas, preserve_order=True)
+        
+        return {
+            "success": True,
+            "criados": criados,
+            "atualizados": atualizados,
+            "total": criados + atualizados
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Erro ao aplicar metas: {str(e)}"
+        )
+
+
+
 
 
 @app.get("/api/regras/pesos-metas")

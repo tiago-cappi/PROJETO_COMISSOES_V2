@@ -1,7 +1,10 @@
-/* MetasEditorV2 - Estilos para editor de metas com formatação */
+/* ===============================================================
+   MetasEditorV2 - Corporate Professional Styling (Concept B)
+   =============================================================== */
 
 .metas-editor-card {
     height: 100%;
+    animation: fadeSlideUp var(--duration-slow, 400ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
 .metas-editor-card .ant-card-body {
@@ -14,11 +17,17 @@
 }
 
 .metas-tabs .ant-tabs-tab {
-    padding: 8px 16px;
+    padding: 10px 18px;
+    font-weight: 500;
+    transition: all var(--duration-fast, 150ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.metas-tabs .ant-tabs-tab:hover {
+    color: var(--brand-700, #1E64A5);
 }
 
 .metas-tabs .ant-tabs-tab-active {
-    font-weight: 500;
+    font-weight: 600;
 }
 
 /* Sheet editor */
@@ -34,10 +43,17 @@
     align-items: flex-start;
     flex-wrap: wrap;
     gap: 16px;
-    padding: 12px 16px;
-    background: linear-gradient(135deg, #f6f8fa 0%, #fff 100%);
-    border-radius: 8px;
-    border: 1px solid #f0f0f0;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, var(--slate-50, #f8fafc) 0%, #ffffff 100%);
+    border-radius: var(--radius-lg, 12px);
+    border: 1px solid var(--slate-200, #e2e8f0);
+    box-shadow: var(--shadow-xs, 0 1px 2px rgba(15, 23, 42, 0.04));
+    transition: all var(--duration-fast, 150ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.metas-sheet-header:hover {
+    box-shadow: var(--shadow-sm, 0 1px 3px rgba(15, 23, 42, 0.06));
+    border-color: var(--slate-300, #cbd5e1);
 }
 
 .metas-sheet-info {
@@ -48,7 +64,7 @@
 /* Stats */
 .metas-stats {
     display: flex;
-    gap: 24px;
+    gap: 28px;
     flex-wrap: wrap;
 }
 
@@ -57,12 +73,16 @@
 }
 
 .metas-stats .ant-statistic-title {
-    font-size: 12px;
-    color: #8c8c8c;
+    font-size: 11px;
+    color: var(--slate-500, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
 }
 
 .metas-stats .ant-statistic-content {
     font-size: 18px;
+    color: var(--slate-800, #1e293b);
 }
 
 /* SmartTable dentro do editor de metas */
@@ -74,28 +94,31 @@
     display: none; /* Hide redundant title */
 }
 
-/* Money cells */
+/* Money cells - Corporate Blue */
 .metas-sheet-editor .cell-money {
-    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
     font-size: 12px;
-    color: #1890ff;
+    color: var(--brand-700, #1E64A5);
     text-align: right;
     display: block;
+    font-weight: 500;
 }
 
 /* Percent cells com cor baseada no valor */
 .metas-sheet-editor .cell-percent {
-    font-weight: 500;
-    padding: 2px 8px;
-    border-radius: 4px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: var(--radius-sm, 6px);
     display: inline-block;
     min-width: 60px;
     text-align: center;
+    font-size: 12px;
 }
 
 /* Tag cells */
 .metas-sheet-editor .ant-tag {
     margin: 0;
+    border-radius: var(--radius-sm, 6px);
 }
 
 /* Responsividade */
@@ -130,19 +153,19 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, rgba(24, 144, 255, 0.05) 0%, transparent 100%);
+    background: linear-gradient(135deg, rgba(30, 100, 165, 0.04) 0%, transparent 100%);
     pointer-events: none;
 }
 
-/* Indicador de meta atingida/não atingida (futuro) */
+/* Indicador de meta atingida/não atingida */
 .meta-achieved {
-    background-color: rgba(82, 196, 26, 0.1);
-    border-left: 3px solid #52c41a;
+    background: linear-gradient(90deg, var(--success-light, #ecfdf5) 0%, #ffffff 100%);
+    border-left: 3px solid var(--success-base, #059669);
 }
 
 .meta-not-achieved {
-    background-color: rgba(255, 77, 79, 0.05);
-    border-left: 3px solid #ff4d4f;
+    background: linear-gradient(90deg, var(--error-light, #fef2f2) 0%, #ffffff 100%);
+    border-left: 3px solid var(--error-base, #dc2626);
 }
 
 /* Loading state */

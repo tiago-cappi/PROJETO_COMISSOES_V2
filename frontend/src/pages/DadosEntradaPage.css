@@ -289,39 +289,39 @@
   margin: 0;
 }
 
-/* Folder Rentabilidades */
+/* Folder Rentabilidades - Corporate Teal Theme */
 .folder-card {
   display: flex;
   align-items: center;
   gap: 14px;
   padding: 16px 18px;
   margin: 8px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg, 12px);
   cursor: pointer;
-  transition: all 0.2s ease;
-  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
-  border: 2px solid #e9d5ff;
+  transition: all var(--duration-fast, 150ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+  background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+  border: 2px solid #99f6e4;
 }
 
 .folder-card:hover {
-  background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
-  border-color: #c084fc;
+  background: linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%);
+  border-color: #2dd4bf;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(192, 132, 252, 0.2);
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);
 }
 
 .folder-card--open {
-  background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
-  border-color: #7c3aed;
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+  border-color: #0d9488;
 }
 
 .folder-card--open:hover {
-  background: linear-gradient(135deg, #6d28d9 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
 }
 
 .folder-card__icon {
   font-size: 28px;
-  color: #a855f7;
+  color: #14b8a6;
 }
 
 .folder-card--open .folder-card__icon {
@@ -335,7 +335,7 @@
 .folder-card__name {
   font-size: 15px;
   font-weight: 600;
-  color: #581c87;
+  color: #115e59;
   margin: 0;
 }
 
@@ -345,7 +345,7 @@
 
 .folder-card__count {
   font-size: 13px;
-  color: #9333ea;
+  color: #0d9488;
   margin-top: 2px;
 }
 
@@ -354,9 +354,9 @@
 }
 
 .folder-card__arrow {
-  color: #a855f7;
+  color: #14b8a6;
   font-size: 16px;
-  transition: transform 0.3s ease;
+  transition: transform var(--duration-normal, 250ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
 .folder-card--open .folder-card__arrow {
@@ -367,28 +367,17 @@
 /* Rentabilidades Files Collapse */
 .rentabilidades-files {
   padding: 8px;
-  animation: slideDown 0.3s ease;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  animation: fadeSlideUp var(--duration-normal, 250ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
 .rentabilidades-files .file-card {
   margin-left: 20px;
-  border-left: 3px solid #e9d5ff;
-  border-radius: 0 10px 10px 0;
+  border-left: 3px solid #99f6e4;
+  border-radius: 0 var(--radius-md, 8px) var(--radius-md, 8px) 0;
 }
 
 .rentabilidades-files .file-card--active {
-  border-left-color: #8b5cf6;
+  border-left-color: #0d9488;
 }
 
 /* Loading Skeleton */

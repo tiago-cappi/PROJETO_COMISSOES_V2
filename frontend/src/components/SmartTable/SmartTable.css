@@ -1,8 +1,20 @@
-/* SmartTable Styles */
+/* ===============================================================
+   SmartTable - Premium Corporate Design (Concept B)
+   =============================================================== */
 
 .smart-table {
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: var(--shadow-card, 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.06));
+  border: 1px solid var(--slate-200, #e2e8f0);
+  background: #ffffff;
+  overflow: hidden;
+  transition: all var(--duration-normal, 250ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+  animation: fadeSlideUp var(--duration-slow, 400ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.smart-table:hover {
+  box-shadow: var(--shadow-card-hover, 0 10px 40px rgba(15, 23, 42, 0.12));
+  border-color: var(--slate-300, #cbd5e1);
 }
 
 .smart-table--compact .ant-card-body {
@@ -18,48 +30,91 @@
 .smart-table__title {
   font-weight: 600;
   font-size: 16px;
+  color: var(--slate-800, #1e293b);
 }
 
 .smart-table__badge {
-  background-color: #1E64A5;
+  background: linear-gradient(135deg, var(--brand-700, #1E64A5) 0%, var(--brand-900, #164875) 100%);
   color: #fff;
-  font-size: 12px;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-weight: 500;
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full, 9999px);
+  font-weight: 600;
+  box-shadow: var(--shadow-brand, 0 4px 14px rgba(30, 100, 165, 0.25));
+  letter-spacing: 0.3px;
 }
 
 /* Row states */
 .smart-table__row--new {
-  background-color: #e6f4ff !important;
+  background: linear-gradient(90deg, var(--brand-50, #eff6ff) 0%, #ffffff 100%) !important;
+  animation: fadeSlideUp var(--duration-slow, 400ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.smart-table__row--new > td:first-child {
+  box-shadow: inset 3px 0 0 var(--brand-600, #2563eb);
 }
 
 .smart-table__row--new:hover > td {
-  background-color: #bae0ff !important;
+  background: var(--brand-100, #dbeafe) !important;
 }
 
 .smart-table__row--modified {
-  background-color: #fffbe6 !important;
+  background: linear-gradient(90deg, var(--warning-light, #fffbeb) 0%, #ffffff 100%) !important;
+}
+
+.smart-table__row--modified > td:first-child {
+  box-shadow: inset 3px 0 0 var(--warning-base, #d97706);
 }
 
 .smart-table__row--modified:hover > td {
-  background-color: #fff1b8 !important;
+  background: var(--warning-border, #fde68a) !important;
 }
 
 /* Clean table styling */
 .smart-table .ant-table-thead > tr > th {
-  background-color: #fafafa;
+  background: linear-gradient(180deg, var(--slate-50, #f8fafc) 0%, var(--slate-100, #f1f5f9) 100%);
   font-weight: 600;
-  font-size: 13px;
-  color: #595959;
-  border-bottom: 2px solid #f0f0f0;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--slate-600, #475569);
+  border-bottom: 2px solid var(--slate-200, #e2e8f0);
+  padding: 12px 14px;
+  transition: background var(--duration-fast, 150ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.smart-table .ant-table-thead > tr > th:hover {
+  background: var(--slate-100, #f1f5f9);
 }
 
 .smart-table .ant-table-tbody > tr > td {
-  padding: 8px 12px;
+  padding: 10px 14px;
   vertical-align: middle;
+  border-bottom: 1px solid var(--slate-100, #f1f5f9);
+  transition: all var(--duration-fast, 150ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+/* Zebra striping - subtle */
+.smart-table .ant-table-tbody > tr:nth-child(even):not(.smart-table__row--new):not(.smart-table__row--modified) > td {
+  background: rgba(248, 250, 252, 0.5);
 }
 
 .smart-table .ant-table-tbody > tr:hover > td {
-  background-color: #f5f5f5;
+  background: var(--brand-50, #eff6ff) !important;
 }
+
+/* Row entrance animation */
+.smart-table .ant-table-tbody > tr {
+  animation: fadeSlideUp var(--duration-normal, 250ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
+}
+
+.smart-table .ant-table-tbody > tr:nth-child(1) { animation-delay: 0ms; }
+.smart-table .ant-table-tbody > tr:nth-child(2) { animation-delay: 25ms; }
+.smart-table .ant-table-tbody > tr:nth-child(3) { animation-delay: 50ms; }
+.smart-table .ant-table-tbody > tr:nth-child(4) { animation-delay: 75ms; }
+.smart-table .ant-table-tbody > tr:nth-child(5) { animation-delay: 100ms; }
+.smart-table .ant-table-tbody > tr:nth-child(6) { animation-delay: 125ms; }
+.smart-table .ant-table-tbody > tr:nth-child(7) { animation-delay: 150ms; }
+.smart-table .ant-table-tbody > tr:nth-child(8) { animation-delay: 175ms; }
+.smart-table .ant-table-tbody > tr:nth-child(9) { animation-delay: 200ms; }
+.smart-table .ant-table-tbody > tr:nth-child(10) { animation-delay: 225ms; }

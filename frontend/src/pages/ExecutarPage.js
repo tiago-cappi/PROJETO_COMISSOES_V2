@@ -161,9 +161,9 @@ const ExecutarPage = () => {
       // Fallback manual de timeout (além do timeout do axios)
       const timeoutPromise = new Promise((_, reject) => {
         timeoutId = setTimeout(() => {
-          console.error('[DEBUG] Timeout manual detectado após 30 segundos');
-          reject(new Error('TIMEOUT_MANUAL: Requisição demorou mais de 30 segundos'));
-        }, 30000); // 30 segundos
+          console.error('[DEBUG] Timeout manual detectado após 10 minutos');
+          reject(new Error('TIMEOUT_MANUAL: Requisição demorou mais de 10 minutos'));
+        }, 600000); // 10 minutos
       });
 
       const requestPromise = execucaoAPI2.executarPreScanCrossSelling(mes, ano);
@@ -226,7 +226,7 @@ const ExecutarPage = () => {
 
       let errorMsg = `Erro no pré-scan: ${error.message}`;
       if (error.code === 'ECONNABORTED' || error.message.includes('timeout') || error.message.includes('TIMEOUT_MANUAL')) {
-        errorMsg = 'Timeout: O pré-scan demorou mais de 30 segundos. O servidor pode estar processando ou travado. Tente novamente.';
+        errorMsg = 'Timeout: O pré-scan demorou mais de 10 minutos. O servidor pode estar processando ou travado. Tente novamente.';
       } else if (error.response?.status === 500) {
         errorMsg = `Erro no servidor: ${error.response.data?.detail || error.message}`;
       } else if (!error.response) {

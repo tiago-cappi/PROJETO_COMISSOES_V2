@@ -1,2 +1,2 @@
 === ANTES de chamar _detectar_cross_selling ===
-=== DEPOIS de chamar _detectar_cross_selling: 1 casos ===
+=== DEPOIS de chamar _detectar_cross_selling: 0 casos ===

@@ -1,5 +1,7 @@
-import React, { useMemo } from 'react';
-import { Modal, Card, Descriptions, Table, Typography, Divider } from 'antd';
+import React, { useMemo, useState } from 'react';
+import { Modal, Card, Descriptions, Table, Typography, Divider, Tooltip } from 'antd';
+import { EyeOutlined } from '@ant-design/icons';
+import DetalhesProcessoItensModal from './DetalhesProcessoItensModal';
 
 const { Title, Text } = Typography;
 
@@ -15,6 +17,19 @@ const formatCurrencyBR = (value) => {
 };
 
 const DetalhesResumoFinalModal = ({ visible, onClose, colaboradorNome, periodo, linhas = [] }) => {
+  const [processoModalVisible, setProcessoModalVisible] = useState(false);
+  const [selectedProcesso, setSelectedProcesso] = useState(null);
+  const [selectedNF, setSelectedNF] = useState(null);
+
+  const handleRowClick = (record) => {
+    const processo = record?.Processo || record?.processo;
+    if (processo) {
+      setSelectedProcesso(processo);
+      setSelectedNF(record?.Numero_NF || record?.numero_nf || null);
+      setProcessoModalVisible(true);
+    }
+  };
+
   const resumo = useMemo(() => {
     const totals = new Map();
     let totalMes = 0;
@@ -60,7 +75,21 @@ const DetalhesResumoFinalModal = ({ visible, onClose, colaboradorNome, periodo, 
 
   const colunasLinhas = [
     { title: 'Tipo', dataIndex: 'Tipo_Comissao', key: 'Tipo_Comissao', width: 140 },
-    { title: 'Processo', dataIndex: 'Processo', key: 'Processo', width: 160, ellipsis: true },
+    { 
+      title: 'Processo', 
+      dataIndex: 'Processo', 
+      key: 'Processo', 
+      width: 160, 
+      ellipsis: true,
+      render: (v) => (
+        <Tooltip title="Clique para ver detalhes do processo">
+          <span style={{ color: '#1890ff', cursor: 'pointer' }}>
+            <EyeOutlined style={{ marginRight: 4 }} />
+            {v || '-'}
+          </span>
+        </Tooltip>
+      ),
+    },
     { title: 'NF', dataIndex: 'Numero_NF', key: 'Numero_NF', width: 120 },
     {
       title: 'Valor Base',
@@ -125,6 +154,9 @@ const DetalhesResumoFinalModal = ({ visible, onClose, colaboradorNome, periodo, 
         <Divider />
 
         <Title level={5} style={{ marginTop: 0 }}>Linhas do Banco Histórico (mês)</Title>
+        <Text type="secondary" style={{ marginBottom: 8, display: 'block' }}>
+          Clique em uma linha para ver os itens detalhados do processo.
+        </Text>
         <Table
           size="small"
           bordered
@@ -133,8 +165,20 @@ const DetalhesResumoFinalModal = ({ visible, onClose, colaboradorNome, periodo, 
           columns={colunasLinhas}
           dataSource={Array.isArray(linhas) ? linhas : []}
           scroll={{ x: 'max-content' }}
+          onRow={(record) => ({
+            onClick: () => handleRowClick(record),
+            style: { cursor: 'pointer' },
+          })}
+          rowClassName={() => 'clickable-row'}
         />
       </SpaceBlock>
+
+      <DetalhesProcessoItensModal
+        visible={processoModalVisible}
+        onClose={() => setProcessoModalVisible(false)}
+        processo={selectedProcesso}
+        numeroNF={selectedNF}
+      />
     </Modal>
   );
 };

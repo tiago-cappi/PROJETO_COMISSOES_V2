@@ -213,7 +213,7 @@ export const execucaoAPI = {
 export const execucaoAPI2 = {
   executarPreScanCrossSelling: (mes, ano) =>
     api.post('/api/executar-prescan', { mes, ano }, {
-      timeout: 30000, // 30 segundos de timeout para pré-scan
+      timeout: 600000, // 10 minutos de timeout para pré-scan (dados volumosos)
     }),
   executarCalculo: (mes, ano, decisoes, opcoes = {}) =>
     api.post('/api/executar-calculo', {
@@ -403,6 +403,11 @@ export const historicoAPI = {
       nome_colaborador: String(nome_colaborador),
     });
     return api.get(`/api/historico/resumo-final-colaborador/detalhes?${queryParams.toString()}`);
+  },
+
+  getProcessoItens: (processo) => {
+    const queryParams = new URLSearchParams({ processo: String(processo) });
+    return api.get(`/api/historico/processo-itens?${queryParams.toString()}`);
   },
 };
 

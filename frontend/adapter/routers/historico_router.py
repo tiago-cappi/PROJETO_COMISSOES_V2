@@ -349,3 +349,112 @@ async def get_resumo_final_colaborador_detalhes(
         df = df.sort_values(by=["Tipo_Comissao"], ascending=True)
 
     return {"linhas": _df_to_records_json_safe(df)}
+
+
+def _get_analise_comercial_path() -> Optional[Path]:
+    """Retorna o caminho do arquivo Analise_Comercial_Completa (CSV ou XLSX)."""
+    robo_root = _get_robo_root_path()
+    
+    # Ordem de prioridade: CSV na raiz, CSV em dados_entrada, XLSX na raiz, XLSX em dados_entrada
+    candidates = [
+        robo_root / "Analise_Comercial_Completa.csv",
+        robo_root / "dados_entrada" / "Analise_Comercial_Completa.csv",
+        robo_root / "Analise_Comercial_Completa.xlsx",
+        robo_root / "dados_entrada" / "Analise_Comercial_Completa.xlsx",
+    ]
+    
+    for path in candidates:
+        if path.exists():
+            return path
+    
+    return None
+
+
+def _load_analise_comercial_df() -> pd.DataFrame:
+    """Carrega o arquivo Analise_Comercial_Completa."""
+    path = _get_analise_comercial_path()
+    if path is None:
+        return pd.DataFrame()
+    
+    try:
+        if path.suffix.lower() == ".csv":
+            df = pd.read_csv(path, dtype=str)
+        else:
+            df = pd.read_excel(path, dtype=str)
+        return df
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao ler Analise_Comercial_Completa: {e}")
+
+
+@router.get("/processo-itens")
+async def get_processo_itens(
+    processo: str = Query(..., min_length=1, description="Número do processo"),
+):
+    """Retorna os itens detalhados de um processo a partir do Analise_Comercial_Completa.
+    
+    Colunas retornadas: Operação, Descrição Produto, Negócio, Grupo, Subgrupo, 
+    Tipo de Mercadoria, Valor Realizado, Dt Emissão, Consultor Interno, 
+    Status Processo, Processo, Numero NF, Status da NF.
+    """
+    df = _load_analise_comercial_df()
+    
+    if df.empty:
+        return {"itens": [], "total": 0, "processo": processo}
+    
+    # Normalizar nome da coluna Processo (pode variar)
+    processo_col = None
+    for col in df.columns:
+        if col.strip().lower() == "processo":
+            processo_col = col
+            break
+    
+    if processo_col is None:
+        raise HTTPException(status_code=500, detail="Coluna 'Processo' não encontrada no arquivo")
+    
+    # Filtrar pelo processo
+    df_filtered = df[df[processo_col].astype(str).str.strip() == str(processo).strip()]
+    
+    if df_filtered.empty:
+        return {"itens": [], "total": 0, "processo": processo}
+    
+    # Mapear colunas desejadas para nomes padronizados
+    column_mapping = {
+        "Operação": ["Operação", "Operacao", "operacao", "OPERACAO"],
+        "Descrição Produto": ["Descrição Produto", "Descricao Produto", "descricao_produto", "DESCRICAO_PRODUTO"],
+        "Negócio": ["Negócio", "Negocio", "negocio", "NEGOCIO"],
+        "Grupo": ["Grupo", "grupo", "GRUPO"],
+        "Subgrupo": ["Subgrupo", "subgrupo", "SUBGRUPO"],
+        "Tipo de Mercadoria": ["Tipo de Mercadoria", "Tipo Mercadoria", "tipo_mercadoria", "TIPO_MERCADORIA"],
+        "Valor Realizado": ["Valor Realizado", "valor_realizado", "VALOR_REALIZADO"],
+        "Dt Emissão": ["Dt Emissão", "Dt Emissao", "dt_emissao", "DT_EMISSAO", "Data Emissão"],
+        "Consultor Interno": ["Consultor Interno", "consultor_interno", "CONSULTOR_INTERNO"],
+        "Status Processo": ["Status Processo", "status_processo", "STATUS_PROCESSO"],
+        "Processo": ["Processo", "processo", "PROCESSO"],
+        "Numero NF": ["Numero NF", "Número NF", "numero_nf", "NUMERO_NF"],
+        "Status da NF": ["Status da NF", "status_nf", "STATUS_NF"],
+    }
+    
+    def find_column(df: pd.DataFrame, alternatives: List[str]) -> Optional[str]:
+        for alt in alternatives:
+            if alt in df.columns:
+                return alt
+        return None
+    
+    # Construir lista de itens com colunas padronizadas
+    result_items = []
+    for _, row in df_filtered.iterrows():
+        item = {}
+        for standard_name, alternatives in column_mapping.items():
+            col = find_column(df_filtered, alternatives)
+            if col is not None:
+                val = row.get(col)
+                item[standard_name] = _safe_str(val) if pd.notna(val) else None
+            else:
+                item[standard_name] = None
+        result_items.append(item)
+    
+    return {
+        "itens": result_items,
+        "total": len(result_items),
+        "processo": processo,
+    }

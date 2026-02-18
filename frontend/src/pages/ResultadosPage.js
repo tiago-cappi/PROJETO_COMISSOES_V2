@@ -332,8 +332,11 @@ const groupMetricasProcessosData = (data = [], isDebug = false) => {
         });
       }
       const entry = map.get(processo);
-      const tcmp = parseJSONSafe(row.TCMP || row.tcmp);
-      const fcmp = parseJSONSafe(row.FCMP || row.fcmp);
+      const tcmp = parseJSONSafe(row.TCMP || row.tcmp || row.TCMP_JSON);
+      const fcmp = parseJSONSafe(row.FCMP || row.fcmp || row.FCMP_JSON);
+      const fcmpApl = parseJSONSafe(row.FCMP_APLICADO_JSON || row.fcmp_aplicado_json || row.FCMP_APLICADO);
+      const fcmpDet = parseJSONSafe(row.FCMP_ESCADA_DETALHES_JSON || row.fcmp_escada_detalhes_json || row.FCMP_ESCADA_DETALHES);
+
       const nomes = new Set([...Object.keys(tcmp || {}), ...Object.keys(fcmp || {})]);
       nomes.forEach((nome) => {
         entry.__colaboradores_metricas.push({
@@ -341,6 +344,8 @@ const groupMetricasProcessosData = (data = [], isDebug = false) => {
           nome_colaborador: nome,
           tcmp: Number(tcmp?.[nome] || 0),
           fcmp: Number(fcmp?.[nome] || 0),
+          fcmp_aplicado: fcmpApl?.[nome] !== undefined ? Number(fcmpApl[nome]) : undefined,
+          escada_detalhes: fcmpDet?.[nome],
           fonte: 'ESTADO',
         });
       });

@@ -14,8 +14,26 @@ import re
 import sys
 import atexit
 from contextlib import contextmanager
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 import json
+
+
+# =============================================================================
+# EXCEÇÕES TIPADAS PARA TRATAMENTO ESTRUTURADO DE ERROS
+# =============================================================================
+
+class MissingAssignmentsError(Exception):
+    """
+    Exceção lançada quando há hierarquias sem atribuições completas.
+    
+    Attributes:
+        missing_list: Lista de hierarquias com atribuições pendentes.
+                      Cada item contém: linha, grupo, subgrupo, tipo_mercadoria, motivo, missing_slots
+    """
+    def __init__(self, missing_list: List[Dict]):
+        self.missing_list = missing_list
+        super().__init__(f"ATRIBUICOES_PENDENTES: {len(missing_list)} hierarquias com atribuições pendentes.")
+
 
 import os, sys
 
@@ -78,6 +96,9 @@ from src.currency import RateFetcher, RateStorage, RateValidator, RateCalculator
 
 # Módulo de processamento de devoluções
 from src.devolucao import DevolucaoProcessor
+
+# Regra de escada do FC (por cargo)
+from src.core.fc_escada import load_fc_escada_cargos, aplicar_fc_escada
 
 # Flag simples de verbosidade (NÃO muda cálculo)
 LOG_VERBOSE = os.getenv("COMISSOES_VERBOSE", "0") == "1"
@@ -199,6 +220,252 @@ def _debug(msg: str):
     """Log verboso (apenas se COMISSOES_VERBOSE=1)."""
     if LOG_VERBOSE:
         print(msg)
+
+
+# ======== FUNÇÃO UTILITÁRIA: EXTRAIR COLABORADORES DE ATRIBUICOES WIDE ========
+
+
+def _extrair_colaboradores_wide(row_wide: pd.Series, cargo_filtro: str = None) -> list:
+    """
+    Extrai colaboradores de uma linha Wide do ATRIBUICOES.
+    
+    Args:
+        row_wide: Uma linha (pd.Series) do DataFrame ATRIBUICOES em formato Wide.
+        cargo_filtro: Se especificado, retorna apenas colaboradores deste cargo.
+                     Se None, retorna todos os colaboradores encontrados.
+    
+    Returns:
+        Lista de dicts: [{'colaborador': str, 'cargo': str, 'fator_split': float}, ...]
+        
+    Regras de fator_split:
+        - Gerente Linha 1/2: usa coluna 'fator_split_gerente' se existir, senão 0.5 se ambos preenchidos
+        - Coordenador 1/2: usa coluna 'fator_split_coordenador' se existir, senão 0.5 se ambos preenchidos
+        - Outros cargos: sempre 1.0 (sem split)
+    """
+    resultado = []
+    
+    # Colunas-chave de hierarquia (não são cargos)
+    keys = ["linha", "grupo", "subgrupo", "tipo_mercadoria", "_h_key"]
+    
+    def get_val(col_name):
+        if col_name not in row_wide.index:
+            return None
+        val = row_wide[col_name]
+        if pd.isna(val) or val is None:
+            return None
+        s = str(val).strip()
+        if s.lower() in ("nenhum", "nan", "", "none"):
+            return None
+        return s
+    
+    # ---- Gerente Linha ----
+    gl1 = get_val("Gerente Linha 1")
+    gl2 = get_val("Gerente Linha 2")
+    
+    # Fallback para coluna única "Gerente Linha" se 1/2 não existirem
+    if gl1 is None and gl2 is None:
+        gl1 = get_val("Gerente Linha")
+    
+    # Fator split para gerente: ler da coluna ou calcular
+    fator_split_gerente = get_val("fator_split_gerente")
+    if fator_split_gerente is not None:
+        try:
+            fator_gl = float(fator_split_gerente)
+        except (ValueError, TypeError):
+            fator_gl = 0.5 if (gl1 and gl2) else 1.0
+    else:
+        fator_gl = 0.5 if (gl1 and gl2) else 1.0
+    
+    if gl1:
+        entry = {"colaborador": gl1, "cargo": "Gerente Linha", "fator_split": fator_gl}
+        if cargo_filtro is None or cargo_filtro == "Gerente Linha":
+            resultado.append(entry)
+    if gl2:
+        entry = {"colaborador": gl2, "cargo": "Gerente Linha", "fator_split": fator_gl}
+        if cargo_filtro is None or cargo_filtro == "Gerente Linha":
+            resultado.append(entry)
+    
+    # ---- Coordenador ----
+    c1 = get_val("Coordenador 1")
+    c2 = get_val("Coordenador 2")
+    
+    # Fallback para coluna única "Coordenador" se 1/2 não existirem
+    if c1 is None and c2 is None:
+        c1 = get_val("Coordenador")
+    
+    # Fator split para coordenador: ler da coluna ou calcular
+    fator_split_coord = get_val("fator_split_coordenador")
+    if fator_split_coord is not None:
+        try:
+            fator_c = float(fator_split_coord)
+        except (ValueError, TypeError):
+            fator_c = 0.5 if (c1 and c2) else 1.0
+    else:
+        fator_c = 0.5 if (c1 and c2) else 1.0
+    
+    if c1:
+        entry = {"colaborador": c1, "cargo": "Coordenador", "fator_split": fator_c}
+        if cargo_filtro is None or cargo_filtro == "Coordenador":
+            resultado.append(entry)
+    if c2:
+        entry = {"colaborador": c2, "cargo": "Coordenador", "fator_split": fator_c}
+        if cargo_filtro is None or cargo_filtro == "Coordenador":
+            resultado.append(entry)
+    
+    # ---- Outros Cargos (sem split, fator sempre 1.0) ----
+    special_cols = [
+        "Gerente Linha 1", "Gerente Linha 2", "Coordenador 1", "Coordenador 2",
+        "Gerente Linha", "Coordenador", "fator_split_gerente", "fator_split_coordenador"
+    ] + keys
+    
+    for col in row_wide.index:
+        if col in special_cols or str(col).startswith("_"):
+            continue
+        if str(col).lower() in ("nan", "none", ""):
+            continue
+            
+        val = get_val(col)
+        if val:
+            # Suporte a múltiplos nomes separados por ponto e vírgula
+            nomes = [n.strip() for n in val.split(";") if n.strip()]
+            for nome in nomes:
+                entry = {"colaborador": nome, "cargo": col, "fator_split": 1.0}
+                if cargo_filtro is None or cargo_filtro == col:
+                    resultado.append(entry)
+    
+    return resultado
+
+
+def _buscar_atribuicao_wide(df_atribuicoes: pd.DataFrame, linha: str, grupo: str, 
+                            subgrupo: str, tipo_mercadoria: str) -> pd.Series:
+    """
+    Busca uma linha específica no DataFrame ATRIBUICOES (formato Wide) pela hierarquia.
+    
+    IMPORTANTE: Implementa fallback hierárquico. Se encontrar match específico mas com 
+    todos os cargos de gestão vazios, tenta usar a atribuição genérica da linha.
+    
+    Returns:
+        pd.Series da linha encontrada, ou None se não encontrar.
+    """
+    if df_atribuicoes.empty:
+        return None
+    
+    # Cargos de gestão que devem estar preenchidos para considerar válida
+    cargos_gestao = ["Gerente Linha 1", "Gerente Linha 2", "Coordenador 1", "Coordenador 2", 
+                     "Diretor", "Gerente Geral", "Gerente Linha", "Coordenador"]
+    
+    def _has_any_gestao(row):
+        """Verifica se a row tem pelo menos um cargo de gestão preenchido."""
+        for cargo in cargos_gestao:
+            if cargo in row.index:
+                val = row[cargo]
+                if pd.notna(val) and str(val).strip().lower() not in ("", "nan", "none", "nenhum"):
+                    return True
+        return False
+    
+    # 1. Busca específica
+    mask_especifica = (
+        (df_atribuicoes["linha"].astype(str).str.strip().str.upper() == str(linha).strip().upper()) &
+        (df_atribuicoes["grupo"].astype(str).str.strip() == str(grupo).strip()) &
+        (df_atribuicoes["subgrupo"].astype(str).str.strip() == str(subgrupo).strip()) &
+        (df_atribuicoes["tipo_mercadoria"].astype(str).str.strip() == str(tipo_mercadoria).strip())
+    )
+    matched_especifica = df_atribuicoes[mask_especifica]
+    
+    if not matched_especifica.empty:
+        row_especifica = matched_especifica.iloc[0]
+        if _has_any_gestao(row_especifica):
+            # Específica tem gestão preenchida - usar ela
+            return row_especifica
+        
+        # Específica está vazia - tentar fallback genérico
+        mask_generica = (
+            (df_atribuicoes["linha"].astype(str).str.strip().str.upper() == str(linha).strip().upper()) &
+            (df_atribuicoes["grupo"].astype(str).str.contains(r'\[Todos', case=False, na=False, regex=True))
+        )
+        matched_generica = df_atribuicoes[mask_generica]
+        
+        if not matched_generica.empty:
+            row_generica = matched_generica.iloc[0]
+            if _has_any_gestao(row_generica):
+                # Genérica tem gestão - usar ela
+                return row_generica
+        
+        # Nem genérica tem gestão - retornar a específica (mesmo vazia)
+        return row_especifica
+    
+    # 2. Não encontrou específica - tentar genérica direto
+    mask_generica = (
+        (df_atribuicoes["linha"].astype(str).str.strip().str.upper() == str(linha).strip().upper()) &
+        (df_atribuicoes["grupo"].astype(str).str.contains(r'\[Todos', case=False, na=False, regex=True))
+    )
+    matched_generica = df_atribuicoes[mask_generica]
+    
+    if not matched_generica.empty:
+        return matched_generica.iloc[0]
+    
+    return None
+
+
+def _colaborador_tem_atribuicao_wide(df_atribuicoes: pd.DataFrame, nome_colaborador: str, 
+                                      linha: str = None) -> bool:
+    """
+    Verifica se um colaborador possui atribuição no DataFrame Wide.
+    
+    Args:
+        df_atribuicoes: DataFrame ATRIBUICOES em formato Wide
+        nome_colaborador: Nome do colaborador a verificar
+        linha: Se especificado, verifica apenas nesta linha de negócio
+    
+    Returns:
+        True se o colaborador tem atribuição, False caso contrário.
+    """
+    if df_atribuicoes.empty:
+        return False
+    
+    nome_norm = str(nome_colaborador).strip().lower()
+    
+    # Filtrar por linha se especificado
+    df_check = df_atribuicoes
+    if linha:
+        df_check = df_atribuicoes[df_atribuicoes["linha"].astype(str).str.strip() == str(linha).strip()]
+    
+    if df_check.empty:
+        return False
+    
+    # Verificar cada linha Wide
+    for _, row in df_check.iterrows():
+        colaboradores = _extrair_colaboradores_wide(row)
+        for colab in colaboradores:
+            if str(colab["colaborador"]).strip().lower() == nome_norm:
+                return True
+    
+    return False
+
+
+def _obter_linhas_colaborador_wide(df_atribuicoes: pd.DataFrame, nome_colaborador: str) -> list:
+    """
+    Obtém todas as linhas de negócio onde um colaborador tem atribuição.
+    
+    Returns:
+        Lista de linhas (strings) onde o colaborador está atribuído.
+    """
+    if df_atribuicoes.empty:
+        return []
+    
+    nome_norm = str(nome_colaborador).strip().lower()
+    linhas = []
+    
+    for _, row in df_atribuicoes.iterrows():
+        colaboradores = _extrair_colaboradores_wide(row)
+        for colab in colaboradores:
+            if str(colab["colaborador"]).strip().lower() == nome_norm:
+                linha_val = str(row.get("linha", "")).strip()
+                if linha_val and linha_val not in linhas:
+                    linhas.append(linha_val)
+                break
+    
+    return linhas
 
 
 # ======== ESTILIZAÇÃO DO EXCEL (pós-processamento, sem mudar dados) ========
@@ -447,12 +714,32 @@ class CalculoComissao:
                     self.data, logger=getattr(self, "_logger", None)
                 )
             )
+
+            # Cache lazy para configs de escada do FC (por cargo)
+            self._fc_escada_configs_by_cargo = None
         except Exception as e:
             # Erro crítico ao carregar dados iniciais; registrar mas continuar (dados poderão estar incompletos)
             self._log_validacao("ERRO", f"Falha ao carregar dados iniciais: {e}", {})
             # Fallback: definir recebe_por_recebimento como vazio em caso de erro
             if not hasattr(self, "recebe_por_recebimento"):
                 self.recebe_por_recebimento = set()
+
+            # Garantir atributo de cache mesmo em erro
+            if not hasattr(self, "_fc_escada_configs_by_cargo"):
+                self._fc_escada_configs_by_cargo = None
+
+    def _get_fc_escada_configs_by_cargo(self) -> Dict[str, object]:
+        """Retorna configs de escada carregadas da aba FC_ESCADA_CARGOS.
+
+        Fail-safe: se aba não existir ou estiver inválida, retorna dict vazio.
+        """
+        if getattr(self, "_fc_escada_configs_by_cargo", None) is None:
+            try:
+                df = self.data.get("FC_ESCADA_CARGOS", pd.DataFrame())
+                self._fc_escada_configs_by_cargo = load_fc_escada_cargos(df)
+            except Exception:
+                self._fc_escada_configs_by_cargo = {}
+        return self._fc_escada_configs_by_cargo or {}
 
     def _unificar_pagamentos(self):
         """
@@ -553,7 +840,15 @@ class CalculoComissao:
                 )
 
         colabs_regras = set(self.data["COLABORADORES"]["nome_colaborador"])
-        colabs_atribuicoes = set(self.data["ATRIBUICOES"]["colaborador"])
+        # Extrair colaboradores de ATRIBUICOES (formato Wide)
+        colabs_atribuicoes = set()
+        df_atr = self.data.get("ATRIBUICOES", pd.DataFrame())
+        if not df_atr.empty:
+            for _, row in df_atr.iterrows():
+                for colab_entry in _extrair_colaboradores_wide(row):
+                    nome = colab_entry.get("colaborador", "")
+                    if nome:
+                        colabs_atribuicoes.add(nome)
         nao_encontrados = colabs_atribuicoes - colabs_regras
         for colab in nao_encontrados:
             self._log_validacao(
@@ -573,9 +868,214 @@ class CalculoComissao:
                 f"Linhas com METAS_FORNECEDORES encontradas: {linhas_com_metas}",
                 {"linhas": linhas_com_metas},
             )
+        
+        # Validar preenchimento obrigatório de hierarquias (Gerente/Coord)
+        # Devemos fazer isso aqui, mas precisamos garantir que ATRIBUICOES esteja carregada
+        # Como _preprocessar_atribuicoes_wide só roda no próximo passo, 
+        # aqui verificaremos a versão RAW se possível ou faremos a validação no início do preprocessamento.
+        # Decisão: Fazer a validação dentro de _preprocessar_dados logo antes da conversão, 
+        # ou chamar uma validação específica aqui se já tivermos acesso ao formato Wide.
+        # Dado que _carregar_dados carrega como Wide (se o excel estiver Wide), podemos validar aqui.
+        self._validar_preenchimento_hierarquias()
+
+    def _buscar_atribuicao_com_fallback(self, df_atr: pd.DataFrame, h_key: tuple, required_slots: list) -> tuple:
+        """
+        Busca atribuição para uma hierarquia com fallback hierárquico.
+        
+        Ordem de busca (do mais específico para o mais genérico):
+        1. Match exato: (linha, grupo, subgrupo, tipo_mercadoria)
+        2. Fallback: (linha, [Todos os grupos], [Todos os subgrupos], [Todos os tipos])
+        
+        Se encontrar match específico mas com slots obrigatórios vazios, tenta o genérico.
+        
+        Args:
+            df_atr: DataFrame de ATRIBUICOES
+            h_key: Tupla (linha, grupo, subgrupo, tipo_mercadoria)
+            required_slots: Lista de colunas obrigatórias a verificar
+            
+        Returns:
+            Tupla (row_encontrada, missing_slots) - row pode ser None se não encontrou
+        """
+        linha, grupo, subgrupo, tipo_merc = h_key
+        
+        def _check_slots(row):
+            """Verifica quais slots obrigatórios estão vazios em uma row."""
+            missing = []
+            for slot in required_slots:
+                if slot in row.index:
+                    val = str(row[slot]).strip()
+                    if not val or val.lower() in ("nan", "none", ""):
+                        missing.append(slot)
+            return missing
+        
+        def _match_row(l, g, s, t):
+            """Busca row que faz match com os valores especificados."""
+            mask = (
+                (df_atr["linha"].astype(str).str.strip().str.upper() == str(l).strip().upper()) &
+                (df_atr["grupo"].astype(str).str.strip() == str(g).strip()) &
+                (df_atr["subgrupo"].astype(str).str.strip() == str(s).strip()) &
+                (df_atr["tipo_mercadoria"].astype(str).str.strip() == str(t).strip())
+            )
+            matched = df_atr[mask]
+            return matched.iloc[0] if not matched.empty else None
+        
+        def _match_generic(l):
+            """Busca row genérica com wildcards para a linha."""
+            mask = (
+                (df_atr["linha"].astype(str).str.strip().str.upper() == str(l).strip().upper()) &
+                (df_atr["grupo"].astype(str).str.contains(r'\[Todos', case=False, na=False, regex=True))
+            )
+            matched = df_atr[mask]
+            return matched.iloc[0] if not matched.empty else None
+        
+        # 1. Tentar match específico
+        row_especifica = _match_row(linha, grupo, subgrupo, tipo_merc)
+        
+        if row_especifica is not None:
+            missing = _check_slots(row_especifica)
+            if not missing:
+                # Match específico está completo
+                return (row_especifica, [])
+            
+            # Match específico tem slots vazios - tentar fallback genérico
+            row_generica = _match_generic(linha)
+            if row_generica is not None:
+                missing_gen = _check_slots(row_generica)
+                if not missing_gen:
+                    # Genérico está completo - usar ele
+                    return (row_generica, [])
+                # Genérico também tem slots vazios - retornar os slots faltantes do genérico
+                return (row_generica, missing_gen)
+            
+            # Não tem genérico - retornar missing do específico
+            return (row_especifica, missing)
+        
+        # 2. Não tem específico - tentar genérico direto
+        row_generica = _match_generic(linha)
+        if row_generica is not None:
+            missing = _check_slots(row_generica)
+            return (row_generica, missing)
+        
+        # 3. Não encontrou nenhum
+        return (None, required_slots)
+
+    def _validar_preenchimento_hierarquias(self):
+        """
+        Verifica se todas as hierarquias presentes em FATURADOS e RECEBIMENTOS
+        possuem atribuições definidas na aba ATRIBUICOES (formato Wide ou Vertical).
+        Se encontrar 'campos em branco' em cargos obrigatórios, emite erro/bloqueio.
+        
+        IMPORTANTE: Implementa fallback hierárquico - se uma hierarquia específica
+        não tiver atribuições completas, busca atribuições genéricas da linha.
+        """
+        # 1. Coletar Hierarquias Ativas (distinct)
+        hierarquias_ativas = set()
+        
+        # De FATURADOS
+        df_fat = self.data.get("FATURADOS", pd.DataFrame())
+        if not df_fat.empty:
+            cols_h = ["Negócio", "Grupo", "Subgrupo", "Tipo de Mercadoria"]
+            # Normalizar nomes de colunas do faturado para bater com ATRIBUICOES (linha, grupo, subgrupo, tipo_mercadoria)
+            # Mapa: Negócio -> linha, Grupo -> grupo, Subgrupo -> subgrupo, Tipo de Mercadoria -> tipo_mercadoria
+            for _, row in df_fat[cols_h].drop_duplicates().iterrows():
+                h_key = (
+                    str(row.get("Negócio", "")).strip(),
+                    str(row.get("Grupo", "")).strip(),
+                    str(row.get("Subgrupo", "")).strip(),
+                    str(row.get("Tipo de Mercadoria", "")).strip()
+                )
+                if h_key and any(h_key): # Ignorar tudo vazio
+                    hierarquias_ativas.add(h_key)
+                    
+        # TODO: Adicionar de RECEBIMENTOS se possível mapear a hierarquia original
+        
+        if not hierarquias_ativas:
+            return
+
+        # 2. Verificar cobertura em ATRIBUICOES
+        df_atr = self.data.get("ATRIBUICOES", pd.DataFrame())
+        if df_atr.empty:
+            # Falha total
+            self._emitir_erro_bloqueante_hierarquia(list(hierarquias_ativas))
+            return
+
+        missing_entries = []
+        
+        # Colunas obrigatórias para checar (se existirem na estrutura Wide)
+        is_wide = "Gerente Linha 1" in df_atr.columns or "Gerente Linha" in df_atr.columns
+        
+        if not is_wide:
+            # Estrutura Vertical antiga - não implementar validação rigorosa
+            return
+        
+        required_slots = ["Gerente Linha 1", "Gerente Linha 2", "Coordenador 1", "Coordenador 2"]
+        
+        for h_key in hierarquias_ativas:
+            # Usar busca com fallback hierárquico
+            row, missing_slots = self._buscar_atribuicao_com_fallback(df_atr, h_key, required_slots)
+            
+            if row is None:
+                # Hierarquia nem existe na tabela de atribuições (nem específica nem genérica)
+                missing_entries.append({
+                    "hierarquia": h_key,
+                    "motivo": "Hierarquia não cadastrada na aba ATRIBUICOES",
+                    "slots": required_slots
+                })
+            elif missing_slots:
+                # Encontrou atribuição mas com slots vazios
+                missing_entries.append({
+                    "hierarquia": h_key,
+                    "motivo": f"Cargos não definidos: {', '.join(missing_slots)}",
+                    "slots": missing_slots
+                })
+
+        if missing_entries:
+            self._emitir_erro_bloqueante_hierarquia(missing_entries)
+
+    def _emitir_erro_bloqueante_hierarquia(self, missing_list):
+        """Emite erro tipado com lista de hierarquias pendentes."""
+        formatted_list = [
+            {
+                "linha": m["hierarquia"][0] if isinstance(m["hierarquia"], tuple) else "",
+                "grupo": m["hierarquia"][1] if isinstance(m["hierarquia"], tuple) else "",
+                "subgrupo": m["hierarquia"][2] if isinstance(m["hierarquia"], tuple) else "",
+                "tipo_mercadoria": m["hierarquia"][3] if isinstance(m["hierarquia"], tuple) else "",
+                "motivo": m.get("motivo", "N/A"),
+                "missing_slots": m.get("slots", [])
+            }
+            for m in missing_list
+        ]
+        # Logar e lançar exceção tipada para tratamento estruturado
+        self._log_validacao("ERRO", f"Bloqueio: {len(missing_list)} hierarquias com atribuições pendentes.", {})
+        raise MissingAssignmentsError(formatted_list)
+
+    def _preprocessar_atribuicoes_wide(self):
+        """
+        NOTA: Conversão Wide->Vertical foi DESABILITADA.
+        O motor agora consome ATRIBUICOES diretamente em formato Wide.
+        
+        Esta função apenas valida e normaliza as colunas essenciais.
+        """
+        df = self.data.get("ATRIBUICOES", pd.DataFrame())
+        if df.empty:
+            _info("[Preprocessing] ATRIBUICOES vazia - nenhuma normalização necessária.")
+            return
+
+        # Normalizar colunas-chave de hierarquia
+        keys = ["linha", "grupo", "subgrupo", "tipo_mercadoria"]
+        for key in keys:
+            if key in df.columns:
+                df[key] = df[key].astype(str).str.strip()
+        
+        self.data["ATRIBUICOES"] = df
+        _info(f"[Preprocessing] ATRIBUICOES mantida em formato Wide com {len(df)} linhas.")
 
     def _preprocessar_dados(self):
         """Prepara os dados para o cálculo, aplicando aliases e conversões."""
+        # 1. Normalizar ATRIBUICOES (mantém formato Wide)
+        self._preprocessar_atribuicoes_wide()
+
+
         alias_map = (
             self.data["ALIASES"][self.data["ALIASES"]["entidade"] == "colaborador"]
             .set_index("alias")["padrao"]
@@ -1382,13 +1882,9 @@ class CalculoComissao:
         # --- Novo componente: Retenção de Clientes (aplica-se apenas a Gerente Linha) ---
         try:
             if cargo_colab == "Gerente Linha":
-                # Identificar a(s) linha(s) que o gerente é responsável a partir de ATRIBUICOES
+                # Identificar a(s) linha(s) que o gerente é responsável a partir de ATRIBUICOES (formato Wide)
                 df_atr = self.data.get("ATRIBUICOES", pd.DataFrame())
-                linhas_do_gerente = (
-                    df_atr[df_atr["colaborador"] == nome_colab]["linha"]
-                    .dropna()
-                    .unique()
-                )
+                linhas_do_gerente = _obter_linhas_colaborador_wide(df_atr, nome_colab)
                 # Se houver pelo menos uma linha atribuída, usamos a primeira para retenção
                 if len(linhas_do_gerente) > 0:
                     linha_gerente = linhas_do_gerente[0]
@@ -2915,13 +3411,8 @@ class CalculoComissao:
                         if not linha_do_item or pd.isna(linha_do_item):
                             continue
 
-                        # Verificar se o consultor possui atribuições para esta linha
-                        possui_atr = False
-                        if not df_atribuicoes.empty:
-                            possui_atr = not df_atribuicoes[
-                                (df_atribuicoes["colaborador"] == gerente_padrao)
-                                & (df_atribuicoes["linha"] == linha_do_item)
-                            ].empty
+                        # Verificar se o consultor possui atribuições para esta linha (formato Wide)
+                        possui_atr = _colaborador_tem_atribuicao_wide(df_atribuicoes, gerente_padrao, linha_do_item)
                         
                         if str(processo) == "400001":
                             print(f"[DEBUG 400001] Possui atribuição em {linha_do_item}? {possui_atr}")
@@ -3048,16 +3539,13 @@ class CalculoComissao:
             f"[Etapa 5.1] Dados carregados em {tempo_carregamento - inicio_etapa5:.2f}s"
         )
 
-        # Pre-filtra atribuições de gestão para otimização
+        # Pre-carrega lista de cargos de gestão para otimização
         tempo_filtro = time.time()
         cargos_gestao = df_colabs_com_cargos[
             df_colabs_com_cargos["tipo_cargo"] == "Gestão"
-        ]["cargo"].unique()
-        df_atribuicoes_gestao = df_atribuicoes[
-            df_atribuicoes["cargo"].isin(cargos_gestao)
-        ]
+        ]["cargo"].unique().tolist()
         _info(
-            f"[Etapa 5.2] Filtro de gestão aplicado: {len(df_atribuicoes_gestao)} atribuições de gestão em {time.time() - tempo_filtro:.2f}s"
+            f"[Etapa 5.2] Cargos de gestão identificados: {cargos_gestao} em {time.time() - tempo_filtro:.2f}s"
         )
 
         # --- Detecção de Cross-Selling por Processo (pré-scan) ---
@@ -3199,17 +3687,25 @@ class CalculoComissao:
                 "tipo_mercadoria": item_faturado["Tipo de Mercadoria"],
             }
 
-            # 1. Obter time de GESTÃO a partir das ATRIBUICOES
+            # 1. Obter time de GESTÃO a partir das ATRIBUICOES (formato Wide)
             tempo_gestao = time.time()
-            atribuidos_gestao = df_atribuicoes_gestao[
-                (df_atribuicoes_gestao["linha"] == contexto_item["linha"])
-                & (df_atribuicoes_gestao["grupo"] == contexto_item["grupo"])
-                & (df_atribuicoes_gestao["subgrupo"] == contexto_item["subgrupo"])
-                & (
-                    df_atribuicoes_gestao["tipo_mercadoria"]
-                    == contexto_item["tipo_mercadoria"]
-                )
-            ]
+            row_atribuicao = _buscar_atribuicao_wide(
+                df_atribuicoes,
+                contexto_item["linha"],
+                contexto_item["grupo"],
+                contexto_item["subgrupo"],
+                contexto_item["tipo_mercadoria"]
+            )
+            
+            # Extrair colaboradores de gestão da linha Wide encontrada
+            gestao_list = []
+            if row_atribuicao is not None:
+                todos_colaboradores = _extrair_colaboradores_wide(row_atribuicao)
+                # Filtrar apenas cargos de gestão
+                for colab_entry in todos_colaboradores:
+                    if colab_entry["cargo"] in cargos_gestao:
+                        gestao_list.append(colab_entry)
+            
             tempo_gestao_decorrido = time.time() - tempo_gestao
             if tempo_gestao_decorrido > 1.0:  # Log se demorar mais de 1 segundo
                 _info(
@@ -3240,11 +3736,15 @@ class CalculoComissao:
             # e aplicamos deduplicação por 'colaborador' e 'cargo'. Além disso mantemos um conjunto
             # processed_colabs durante a iteração para garantir que cada colaborador seja processado
             # no máximo uma vez por item_faturado.
+            
+            # Converter lista de gestão para DataFrame
+            gest_cols = ["colaborador", "cargo", "fator_split"]
             gestion = (
-                atribuidos_gestao[["colaborador", "cargo"]].copy()
-                if not atribuidos_gestao.empty
-                else pd.DataFrame(columns=["colaborador", "cargo"])
+                pd.DataFrame(gestao_list, columns=gest_cols)
+                if gestao_list
+                else pd.DataFrame(columns=gest_cols)
             )
+            
             operacional = (
                 atribuidos_operacional[["nome_colaborador", "cargo"]]
                 .rename(columns={"nome_colaborador": "colaborador"})
@@ -3252,23 +3752,28 @@ class CalculoComissao:
                 if not atribuidos_operacional.empty
                 else pd.DataFrame(columns=["colaborador", "cargo"])
             )
-            # Normalizar texto (strip e lower) para comparação e deduplicação
+            operacional["fator_split"] = 1.0
+
+            # Normalizar texto (strip e lower)
             for df_tmp in (gestion, operacional):
                 if not df_tmp.empty and "colaborador" in df_tmp.columns:
                     df_tmp["colaborador"] = (
                         df_tmp["colaborador"].astype(str).str.strip()
                     )
-                    # preservar original-case in the final DataFrame, but dedupe on normalized
+
             combined = pd.concat([gestion, operacional], ignore_index=True, sort=False)
-            # deduplicate by colaborador and cargo after normalization of whitespace
-            combined["__colab_norm"] = (
-                combined["colaborador"].astype(str).str.lower().str.strip()
-            )
-            combined = (
-                combined.drop_duplicates(subset=["__colab_norm", "cargo"])
-                .drop(columns=["__colab_norm"])
-                .reset_index(drop=True)
-            )
+            
+            # Deduplicação inteligente: Se o mesmo colaborador aparecer duas vezes no mesmo cargo (ex: Gerente 1 e 2),
+            # somamos o fator_split (0.5 + 0.5 = 1.0) para que ele receba integralmente.
+            if not combined.empty:
+                combined["__colab_norm"] = combined["colaborador"].astype(str).str.lower().str.strip()
+                combined = combined.groupby(["__colab_norm", "cargo"], as_index=False).agg({
+                    "colaborador": "first",
+                    "fator_split": "sum"
+                })
+                # Capar em 1.0 por segurança
+                combined["fator_split"] = combined["fator_split"].clip(upper=1.0)
+            
             colaboradores_para_comissionar = combined
 
             # Verificar se este processo foi detectado como cross-selling
@@ -3450,8 +3955,21 @@ class CalculoComissao:
 
                 # Se a decisão for B, mantemos taxa_rateio intacta mas consultor externo já foi removido
 
-                comissao_potencial = faturamento_item * taxa_rateio * pe
-                comissao_item = comissao_potencial * fc
+                # Aplicar Fator Split (0.5 se houver divisão de cargo)
+                fator_split = float(atribuicao.get("fator_split", 1.0))
+
+                comissao_potencial = faturamento_item * taxa_rateio * pe * fator_split
+
+                # FC em rampa (como hoje) é calculado acima. Para faturamento, aplicamos a ESCADA
+                # por cargo somente no multiplicador final (compatível com a nova regra).
+                fc_rampa = fc
+                fc_aplicado, detalhes_fc_escada = aplicar_fc_escada(
+                    performance=fc_rampa,
+                    cargo=colab_cargo,
+                    configs_por_cargo=self._get_fc_escada_configs_by_cargo(),
+                )
+
+                comissao_item = comissao_potencial * fc_aplicado
 
                 # construir dicionário base e depois anexar colunas detalhadas do FC
                 # Obter id_colaborador de forma segura
@@ -3467,6 +3985,7 @@ class CalculoComissao:
                     "id_colaborador": id_colab,
                     "nome_colaborador": colab_nome,
                     "cargo": colab_cargo,
+                    "fator_split_cargo": fator_split, # Auditoria de divisão de cargo
                     "cod_produto": item_faturado["Código Produto"],
                     "descricao_produto": item_faturado["Descrição Produto"],
                     "processo": item_faturado["Processo"],
@@ -3474,7 +3993,15 @@ class CalculoComissao:
                     **contexto_item,
                     "faturamento_item": faturamento_item,
                     "taxa_rateio_aplicada": taxa_rateio,
-                    "fator_correcao_fc": fc,
+                    # Mantém o significado original da coluna: multiplicador efetivamente aplicado.
+                    "fator_correcao_fc": fc_aplicado,
+                    # Auditoria: FC original em rampa (antes da escada)
+                    "fator_correcao_fc_rampa": fc_rampa,
+                    # Auditoria: detalhes do degrau aplicado
+                    "fc_escada_modo": detalhes_fc_escada.get("modo") if isinstance(detalhes_fc_escada, dict) else None,
+                    "fc_escada_degrau_indice": detalhes_fc_escada.get("degrau_indice") if isinstance(detalhes_fc_escada, dict) else None,
+                    "fc_escada_num_degraus": detalhes_fc_escada.get("num_degraus") if isinstance(detalhes_fc_escada, dict) else None,
+                    "fc_escada_piso": detalhes_fc_escada.get("piso") if isinstance(detalhes_fc_escada, dict) else None,
                     "percentual_elegibilidade_pe": pe,
                     "comissao_potencial_maxima": comissao_potencial,
                     "comissao_calculada": comissao_item,
@@ -4280,6 +4807,11 @@ class CalculoComissao:
                 "taxa_rateio_aplicada",
                 "percentual_elegibilidade_pe",
                 "fator_correcao_fc",
+                "fator_correcao_fc_rampa",
+                "fc_escada_modo",
+                "fc_escada_degrau_indice",
+                "fc_escada_num_degraus",
+                "fc_escada_piso",
             ]
             # detalhes do FC — para cada componente incluímos colunas padronizadas
             detalhes_shorts = [
@@ -5377,16 +5909,24 @@ class CalculoComissao:
 
                 df_faturados_cs["Gerente Comercial-Pedido_Alias"] = df_faturados_cs["Gerente Comercial-Pedido"].apply(get_alias)
 
-                # Obter atribuições para verificar se o cross-selling é real
+                # Obter atribuições para verificar se o cross-selling é real (formato Wide)
                 df_atribuicoes = self.data.get("ATRIBUICOES", pd.DataFrame())
+                
+                # Criar um mapeamento de (linha, grupo, subgrupo) -> lista de colaboradores (extraído do Wide)
                 atribuicoes_map = {}
                 if not df_atribuicoes.empty:
-                    # Criar um mapeamento de (linha, grupo, subgrupo) -> lista de consultores
                     for _, row in df_atribuicoes.iterrows():
-                        chave = (row["linha"], row["grupo"], row["subgrupo"])
+                        linha_val = str(row.get("linha", "")).strip()
+                        grupo_val = str(row.get("grupo", "")).strip()
+                        subgrupo_val = str(row.get("subgrupo", "")).strip()
+                        chave = (linha_val, grupo_val, subgrupo_val)
                         if chave not in atribuicoes_map:
                             atribuicoes_map[chave] = []
-                        atribuicoes_map[chave].append(str(row["colaborador"]).strip())
+                        # Extrair todos os colaboradores da linha Wide
+                        for colab_entry in _extrair_colaboradores_wide(row):
+                            nome = str(colab_entry.get("colaborador", "")).strip()
+                            if nome and nome not in atribuicoes_map[chave]:
+                                atribuicoes_map[chave].append(nome)
 
                 # Verificar cada caso de cross-selling
                 casos_unicos = {}

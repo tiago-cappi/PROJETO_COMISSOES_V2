@@ -9,6 +9,7 @@ from typing import Dict, Optional
 from datetime import datetime
 
 from .identificador_colaboradores import IdentificadorColaboradores
+from src.core.fc_escada import load_fc_escada_cargos, aplicar_fc_escada
 
 
 class MetricasCalculator:
@@ -36,6 +37,14 @@ class MetricasCalculator:
             atribuicoes_df=calculo_comissao_instance.data.get("ATRIBUICOES", pd.DataFrame()),
             recebe_por_recebimento_ids=calculo_comissao_instance.recebe_por_recebimento
         )
+
+        # Cache local das configs de escada (por cargo)
+        try:
+            self._fc_escada_configs_by_cargo = load_fc_escada_cargos(
+                calculo_comissao_instance.data.get("FC_ESCADA_CARGOS", pd.DataFrame())
+            )
+        except Exception:
+            self._fc_escada_configs_by_cargo = {}
     
     def calcular_metricas_processo(
         self,
@@ -117,6 +126,7 @@ class MetricasCalculator:
             cargo = colab["cargo"]
             
             dados_por_colaborador[nome] = {
+                "cargo": cargo,
                 "valores": [],
                 "taxas": [],
                 "fcs": [],
@@ -246,8 +256,10 @@ class MetricasCalculator:
         # 5. Calcular médias ponderadas
         tcmp_dict = {}
         fcmp_dict = {}
+        fcmp_aplicado_dict = {}
         tcmp_detalhes_dict = {}
         fcmp_detalhes_dict = {}
+        fcmp_escada_detalhes_dict = {}
         
         for nome, dados in dados_por_colaborador.items():
             valores = np.array(dados["valores"])
@@ -266,6 +278,16 @@ class MetricasCalculator:
             
             # FCMP = média ponderada dos FCs
             fcmp_dict[nome] = float((fcs * valores).sum() / valores.sum())
+
+            # Aplicar escada somente depois do FCMP estar calculado (FCMP é rampa; escada é o multiplicador final)
+            cargo_nome = str(dados.get("cargo", "") or "").strip()
+            fcmp_aplicado, detalhes_escada = aplicar_fc_escada(
+                performance=fcmp_dict[nome],
+                cargo=cargo_nome,
+                configs_por_cargo=self._fc_escada_configs_by_cargo,
+            )
+            fcmp_aplicado_dict[nome] = float(fcmp_aplicado)
+            fcmp_escada_detalhes_dict[nome] = detalhes_escada
             
             # Armazenar detalhes para auditoria
             tcmp_detalhes_dict[nome] = {
@@ -287,8 +309,10 @@ class MetricasCalculator:
         return {
             "TCMP": tcmp_dict,
             "FCMP": fcmp_dict,
+            "FCMP_APLICADO": fcmp_aplicado_dict,
             "TCMP_DETALHES": tcmp_detalhes_dict,
             "FCMP_DETALHES": fcmp_detalhes_dict,
+            "FCMP_ESCADA_DETALHES": fcmp_escada_detalhes_dict,
             "colaboradores": list(tcmp_dict.keys())
         }
     

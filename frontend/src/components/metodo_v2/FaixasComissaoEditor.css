@@ -1,0 +1,433 @@
+/**
+ * FaixasComissaoEditor.css
+ * 
+ * Estilos para o editor de faixas simplificado.
+ * Layout: # | De (R$) | Até (R$) | Taxa (%) | Ações
+ */
+
+.faixas-comissao-editor {
+  width: 100%;
+  margin-top: 12px;
+}
+
+/* ==================== VALIDAÇÃO GLOBAL ==================== */
+
+.faixas-validation-warning {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #fff2e8;
+  border: 1px solid #ffbb96;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #d4380d;
+}
+
+.faixas-validation-success {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #f6ffed;
+  border: 1px solid #b7eb8f;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #389e0d;
+}
+
+.warning-icon,
+.success-icon {
+  font-size: 16px;
+}
+
+.btn-auto-ajustar {
+  margin-left: auto;
+  padding: 4px 12px;
+  background: #fa541c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-auto-ajustar:hover {
+  background: #d4380d;
+}
+
+/* ==================== TABELA ==================== */
+
+.faixas-table {
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+}
+
+.faixas-row {
+  display: grid;
+  grid-template-columns: 40px 1fr 1fr 120px 40px;
+  grid-template-areas: 
+    "num de ate taxa actions"
+    "preview preview preview preview preview"
+    "errors errors errors errors errors";
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s;
+}
+
+.faixas-row:last-child {
+  border-bottom: none;
+}
+
+.faixas-row:hover {
+  background-color: #fafafa;
+}
+
+.faixas-row.row-error {
+  background-color: #fff1f0;
+}
+
+.faixas-row.row-error:hover {
+  background-color: #ffccc7;
+}
+
+/* ==================== HEADER ==================== */
+
+.faixas-header {
+  background: linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%);
+  font-weight: 600;
+  font-size: 12px;
+  color: #595959;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 10px 16px;
+  grid-template-areas: "num de ate taxa actions";
+}
+
+.faixas-header:hover {
+  background: linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%);
+}
+
+/* ==================== COLUNAS ==================== */
+
+.faixa-col {
+  display: flex;
+  align-items: center;
+}
+
+.col-numero {
+  grid-area: num;
+  justify-content: center;
+}
+
+.col-de {
+  grid-area: de;
+}
+
+.col-ate {
+  grid-area: ate;
+}
+
+.col-taxa {
+  grid-area: taxa;
+  position: relative;
+}
+
+.col-actions {
+  grid-area: actions;
+  justify-content: center;
+}
+
+.faixa-numero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: #e6f7ff;
+  border-radius: 50%;
+  font-weight: 600;
+  font-size: 12px;
+  color: #1890ff;
+}
+
+.row-error .faixa-numero {
+  background: #fff1f0;
+  color: #ff4d4f;
+}
+
+/* ==================== INPUTS ==================== */
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+}
+
+.input-prefix {
+  position: absolute;
+  left: 10px;
+  color: #8c8c8c;
+  font-size: 13px;
+  font-weight: 500;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.limite-input {
+  width: 100%;
+  padding: 8px 12px 8px 36px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.2s;
+  text-align: right;
+}
+
+.limite-input:hover {
+  border-color: #40a9ff;
+}
+
+.limite-input:focus {
+  outline: none;
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.limite-input.input-error {
+  border-color: #ff4d4f;
+  background-color: #fff1f0;
+}
+
+.limite-input.input-error:focus {
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
+}
+
+.taxa-input {
+  width: 100%;
+  padding: 8px 30px 8px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.2s;
+  text-align: right;
+}
+
+.taxa-input:hover {
+  border-color: #40a9ff;
+}
+
+.taxa-input:focus {
+  outline: none;
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.taxa-suffix {
+  position: absolute;
+  right: 10px;
+  color: #8c8c8c;
+  font-size: 13px;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+/* ==================== INFINITO ==================== */
+
+.infinito-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #f0f5ff 0%, #e6f7ff 100%);
+  border: 1px dashed #91d5ff;
+  border-radius: 6px;
+  width: 100%;
+}
+
+.infinito-symbol {
+  font-size: 20px;
+  font-weight: 300;
+  color: #1890ff;
+}
+
+.infinito-label {
+  font-size: 13px;
+  color: #595959;
+}
+
+.btn-definir-limite {
+  margin-left: auto;
+  padding: 4px 10px;
+  background: white;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #595959;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-definir-limite:hover {
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+.btn-infinito {
+  position: absolute;
+  right: 4px;
+  padding: 4px 8px;
+  background: #f0f5ff;
+  border: 1px solid #adc6ff;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #2f54eb;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-infinito:hover {
+  background: #d6e4ff;
+  border-color: #85a5ff;
+}
+
+/* ==================== PREVIEW ==================== */
+
+.faixa-preview-row {
+  grid-area: preview;
+  padding: 6px 10px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.preview-text {
+  font-size: 12px;
+  color: #595959;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+}
+
+/* ==================== ERROS ==================== */
+
+.faixa-errors {
+  grid-area: errors;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: #fff1f0;
+  border: 1px solid #ffccc7;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #cf1322;
+}
+
+.error-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: #ff4d4f;
+  color: white;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+/* ==================== BOTÕES ==================== */
+
+.btn-remove-faixa {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #8c8c8c;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-remove-faixa:hover {
+  background: #fff1f0;
+  border-color: #ffccc7;
+  color: #ff4d4f;
+}
+
+.btn-add-faixa {
+  margin-top: 12px;
+  padding: 10px 16px;
+  border: 1px dashed #d9d9d9;
+  border-radius: 6px;
+  background: white;
+  color: #1890ff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  font-weight: 500;
+}
+
+.btn-add-faixa:hover {
+  border-color: #40a9ff;
+  background: #e6f7ff;
+}
+
+.faixas-max-warning {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background-color: #fffbe6;
+  border: 1px solid #ffe58f;
+  border-radius: 6px;
+  color: #d48806;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ==================== RESPONSIVO ==================== */
+
+@media (max-width: 768px) {
+  .faixas-row {
+    grid-template-columns: 30px 1fr 40px;
+    grid-template-areas: 
+      "num de actions"
+      "num ate actions"
+      "num taxa actions"
+      "preview preview preview"
+      "errors errors errors";
+    gap: 8px;
+  }
+  
+  .faixas-header {
+    display: none;
+  }
+  
+  .col-de::before,
+  .col-ate::before,
+  .col-taxa::before {
+    content: attr(data-label);
+    font-size: 11px;
+    color: #8c8c8c;
+    margin-right: 8px;
+    min-width: 60px;
+  }
+}

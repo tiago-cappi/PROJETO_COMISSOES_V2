@@ -70,6 +70,20 @@
   background: var(--warning-border, #fde68a) !important;
 }
 
+.smart-table__row--deleted {
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.05) 0%, #ffffff 100%) !important;
+  opacity: 0.6;
+}
+
+.smart-table__row--deleted > td:first-child {
+  box-shadow: inset 3px 0 0 var(--error-base, #ef4444);
+}
+
+.smart-table__row--deleted > td {
+  text-decoration: line-through;
+  color: rgba(71, 85, 105, 0.6);
+}
+
 /* Clean table styling */
 .smart-table .ant-table-thead > tr > th {
   background: linear-gradient(180deg, var(--slate-50, #f8fafc) 0%, var(--slate-100, #f1f5f9) 100%);

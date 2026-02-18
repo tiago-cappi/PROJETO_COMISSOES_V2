@@ -466,3 +466,89 @@ export const dadosEntradaAPI = {
   salvarRentabilidade: (nomeArquivo, dados) => 
     api.post(`/dados-entrada/rentabilidades/${nomeArquivo}`, { dados }),
 };
+
+// ==================== METODOLOGIA V2 ====================
+
+export const metodoV2API = {
+  // Configuração
+  getConfig: () => api.get('/v2/config'),
+  saveConfig: (data) => api.post('/v2/config', data),
+  
+  // Aplicações disponíveis
+  getAplicacoes: () => api.get('/v2/aplicacoes'),
+  
+  // Execução (suporta modo_calculo: 'hierarquia' ou 'centro_custo')
+  executar: (mes, ano, modoCalculo = 'hierarquia') => 
+    api.post('/v2/executar', { mes, ano, modo_calculo: modoCalculo }),
+
+  // Execução de recebimento V2
+  executarRecebimento: (mes, ano, modoCalculo = 'hierarquia') =>
+    api.post('/v2/recebimento/executar', { mes, ano, modo_calculo: modoCalculo }),
+  
+  // Resultados (suporta modo_calculo)
+  getResultados: (mes, ano, modoCalculo = 'hierarquia') => 
+    api.get(`/v2/resultados?mes=${mes}&ano=${ano}&modo_calculo=${modoCalculo}`),
+
+  // Resultados de recebimento V2
+  getResultadosRecebimento: (mes, ano, modoCalculo = 'hierarquia') =>
+    api.get(`/v2/recebimento/resultados?mes=${mes}&ano=${ano}&modo_calculo=${modoCalculo}`),
+
+  // Listar períodos com resultados salvos
+  listarResultadosDisponiveis: () => api.get('/v2/resultados/periodos'),
+
+  // Listar períodos com recebimento V2
+  listarResultadosRecebimentoDisponiveis: (modoCalculo = 'hierarquia') =>
+    api.get(`/v2/recebimento/periodos?modo_calculo=${modoCalculo}`),
+
+  // Excluir resultados salvos
+  excluirResultados: (mes, ano, modoCalculo = 'hierarquia') => 
+    api.delete(`/v2/resultados?mes=${mes}&ano=${ano}&modo_calculo=${modoCalculo}`),
+
+  // Download de recebimento V2
+  baixarRecebimento: (mes, ano, modoCalculo = 'hierarquia') =>
+    api.get(`/v2/recebimento/baixar?mes=${mes}&ano=${ano}&modo_calculo=${modoCalculo}`, { responseType: 'blob' }),
+  
+  // Health check
+  health: () => api.get('/v2/health'),
+  
+  // ==================== ABAS GENÉRICAS V2 ====================
+  
+  // Ler aba do arquivo V2
+  lerAba: (nomeAba, params = {}) => {
+    const { page = 1, size = 100, sortBy, sortOrder, filters, allPages = false } = params;
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+    });
+    if (sortBy) {
+      queryParams.append('sort_by', sortBy);
+      queryParams.append('sort_order', sortOrder || 'asc');
+    }
+    if (filters) {
+      queryParams.append('filters', JSON.stringify(filters));
+    }
+    if (allPages) {
+      queryParams.append('all_pages', 'true');
+    }
+    return api.get(`/v2/aba/${nomeAba}?${queryParams}`);
+  },
+  
+  // Salvar aba no arquivo V2
+  salvarAba: (nomeAba, data, preserveColumns = true) =>
+    api.post(`/v2/aba/${nomeAba}/save`, {
+      data,
+      preserve_columns: preserveColumns,
+    }),
+  
+  // Obter valores únicos de uma coluna
+  obterValoresUnicos: (nomeAba, coluna) =>
+    api.get(`/v2/aba/${nomeAba}/valores-unicos/${coluna}`),
+  
+  // Obter dados de referência (lookups)
+  getLookups: () => api.get('/v2/lookups'),
+  
+  // ==================== CC + FABRICANTE ====================
+  
+  // Obter CCs e Fabricantes da Análise Comercial (para editor de regras CC)
+  getCCFabricantes: () => api.get('/v2/cc-fabricantes'),
+};

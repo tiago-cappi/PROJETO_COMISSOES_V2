@@ -85,9 +85,11 @@ app = FastAPI(
 
 # ==================== ROUTERS ====================
 from routers import monitor_router, historico_router
+from routers.metodo_v2_router import router as metodo_v2_router
 
 app.include_router(monitor_router)
 app.include_router(historico_router)
+app.include_router(metodo_v2_router)
 
 # CORS
 app.add_middleware(
@@ -1376,11 +1378,18 @@ async def executar_prescan(payload: ExecPrescanRequest):
 
 @app.post("/api/executar-calculo")
 async def executar_calculo(payload: ExecCalculoRequest):
+    import logging
+    import traceback
+    
+    logger = logging.getLogger(__name__)
+    logger.info(f"[CALCULO] Iniciando cálculo para {payload.mes}/{payload.ano}")
+    
     try:
         # Execução síncrona com decisões vindas da UI
         from calculo_comissoes import CalculoComissao
 
         with _cwd(ROBO_ROOT_PATH):
+            logger.info("[CALCULO] Verificando flags de limpeza...")
             # (Opcional) Limpeza para cenários de teste
             try:
                 if payload.limpar_historico_master:
@@ -1415,14 +1424,18 @@ async def executar_calculo(payload: ExecCalculoRequest):
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Falha ao limpar arquivos antes do cálculo: {e}")
 
+            logger.info("[CALCULO] Executando preparador de dados...")
             # Preparar dados do mês/ano antes da execução
             try:
                 import preparar_dados_mensais
 
                 preparar_dados_mensais.run_preparador(payload.mes, payload.ano)
+                logger.info("[CALCULO] Preparador concluído")
             except Exception as e:
+                logger.error(f"[CALCULO] Erro no preparador: {e}\n{traceback.format_exc()}")
                 raise HTTPException(status_code=500, detail=f"Falha no preparador: {e}")
 
+            logger.info("[CALCULO] Configurando caminhos de arquivos...")
             # Ajustar caminhos como no CLI principal
             try:
                 import calculo_comissoes as cc
@@ -1438,6 +1451,7 @@ async def executar_calculo(payload: ExecCalculoRequest):
                 )
                 if encontrados:
                     cc.ARQUIVO_RENTABILIDADE = encontrados[0]
+                    logger.info(f"[CALCULO] Arquivo de rentabilidade: {cc.ARQUIVO_RENTABILIDADE}")
                 else:
                     padrao = (
                         Path("dados_entrada/rentabilidades")
@@ -1445,18 +1459,26 @@ async def executar_calculo(payload: ExecCalculoRequest):
                     )
                     if padrao.exists():
                         cc.ARQUIVO_RENTABILIDADE = str(padrao)
+                        logger.info(f"[CALCULO] Arquivo de rentabilidade: {cc.ARQUIVO_RENTABILIDADE}")
                     else:
                         # Se não encontrou, deixar None (o código defensivo tratará)
                         cc.ARQUIVO_RENTABILIDADE = None
-            except Exception:
+                        logger.warning(f"[CALCULO] Arquivo de rentabilidade não encontrado para {mm}/{payload.ano}")
+            except Exception as e:
+                logger.error(f"[CALCULO] Erro ao configurar caminhos: {e}")
                 # Se houver erro, garantir que None seja definido para evitar NameError
                 cc.ARQUIVO_RENTABILIDADE = None
 
+            logger.info("[CALCULO] Instanciando CalculoComissao...")
             calc = CalculoComissao()
             # FIX: Set the month and year parameters explicitly to avoid defaulting to current date
             calc.params['mes_apuracao'] = payload.mes
             calc.params['ano_apuracao'] = payload.ano
+            
+            logger.info(f"[CALCULO] Executando cálculo com {len(payload.decisoes_cross_selling or [])} decisões de cross-selling...")
             calc.executar(decisoes_cross_selling=payload.decisoes_cross_selling or [])
+            logger.info("[CALCULO] Cálculo concluído com sucesso!")
+            
         return {"success": True, "message": "Cálculo concluído"}
     except HTTPException:
         raise
@@ -1464,7 +1486,21 @@ async def executar_calculo(payload: ExecCalculoRequest):
         import traceback
 
         erro_completo = traceback.format_exc()
+        logger.error(f"[CALCULO] ERRO ao executar cálculo:\n{erro_completo}")
         print(f"[adapter] ERRO ao executar cálculo:\n{erro_completo}")
+        
+        # Tratamento específico para erro de atribuições pendentes
+        from calculo_comissoes import MissingAssignmentsError
+        if isinstance(e, MissingAssignmentsError):
+            logger.info(f"[CALCULO] Atribuições pendentes detectadas: {len(e.missing_list)} hierarquias")
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "error_type": "MissingAssignmentsError",
+                    "data": e.missing_list,
+                    "message": f"{len(e.missing_list)} hierarquias com atribuições pendentes"
+                }
+            )
         
         # Tratamento específico para erro de inconsistência de adiantamento
         from src.recebimento import InconsistenciaAdiantamentoError

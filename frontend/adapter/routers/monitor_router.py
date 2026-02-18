@@ -173,8 +173,8 @@ async def get_estado_raw(
     
     # Lista de colunas que contêm JSON
     json_columns = [
-        "TCMP_JSON", "FCMP_JSON", 
-        "TCMP_DETALHES_JSON", "FCMP_DETALHES_JSON",
+        "TCMP_JSON", "FCMP_JSON", "FCMP_APLICADO_JSON",
+        "TCMP_DETALHES_JSON", "FCMP_DETALHES_JSON", "FCMP_ESCADA_DETALHES_JSON",
         "COMISSOES_ADIANTADAS_JSON"
     ]
     

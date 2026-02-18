@@ -11,6 +11,7 @@ import {
   DashboardOutlined,
   DatabaseOutlined,
   FileExcelOutlined,
+  ExperimentOutlined,
 } from '@ant-design/icons';
 import logo from '../assets/logo.png';
 
@@ -36,6 +37,11 @@ const MainLayout = ({ children }) => {
       key: '/regras',
       icon: <FileTextOutlined />,
       label: 'Regras',
+    },
+    {
+      key: '/metodo-v2',
+      icon: <ExperimentOutlined />,
+      label: 'Metodologia V2',
     },
     {
       key: '/uploads',

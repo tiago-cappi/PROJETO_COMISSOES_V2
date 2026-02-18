@@ -106,7 +106,9 @@ class ReconciliacaoDetector:
         # Obter métricas
         metricas = self.state_manager.obter_metricas(processo_id)
         tcmp_dict = metricas.get("TCMP", {}) if metricas else {}
-        fcmp_dict = metricas.get("FCMP", {}) if metricas else {}
+        fcmp_rampa_dict = metricas.get("FCMP", {}) if metricas else {}
+        fcmp_aplicado_dict = metricas.get("FCMP_APLICADO", {}) if metricas else {}
+        fcmp_dict = fcmp_aplicado_dict if fcmp_aplicado_dict else fcmp_rampa_dict
 
         # Obter comissões adiantadas
         comissoes_adiantadas = self.state_manager.obter_comissoes_adiantadas(
@@ -143,7 +145,10 @@ class ReconciliacaoDetector:
             "total_adiantamentos": total_adiantamentos,
             "total_comissao_adiantamentos": total_comissao_adiantamentos,
             "tcmp": tcmp_dict,
+            # fcmp = fator efetivamente aplicado (ESCADA sobre FCMP rampa, quando configurado)
             "fcmp": fcmp_dict,
+            # auditoria: FCMP rampa, antes da escada
+            "fcmp_rampa": fcmp_rampa_dict,
             "comissoes_adiantadas": comissoes_adiantadas,
             "mes_faturamento": mes_faturamento,
             "colaboradores_envolvidos": processo.get("COLABORADORES_ENVOLVIDOS", ""),

@@ -16,15 +16,19 @@ import {
   Input,
   Row,
   Col,
+  Radio,
+  Tooltip,
 } from 'antd';
 import {
   PlayCircleOutlined,
   DownloadOutlined,
   ArrowRightOutlined,
+  InfoCircleOutlined,
 } from '@ant-design/icons';
-import { execucaoAPI, resultadosAPI, healthAPI, debugAPI } from '../services/api';
+import { execucaoAPI, resultadosAPI, healthAPI, debugAPI, metodoV2API } from '../services/api';
 import { execucaoAPI2 } from '../services/api';
 import CrossSellingModal from '../components/CrossSellingModal';
+import MissingAssignmentsModal from '../components/MissingAssignmentsModal';
 import { useNavigate } from 'react-router-dom';
 
 const { Title, Text } = Typography;
@@ -33,6 +37,7 @@ const ExecutarPage = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [, setJobId] = useState(null);
+  const [metodologia, setMetodologia] = useState('atual'); // 'atual' ou 'v2'
   const [progresso, setProgresso] = useState({
     percent: 0,
     etapa: '',
@@ -41,6 +46,9 @@ const ExecutarPage = () => {
   });
   const [isCsModalVisible, setIsCsModalVisible] = useState(false);
   const [csCases, setCsCases] = useState([]);
+  const [isMissingAssignmentsModalVisible, setIsMissingAssignmentsModalVisible] = useState(false);
+  const [missingAssignmentsData, setMissingAssignmentsData] = useState([]);
+  const [pendingDecisions, setPendingDecisions] = useState(null);
   const navigate = useNavigate();
   const pollingRef = useRef(null);
   const lastParamsRef = useRef({
@@ -48,6 +56,7 @@ const ExecutarPage = () => {
     ano: null,
     limparHistoricoMaster: false,
     limparEstadoProcessosRecebimento: false,
+    metodologia: 'atual',
   });
   const elapsedTimeRef = useRef(0);
   const elapsedIntervalRef = useRef(null);
@@ -106,6 +115,86 @@ const ExecutarPage = () => {
     }, 1500); // Polling a cada 1.5 segundos
   };
 
+  // Handler para cálculo usando Metodologia V2 (Simplificada)
+  const handleCalcularV2 = async (mes, ano) => {
+    console.log('[DEBUG] Iniciando cálculo usando Metodologia V2', { mes, ano });
+    
+    setLoading(true);
+    elapsedTimeRef.current = 0;
+    setProgresso({
+      percent: 0,
+      etapa: 'Iniciando cálculo V2...',
+      mensagens: ['Usando metodologia simplificada V2'],
+      status: 'em_andamento',
+    });
+
+    // Iniciar contador de tempo decorrido
+    if (elapsedIntervalRef.current) {
+      clearInterval(elapsedIntervalRef.current);
+    }
+    elapsedIntervalRef.current = setInterval(() => {
+      elapsedTimeRef.current += 1;
+      const elapsed = elapsedTimeRef.current;
+      setProgresso(prev => ({
+        ...prev,
+        etapa: `Calculando comissões V2... (${elapsed}s)`,
+      }));
+    }, 1000);
+
+    try {
+      setProgresso(prev => ({
+        ...prev,
+        percent: 20,
+        etapa: 'Carregando configurações V2...',
+        mensagens: [...prev.mensagens, 'Carregando REGRAS_COMISSOES_V2.xlsx...'],
+      }));
+
+      const response = await metodoV2API.executar(mes, ano);
+
+      // Parar contador de tempo
+      if (elapsedIntervalRef.current) {
+        clearInterval(elapsedIntervalRef.current);
+      }
+
+      if (response.data.sucesso) {
+        const resultados = response.data.resultados || [];
+        const totalComissao = resultados.reduce((sum, r) => sum + (r.comissao_final || 0), 0);
+        
+        setProgresso({
+          percent: 100,
+          etapa: 'Cálculo V2 concluído!',
+          mensagens: [
+            `✅ ${resultados.length} colaborador(es) processado(s)`,
+            `💰 Total de comissões: R$ ${totalComissao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+            '📊 Acesse "Metodologia V2" no menu para ver detalhes',
+          ],
+          status: 'concluido',
+        });
+
+        message.success(`Cálculo V2 concluído! ${resultados.length} colaborador(es) processado(s).`);
+      } else {
+        throw new Error(response.data.erro || 'Erro desconhecido no cálculo V2');
+      }
+    } catch (error) {
+      console.error('[DEBUG] Erro no cálculo V2:', error);
+      
+      if (elapsedIntervalRef.current) {
+        clearInterval(elapsedIntervalRef.current);
+      }
+
+      setProgresso({
+        percent: 0,
+        etapa: 'Erro no cálculo V2',
+        mensagens: [`❌ ${error.response?.data?.detail || error.message}`],
+        status: 'erro',
+      });
+
+      message.error(`Erro no cálculo V2: ${error.response?.data?.detail || error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCalcular = async (values) => {
     const { mes, ano } = values;
     lastParamsRef.current = {
@@ -113,9 +202,15 @@ const ExecutarPage = () => {
       ano,
       limparHistoricoMaster: !!values.limparHistoricoMaster,
       limparEstadoProcessosRecebimento: !!values.limparEstadoProcessosRecebimento,
+      metodologia,
     };
 
-    console.log('[DEBUG] Iniciando handleCalcular', { mes, ano });
+    // Se metodologia V2 selecionada, usar handler específico
+    if (metodologia === 'v2') {
+      return handleCalcularV2(mes, ano);
+    }
+
+    console.log('[DEBUG] Iniciando handleCalcular (Método Atual)', { mes, ano });
 
     setLoading(true);
     elapsedTimeRef.current = 0;
@@ -293,6 +388,21 @@ const ExecutarPage = () => {
         errorCode: error.code,
       });
 
+      // Verificar se é erro de atribuições pendentes (HTTP 422 + MissingAssignmentsError)
+      const responseData = error.response?.data;
+      const errorType = responseData?.detail?.error_type || responseData?.error_type;
+      
+      if (error.response?.status === 422 && errorType === 'MissingAssignmentsError') {
+        console.log('[DEBUG] Atribuições pendentes detectadas', responseData);
+        const missingData = responseData?.detail?.data || responseData?.data || [];
+        setMissingAssignmentsData(missingData);
+        setPendingDecisions(decisions);
+        setIsMissingAssignmentsModalVisible(true);
+        setLoading(false);
+        setProgresso(prev => ({ ...prev, status: 'idle', etapa: 'Aguardando atribuições...' }));
+        return;
+      }
+
       let errorMsg = `Erro ao executar cálculo: ${error.message}`;
       if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
         errorMsg = 'Timeout: O cálculo demorou mais de 10 minutos. Verifique o servidor.';
@@ -306,6 +416,15 @@ const ExecutarPage = () => {
       setLoading(false);
       setProgresso(prev => ({ ...prev, status: 'erro', etapa: `Erro: ${errorMsg}` }));
     }
+  };
+
+  // Handler chamado quando o modal de atribuições pendentes salva e pede re-execução
+  const handleMissingAssignmentsSaved = () => {
+    setIsMissingAssignmentsModalVisible(false);
+    setMissingAssignmentsData([]);
+    message.info('Atribuições salvas! Re-executando cálculo...');
+    // Re-executar o cálculo com as mesmas decisões
+    runFinalExecution(pendingDecisions || []);
   };
 
   const handleBaixar = async () => {
@@ -395,12 +514,53 @@ const ExecutarPage = () => {
             </Col>
           </Row>
 
+          <Divider orientation="left" style={{ marginTop: 8, marginBottom: 16 }}>
+            Metodologia de Cálculo
+          </Divider>
+
+          <Form.Item style={{ marginBottom: 16 }}>
+            <Radio.Group 
+              value={metodologia} 
+              onChange={(e) => setMetodologia(e.target.value)}
+              optionType="button"
+              buttonStyle="solid"
+              size="large"
+            >
+              <Tooltip title="Cálculo completo com recebimentos, cross-selling, devoluções e toda a lógica existente">
+                <Radio.Button value="atual">
+                  📊 Método Atual (Completo)
+                </Radio.Button>
+              </Tooltip>
+              <Tooltip title="Cálculo simplificado usando apenas Aplicação Mat./Serv. com degraus configuráveis por colaborador">
+                <Radio.Button value="v2">
+                  ⚡ Método V2 (Simplificado)
+                </Radio.Button>
+              </Tooltip>
+            </Radio.Group>
+          </Form.Item>
+
+          {metodologia === 'v2' && (
+            <Alert
+              message="Metodologia V2 Selecionada"
+              description={
+                <span>
+                  O cálculo usará apenas a coluna <strong>"Aplicação Mat./Serv."</strong> da análise comercial 
+                  e as regras configuradas em <code>REGRAS_COMISSOES_V2.xlsx</code>. 
+                  Configure metas e degraus em <a href="/metodo-v2">Metodologia V2</a>.
+                </span>
+              }
+              type="info"
+              showIcon
+              style={{ marginBottom: 16 }}
+            />
+          )}
+
           <Form.Item
             name="limparHistoricoMaster"
             valuePropName="checked"
             style={{ marginBottom: 8 }}
           >
-            <Checkbox>
+            <Checkbox disabled={metodologia === 'v2'}>
               Limpar histórico de comissões (Master DB) antes do cálculo
             </Checkbox>
           </Form.Item>
@@ -410,7 +570,7 @@ const ExecutarPage = () => {
             valuePropName="checked"
             style={{ marginBottom: 24 }}
           >
-            <Checkbox>
+            <Checkbox disabled={metodologia === 'v2'}>
               Limpar Estado_Processos_Recebimento antes do cálculo
             </Checkbox>
           </Form.Item>
@@ -574,6 +734,16 @@ const ExecutarPage = () => {
         onCancel={() => {
           setIsCsModalVisible(false);
         }}
+      />
+      <MissingAssignmentsModal
+        open={isMissingAssignmentsModalVisible}
+        missingData={missingAssignmentsData}
+        onCancel={() => {
+          setIsMissingAssignmentsModalVisible(false);
+          setMissingAssignmentsData([]);
+          setPendingDecisions(null);
+        }}
+        onSaved={handleMissingAssignmentsSaved}
       />
     </div>
   );

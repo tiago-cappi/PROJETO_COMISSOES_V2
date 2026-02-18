@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card, Divider, Progress, Space, Tooltip, Typography } from 'antd';
-import { InfoCircleOutlined } from '@ant-design/icons';
+import { InfoCircleOutlined, CalculatorOutlined } from '@ant-design/icons';
+import EscadaDemonstrativoModal from './EscadaDemonstrativoModal';
 
 const { Title, Text } = Typography;
 
@@ -74,6 +75,8 @@ const COMPONENTES_META = [
 ];
 
 const DetalhesCalculoModal = ({ rowData, isHistorico = false }) => {
+    const [isEscadaModalVisible, setIsEscadaModalVisible] = useState(false);
+
     const capFcMax = Number(rowData?.cap_fc_max);
     const capFcMaxPercent = isNaN(capFcMax) ? '100%' : formatPercent(capFcMax);
 
@@ -282,16 +285,68 @@ const DetalhesCalculoModal = ({ rowData, isHistorico = false }) => {
                         <Text>Soma dos Componentes: <b>{formatDecimal4(somaFCBruto)}</b></Text>
                         <Text>FC Bruto (Soma) = <b>{formatDecimal4(somaFCBruto)}</b></Text>
                         <Text>Teto Máximo do FC: <b>{capFcMaxPercent}</b></Text>
-                        <Text>
-                            FC Final Aplicado = <b>{formatDecimal4(rowData?.fator_correcao_fc)}</b>
-                            {somaCappedMaiorQueFinal && (
-                                <span className="limit-highlight" style={{ marginLeft: 8 }}>
-                                    <Tooltip title={`Sua soma de ${formatDecimal4(somaFCBruto)} foi limitada pelo teto do FC de ${formatPercent(Number(rowData?.cap_fc_max || 1))}.`}>
-                                        <InfoCircleOutlined />
-                                    </Tooltip>
-                                </span>
-                            )}
-                        </Text>
+                        
+                        <Divider style={{ margin: '8px 0' }} />
+                        
+                        {/* Exibir lógica de Escada se disponível */}
+                        {rowData?.fc_escada_modo === 'ESCADA' ? (
+                            <>
+                                <Text>
+                                    FC Rampa (com Teto): <b>{formatDecimal4(rowData?.fator_correcao_fc_rampa || Math.min(somaFCBruto, capFcMax))}</b>
+                                </Text>
+                                <div 
+                                    style={{ 
+                                        marginTop: 8, 
+                                        padding: 8, 
+                                        background: '#e6f7ff', 
+                                        borderRadius: 4, 
+                                        border: '1px solid #91d5ff',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.3s'
+                                    }}
+                                    className="escada-block-hover"
+                                    onClick={() => setIsEscadaModalVisible(true)}
+                                    title="Clique para ver o cálculo detalhado"
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <Text strong style={{ color: '#0050b3' }}>
+                                            🪜 Regra de Escada Aplicada <CalculatorOutlined />
+                                        </Text>
+                                        <Text type="secondary" style={{ fontSize: 10 }}>Clique para demonstrativo</Text>
+                                    </div>
+                                    <div style={{ marginLeft: 8 }}>
+                                        <Text>Modo: <b>ESCADA</b></Text><br/>
+                                        <Text>Degraus: <b>{rowData?.fc_escada_num_degraus}</b></Text><br/>
+                                        <Text>Degrau Atingido: <b>#{rowData?.fc_escada_degrau_indice}</b></Text><br/>
+                                        <Text strong>FC Final Aplicado = {formatDecimal4(rowData?.fator_correcao_fc)}</Text>
+                                    </div>
+                                </div>
+
+                                <EscadaDemonstrativoModal
+                                    visible={isEscadaModalVisible}
+                                    onClose={() => setIsEscadaModalVisible(false)}
+                                    data={{
+                                        cargo: rowData?.cargo,
+                                        numDegraus: rowData?.fc_escada_num_degraus,
+                                        piso: rowData?.fc_escada_piso,
+                                        performanceRampa: rowData?.fator_correcao_fc_rampa || Math.min(somaFCBruto, capFcMax),
+                                        multiplicadorFinal: rowData?.fator_correcao_fc,
+                                        degrauAtingido: rowData?.fc_escada_degrau_indice
+                                    }}
+                                />
+                            </>
+                        ) : (
+                           <Text>
+                                FC Final Aplicado = <b>{formatDecimal4(rowData?.fator_correcao_fc)}</b>
+                                {somaCappedMaiorQueFinal && rowData?.fc_escada_modo !== 'ESCADA' && (
+                                    <span className="limit-highlight" style={{ marginLeft: 8 }}>
+                                        <Tooltip title={`Sua soma de ${formatDecimal4(somaFCBruto)} foi limitada pelo teto do FC de ${formatPercent(Number(rowData?.cap_fc_max || 1))}.`}>
+                                            <InfoCircleOutlined />
+                                        </Tooltip>
+                                    </span>
+                                )}
+                            </Text>
+                        )}
                     </Space>
                 </Card>
             </div>

@@ -9,6 +9,7 @@ import ComissoesPage from './pages/ComissoesPage';
 import CambioPage from './pages/CambioPage';
 import EstadoProcessosPage from './pages/EstadoProcessosPage';
 import DadosEntradaPage from './pages/DadosEntradaPage';
+import MetodoV2Page from './pages/MetodoV2Page';
 
 import 'antd/dist/reset.css';
 import './App.css';
@@ -29,6 +30,7 @@ function App() {
             <Route path="/comissoes" element={<ComissoesPage />} />
             <Route path="/estado-processos" element={<EstadoProcessosPage />} />
             <Route path="/cambio" element={<CambioPage />} />
+            <Route path="/metodo-v2" element={<MetodoV2Page />} />
           </Routes>
         </Content>
       </MainLayout>
@@ -37,4 +39,5 @@ function App() {
 }
 
 export default App;
+
 

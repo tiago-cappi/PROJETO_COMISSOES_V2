@@ -419,7 +419,9 @@ class RecebimentoOrchestrator:
         if metricas_salvas:
             print(f"[RECEBIMENTO] [REGULAR] Métricas encontradas no estado")
             tcmp_dict = metricas_salvas["TCMP"]
-            fcmp_dict = metricas_salvas["FCMP"]
+            fcmp_rampa_dict = metricas_salvas.get("FCMP", {})
+            fcmp_aplicado_dict = metricas_salvas.get("FCMP_APLICADO", {})
+            fcmp_dict = fcmp_aplicado_dict if fcmp_aplicado_dict else fcmp_rampa_dict
             mes_faturamento = self.state_manager.obter_processo(processo).get(
                 "MES_ANO_FATURAMENTO"
             )
@@ -436,7 +438,10 @@ class RecebimentoOrchestrator:
             )
 
             tcmp_dict = metricas.get("TCMP", {})
-            fcmp_dict = metricas.get("FCMP", {})
+            fcmp_rampa_dict = metricas.get("FCMP", {})
+            fcmp_aplicado_dict = metricas.get("FCMP_APLICADO", {})
+            fcmp_escada_detalhes = metricas.get("FCMP_ESCADA_DETALHES", {})
+            fcmp_dict = fcmp_aplicado_dict if fcmp_aplicado_dict else fcmp_rampa_dict
             tcmp_detalhes = metricas.get("TCMP_DETALHES", {})
             fcmp_detalhes = metricas.get("FCMP_DETALHES", {})
 
@@ -457,8 +462,14 @@ class RecebimentoOrchestrator:
                 f"[RECEBIMENTO] [REGULAR] Salvando métricas no estado (mês faturamento: {mes_faturamento})..."
             )
             self.state_manager.definir_metricas(
-                processo, tcmp_dict, fcmp_dict, mes_faturamento,
-                tcmp_detalhes=tcmp_detalhes, fcmp_detalhes=fcmp_detalhes
+                processo,
+                tcmp_dict,
+                fcmp_rampa_dict,
+                fcmp_aplicado_dict,
+                mes_faturamento,
+                tcmp_detalhes=tcmp_detalhes,
+                fcmp_detalhes=fcmp_detalhes,
+                fcmp_escada_detalhes=fcmp_escada_detalhes,
             )
             print(f"[RECEBIMENTO] [REGULAR] Métricas salvas no estado")
 
@@ -614,9 +625,13 @@ class RecebimentoOrchestrator:
             )
 
             tcmp_dict = metricas.get("TCMP", {})
-            fcmp_dict = metricas.get("FCMP", {})
+            fcmp_rampa_dict = metricas.get("FCMP", {})
+            fcmp_aplicado_dict = metricas.get("FCMP_APLICADO", {})
+            fcmp_escada_detalhes = metricas.get("FCMP_ESCADA_DETALHES", {})
             tcmp_detalhes = metricas.get("TCMP_DETALHES", {})
             fcmp_detalhes = metricas.get("FCMP_DETALHES", {})
+
+            fcmp_dict = fcmp_aplicado_dict if fcmp_aplicado_dict else fcmp_rampa_dict
 
             print(
                 f"[RECEBIMENTO] [MÉTRICAS] Processo {processo}: TCMP={len(tcmp_dict)} colab(s), FCMP={len(fcmp_dict)} colab(s)"
@@ -626,8 +641,14 @@ class RecebimentoOrchestrator:
                 # Salvar no estado
                 mes_faturamento = f"{self.mes:02d}/{self.ano}"
                 self.state_manager.definir_metricas(
-                    processo, tcmp_dict, fcmp_dict, mes_faturamento,
-                    tcmp_detalhes=tcmp_detalhes, fcmp_detalhes=fcmp_detalhes
+                    processo,
+                    tcmp_dict,
+                    fcmp_rampa_dict,
+                    fcmp_aplicado_dict,
+                    mes_faturamento,
+                    tcmp_detalhes=tcmp_detalhes,
+                    fcmp_detalhes=fcmp_detalhes,
+                    fcmp_escada_detalhes=fcmp_escada_detalhes,
                 )
                 processos_calculados += 1
                 print(

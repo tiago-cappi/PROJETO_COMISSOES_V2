@@ -22,6 +22,7 @@ import './SmartTable.css';
  * @param {object} schema - Column schema definitions
  * @param {boolean} readOnly - Whether editing is disabled
  * @param {object} lookups - Cross-reference data for dropdowns { columnName: [options] }
+ * @param {ReactNode} extraActions - Additional action buttons to display in header
  */
 const SmartTable = ({ 
   resourceId, 
@@ -30,7 +31,8 @@ const SmartTable = ({
   schema = {},
   readOnly = false,
   lookups = {},
-  compact = false
+  compact = false,
+  extraActions = null
 }) => {
   const [data, setData] = useState([]);
   const [columns, setColumns] = useState([]);
@@ -95,19 +97,35 @@ const SmartTable = ({
       okType: 'danger',
       cancelText: 'Cancelar',
       onOk: () => {
-        setData((prev) => prev.filter((r) => r.__key !== row.__key));
-        setModifiedRows((m) => {
-          const newSet = new Set(m);
-          newSet.delete(row.__key);
-          return newSet;
-        });
+        // Marcar linha como deletada em vez de remover imediatamente
+        setData((prev) => prev.map((r) => {
+          if (r.__key === row.__key) {
+            setModifiedRows((m) => new Set(m).add(row.__key));
+            return { ...r, __isDeleted: true };
+          }
+          return r;
+        }));
       },
     });
+  };
+
+  const undoDeleteRow = (row) => {
+    setData((prev) => prev.map((r) => {
+      if (r.__key === row.__key) {
+        const newRow = { ...r };
+        delete newRow.__isDeleted;
+        return newRow;
+      }
+      return r;
+    }));
   };
 
   const validate = () => {
     // Basic validation - can be extended with schema rules
     for (const row of data) {
+      // Skip validation for deleted rows
+      if (row.__isDeleted) continue;
+      
       for (const col of columns) {
         const colSchema = schema[col] || {};
         if (colSchema.required && !row[col]) {
@@ -131,7 +149,11 @@ const SmartTable = ({
     
     setSaving(true);
     try {
-      const payload = data.map(({ __key, __original, __isNew, ...rest }) => rest);
+      // Filtrar linhas deletadas e remover metadados internos
+      const payload = data
+        .filter((row) => !row.__isDeleted) // Excluir linhas marcadas como deletadas
+        .map(({ __key, __original, __isNew, __isDeleted, ...rest }) => rest);
+      
       await apiService.save(resourceId, payload);
       message.success('Alterações salvas com sucesso!');
       setEditMode(false);
@@ -159,10 +181,14 @@ const SmartTable = ({
 
   // Filter data based on search
   const filteredData = useMemo(() => {
-    if (!searchText) return data;
+    let result = data;
+    
+    if (!searchText) return result;
+    
     const lower = searchText.toLowerCase();
-    return data.filter((row) =>
-      columns.some((col) => String(row[col] || '').toLowerCase().includes(lower))
+    return result.filter((row) =>
+      // Skip search on deleted rows
+      !row.__isDeleted && columns.some((col) => String(row[col] || '').toLowerCase().includes(lower))
     );
   }, [data, columns, searchText]);
 
@@ -210,29 +236,42 @@ const SmartTable = ({
       cols.push({
         title: '',
         key: '__actions',
-        width: 80,
+        width: 100,
         fixed: 'right',
         render: (_, row) => (
           editMode ? (
-            <Space size="small">
-              <Tooltip title="Duplicar">
+            row.__isDeleted ? (
+              <Tooltip title="Desfazer exclusão">
                 <Button 
                   type="text" 
                   size="small" 
-                  icon={<CopyOutlined />} 
-                  onClick={() => duplicateRow(row)} 
-                />
+                  onClick={() => undoDeleteRow(row)}
+                  style={{ color: '#ef4444' }}
+                >
+                  Desfazer
+                </Button>
               </Tooltip>
-              <Tooltip title="Excluir">
-                <Button 
-                  type="text" 
-                  size="small" 
-                  danger 
-                  icon={<DeleteOutlined />} 
-                  onClick={() => deleteRow(row)} 
-                />
-              </Tooltip>
-            </Space>
+            ) : (
+              <Space size="small">
+                <Tooltip title="Duplicar">
+                  <Button 
+                    type="text" 
+                    size="small" 
+                    icon={<CopyOutlined />} 
+                    onClick={() => duplicateRow(row)} 
+                  />
+                </Tooltip>
+                <Tooltip title="Excluir">
+                  <Button 
+                    type="text" 
+                    size="small" 
+                    danger 
+                    icon={<DeleteOutlined />} 
+                    onClick={() => deleteRow(row)} 
+                  />
+                </Tooltip>
+              </Space>
+            )
           ) : null
         ),
       });
@@ -297,6 +336,8 @@ const SmartTable = ({
             </>
           )}
           
+          {extraActions}
+          
           <Button 
             icon={<ReloadOutlined />} 
             onClick={carregar} 
@@ -320,10 +361,12 @@ const SmartTable = ({
           scroll={{ x: 'max-content' }}
           size="small"
           rowKey="__key"
-          rowClassName={(row) => 
-            row.__isNew ? 'smart-table__row--new' : 
-            modifiedRows.has(row.__key) ? 'smart-table__row--modified' : ''
-          }
+          rowClassName={(row) => {
+            if (row.__isDeleted) return 'smart-table__row--deleted';
+            if (row.__isNew) return 'smart-table__row--new';
+            if (modifiedRows.has(row.__key)) return 'smart-table__row--modified';
+            return '';
+          }}
         />
       )}
     </Card>

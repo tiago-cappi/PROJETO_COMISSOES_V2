@@ -390,3 +390,73 @@ consultor_externo: André Camargo
 taxa: 1.0
 taxa_cs (dividido por 100): 0.01
 Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo TESTE ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'A', 'timestamp': '2026-01-19T10:27:37.324188'}
+consultor_externo: André Camargo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo TESTE ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'A', 'timestamp': '2026-01-19T10:27:37.324188'}
+consultor_externo: André Camargo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo TESTE ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'A', 'timestamp': '2026-01-21T11:14:53.201162'}
+consultor_externo: André Camargo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo TESTE ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'A', 'timestamp': '2026-01-21T11:14:53.201162'}
+consultor_externo: André Camargo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo TESTE ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'A', 'timestamp': '2026-01-21T11:22:38.159103'}
+consultor_externo: André Camargo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo TESTE ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'A', 'timestamp': '2026-01-21T11:22:38.159103'}
+consultor_externo: André Camargo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo TESTE ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'A', 'timestamp': '2026-01-21T11:23:42.028752'}
+consultor_externo: André Camargo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo TESTE ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'A', 'timestamp': '2026-01-21T11:23:42.028752'}
+consultor_externo: André Camargo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo TESTE ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'A', 'timestamp': '2026-01-21T11:41:38.569189'}
+consultor_externo: André Camargo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True
+
+=== Processo TESTE ===
+cs_info: {'is_cross': True, 'consultor': 'André Camargo', 'linha': 'Hidrologia', 'taxa': 1.0, 'decision': 'A', 'timestamp': '2026-01-21T11:41:38.569189'}
+consultor_externo: André Camargo
+taxa: 1.0
+taxa_cs (dividido por 100): 0.01
+Condição taxa_cs and taxa_cs > 0: True

@@ -257,6 +257,7 @@ class StateManager:
         processo_id: str,
         tcmp_dict: Dict[str, float],
         fcmp_dict: Dict[str, float],
+        fcmp_aplicado_dict: Optional[Dict[str, float]] = None,
         tcmp_detalhes: Optional[Dict] = None,
         fcmp_detalhes: Optional[Dict] = None
     ):
@@ -286,6 +287,11 @@ class StateManager:
         # Converter dicts para JSON
         self.estado_df.at[idx, "TCMP_JSON"] = json.dumps(tcmp_dict, ensure_ascii=False)
         self.estado_df.at[idx, "FCMP_JSON"] = json.dumps(fcmp_dict, ensure_ascii=False)
+
+        if fcmp_aplicado_dict is not None:
+            self.estado_df.at[idx, "FCMP_APLICADO_JSON"] = json.dumps(
+                fcmp_aplicado_dict, ensure_ascii=False
+            )
         
         # Armazenar detalhes se fornecidos
         if tcmp_detalhes:
@@ -322,9 +328,11 @@ class StateManager:
         processo_id: str,
         tcmp_dict: Dict[str, float],
         fcmp_dict: Dict[str, float],
+        fcmp_aplicado_dict: Optional[Dict[str, float]],
         mes_faturamento: str,
         tcmp_detalhes: Optional[Dict] = None,
-        fcmp_detalhes: Optional[Dict] = None
+        fcmp_detalhes: Optional[Dict] = None,
+        fcmp_escada_detalhes: Optional[Dict] = None,
     ):
         """
         Define TCMP e FCMP para um processo (quando faturado).
@@ -350,6 +358,15 @@ class StateManager:
         # Converter dicts para JSON
         self.estado_df.at[idx, "TCMP_JSON"] = json.dumps(tcmp_dict, ensure_ascii=False)
         self.estado_df.at[idx, "FCMP_JSON"] = json.dumps(fcmp_dict, ensure_ascii=False)
+
+        if fcmp_aplicado_dict is not None:
+            self.estado_df.at[idx, "FCMP_APLICADO_JSON"] = json.dumps(
+                fcmp_aplicado_dict, ensure_ascii=False
+            )
+        if fcmp_escada_detalhes is not None:
+            self.estado_df.at[idx, "FCMP_ESCADA_DETALHES_JSON"] = json.dumps(
+                fcmp_escada_detalhes, ensure_ascii=False
+            )
         
         # Armazenar detalhes se fornecidos
         if tcmp_detalhes:
@@ -389,13 +406,20 @@ class StateManager:
         try:
             tcmp_json = processo.get("TCMP_JSON", "{}")
             fcmp_json = processo.get("FCMP_JSON", "{}")
+            fcmp_aplicado_json = processo.get("FCMP_APLICADO_JSON", "")
             
             tcmp_dict = json.loads(tcmp_json) if tcmp_json else {}
             fcmp_dict = json.loads(fcmp_json) if fcmp_json else {}
+            fcmp_aplicado_dict = (
+                json.loads(fcmp_aplicado_json)
+                if fcmp_aplicado_json
+                else {}
+            )
             
             return {
                 "TCMP": tcmp_dict,
-                "FCMP": fcmp_dict
+                "FCMP": fcmp_dict,
+                "FCMP_APLICADO": fcmp_aplicado_dict
             }
         except Exception:
             return None

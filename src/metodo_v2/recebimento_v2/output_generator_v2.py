@@ -195,7 +195,8 @@ class OutputGeneratorV2:
         if not adiantamentos:
             return pd.DataFrame(columns=[
                 "Colaborador", "Documento", "Documento Normalizado",
-                "Valor Base", "Taxa (%)", "Comissão"
+                "Valor Base", "Taxa (%)", "Comissão",
+                "Tipo Cálculo", "Regra Utilizada"
             ])
         
         dados = []
@@ -206,7 +207,9 @@ class OutputGeneratorV2:
                 "Documento Normalizado": adiante.documento_normalizado,
                 "Valor Base": adiante.valor_base,
                 "Taxa (%)": adiante.percentual_aplicado,
-                "Comissão": adiante.comissao_calculada
+                "Comissão": adiante.comissao_calculada,
+                "Tipo Cálculo": adiante.tipo_calculo,
+                "Regra Utilizada": adiante.regra_utilizada or ""
             })
         
         return pd.DataFrame(dados)

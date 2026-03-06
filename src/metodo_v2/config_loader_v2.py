@@ -125,7 +125,11 @@ class ConfigLoaderV2:
         logger.info(f"Carregados {len(self._cargos)} cargos válidos")
 
     def _parse_colaboradores(self) -> None:
-        """Processa a aba COLABORADORES_V2."""
+        """Processa a aba COLABORADORES_V2.
+        
+        Raises:
+            ValueError: Se houver nomes duplicados na aba COLABORADORES_V2.
+        """
         sheet_name = "COLABORADORES_V2"
         
         if sheet_name not in self._raw_data:
@@ -144,6 +148,30 @@ class ConfigLoaderV2:
         if nome_col is None:
             logger.warning(f"Coluna 'colaborador' ou 'nome_colaborador' não encontrada em {sheet_name}")
             return
+
+        # --- Detecção de nomes duplicados (DEVE interromper o cálculo) ---
+        nomes_raw = [
+            self._clean_string(v) for v in df[nome_col].dropna()
+            if self._clean_string(v)
+        ]
+        nomes_vistos: dict[str, int] = {}
+        duplicatas: list[str] = []
+        for n in nomes_raw:
+            nomes_vistos[n] = nomes_vistos.get(n, 0) + 1
+        for n, count in nomes_vistos.items():
+            if count > 1:
+                duplicatas.append(f"'{n}' ({count}x)")
+        
+        if duplicatas:
+            msg = (
+                f"[ERRO CRÍTICO] Nomes duplicados encontrados em {sheet_name}: "
+                f"{', '.join(duplicatas)}. "
+                f"O nome do colaborador é usado como ID único — cada nome deve "
+                f"aparecer exatamente uma vez. Corrija a planilha e re-execute."
+            )
+            logger.error(msg)
+            raise ValueError(msg)
+        # --- Fim da detecção de duplicatas ---
 
         for _, row in df.iterrows():
             nome = self._clean_string(row.get(nome_col))

@@ -82,13 +82,15 @@ class ReconciliacaoCalculatorV2:
     """Calculadora de reconciliações para V2.
     
     Processa ajustes quando processos com adiantamento são faturados.
+    Suporta modo Hierarquia e modo Centro de Custo.
     """
     
     def __init__(
         self,
         state_manager: StateManagerV2,
         comissao_calculator: ComissaoRecebimentoCalculatorV2,
-        colaboradores: Dict[str, ColaboradorV2]
+        colaboradores: Dict[str, ColaboradorV2],
+        modo_cc: bool = False
     ):
         """Inicializa a calculadora.
         
@@ -96,10 +98,12 @@ class ReconciliacaoCalculatorV2:
             state_manager: Gerenciador de estado.
             comissao_calculator: Calculadora de comissões.
             colaboradores: Dicionário de colaboradores.
+            modo_cc: Se True, usa regras de Centro de Custo na reconciliação.
         """
         self.state_manager = state_manager
         self.comissao_calculator = comissao_calculator
         self.colaboradores = colaboradores
+        self.modo_cc = modo_cc
         
         # Índice por nome
         self._colab_por_nome = {
@@ -175,6 +179,9 @@ class ReconciliacaoCalculatorV2:
     ) -> Optional[ResultadoReconciliacaoV2]:
         """Calcula reconciliação para um registro.
         
+        No modo CC, usa regras de Centro de Custo (RegraCentroCusto) para
+        determinar a comissão real. No modo hierarquia, usa regras hierárquicas.
+        
         Args:
             registro: Registro de estado (deve estar FATURADO).
             margem_pct: Margem para cálculo da comissão real.
@@ -199,16 +206,22 @@ class ReconciliacaoCalculatorV2:
             logger.warning(f"[V2-REC-RECONC] Colaborador não encontrado: {registro.colaborador_id}")
             return None
         
-        # Calcular comissão real usando regras
-        resultado_comissao = self.comissao_calculator.calcular_regular(
-            colaborador=colaborador,
-            documento=registro.documento_normalizado,
-            documento_normalizado=registro.documento_normalizado,
-            valor_faturado=registro.valor_faturado,
-            margem_pct=margem_pct
-        )
-        
-        comissao_real = resultado_comissao.comissao_calculada
+        # Calcular comissão real conforme o modo
+        if self.modo_cc and registro.centro_custo:
+            comissao_real = self._calcular_comissao_real_cc(
+                colaborador=colaborador,
+                registro=registro
+            )
+        else:
+            # Modo hierarquia: usar calcular_regular existente
+            resultado_comissao = self.comissao_calculator.calcular_regular(
+                colaborador=colaborador,
+                documento=registro.documento_normalizado,
+                documento_normalizado=registro.documento_normalizado,
+                valor_faturado=registro.valor_faturado,
+                margem_pct=margem_pct
+            )
+            comissao_real = resultado_comissao.comissao_calculada
         
         # Atualizar registro com comissão real
         registro.comissao_real = comissao_real
@@ -246,6 +259,48 @@ class ReconciliacaoCalculatorV2:
         )
         
         return resultado
+    
+    def _calcular_comissao_real_cc(
+        self,
+        colaborador: ColaboradorV2,
+        registro: RegistroEstado
+    ) -> float:
+        """Calcula a comissão real usando regras de Centro de Custo.
+        
+        Busca a RegraCentroCusto do colaborador para o CC do documento
+        e aplica a faixa correspondente ao valor faturado.
+        
+        Args:
+            colaborador: Colaborador com regras_cc.
+            registro: Registro com centro_custo e valor_faturado.
+            
+        Returns:
+            Valor da comissão real (R$).
+        """
+        cc = registro.centro_custo
+        regra_cc = colaborador.get_regra_cc(cc)
+        
+        if not regra_cc:
+            logger.warning(
+                f"[V2-REC-RECONC] Colaborador '{colaborador.nome}' sem regra CC "
+                f"para '{cc}'. Usando taxa_adiantamento como fallback."
+            )
+            taxa = colaborador.taxa_adiantamento_pct or 0.0
+            return registro.valor_faturado * (taxa / 100.0)
+        
+        # Obter taxa da faixa baseada no valor faturado
+        taxa = regra_cc.get_taxa_para_faturamento(registro.valor_faturado)
+        split_decimal = regra_cc.get_split_decimal()
+        
+        comissao = registro.valor_faturado * (taxa / 100.0) * split_decimal
+        
+        logger.debug(
+            f"[V2-REC-RECONC] Comissão real CC: {colaborador.nome} | "
+            f"CC={cc} | ValorFat={registro.valor_faturado:.2f} | "
+            f"Taxa={taxa}% | Split={split_decimal*100:.0f}% | Comissão={comissao:.2f}"
+        )
+        
+        return comissao
     
     def processar_reconciliacoes(
         self,

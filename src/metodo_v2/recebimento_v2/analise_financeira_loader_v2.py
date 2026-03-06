@@ -5,7 +5,7 @@ Carrega e filtra dados do arquivo Análise Financeira.xlsx para a Metodologia V2
 
 Filtros aplicados:
 - Tipo de Baixa == 'B' (pagamento efetivo)
-- Data de Baixa no mês/ano de apuração
+- Dt. Emissão no mês/ano de apuração
 """
 
 from __future__ import annotations
@@ -88,17 +88,22 @@ class AnaliseFinanceiraLoaderV2:
         # Encontrar colunas relevantes
         col_documento = self._encontrar_coluna(df, ["Documento", "documento", "DOCUMENTO"])
         col_valor = self._encontrar_coluna(df, ["Valor Líquido", "Valor Liquido", "valor líquido", "VALOR LIQUIDO"])
-        col_data = self._encontrar_coluna(df, ["Data de Baixa", "Data Baixa", "data de baixa", "DATA BAIXA"])
+        col_data_baixa = self._encontrar_coluna(df, ["Data de Baixa", "Data Baixa", "data de baixa", "DATA BAIXA"])
         col_tipo = self._encontrar_coluna(df, ["Tipo de Baixa", "Tipo Baixa", "tipo de baixa", "TIPO BAIXA"])
+        col_dt_emissao = self._encontrar_coluna(df, ["Dt. Emissão", "Dt. Emissao", "dt. emissão", "DT. EMISSÃO", "DT. EMISSAO"])
         
-        if not all([col_documento, col_valor, col_data, col_tipo]):
+        if not all([col_documento, col_valor, col_data_baixa, col_tipo]):
             logger.error(f"[V2-REC] Colunas essenciais não encontradas!")
-            logger.error(f"[V2-REC] Encontradas: doc={col_documento}, valor={col_valor}, data={col_data}, tipo={col_tipo}")
+            logger.error(f"[V2-REC] Encontradas: doc={col_documento}, valor={col_valor}, data_baixa={col_data_baixa}, tipo={col_tipo}")
             return pd.DataFrame(columns=["Documento", "Valor Líquido", "Data de Baixa", "Tipo de Baixa"])
         
-        # Selecionar apenas colunas relevantes
-        df_filtrado = df[[col_documento, col_valor, col_data, col_tipo]].copy()
-        df_filtrado.columns = ["Documento", "Valor Líquido", "Data de Baixa", "Tipo de Baixa"]
+        if not col_dt_emissao:
+            logger.error("[V2-REC] Coluna 'Dt. Emissão' não encontrada! Necessária para filtro de mês/ano.")
+            return pd.DataFrame(columns=["Documento", "Valor Líquido", "Data de Baixa", "Tipo de Baixa"])
+        
+        # Selecionar apenas colunas relevantes (inclui Dt. Emissão para filtro temporal)
+        df_filtrado = df[[col_documento, col_valor, col_data_baixa, col_tipo, col_dt_emissao]].copy()
+        df_filtrado.columns = ["Documento", "Valor Líquido", "Data de Baixa", "Tipo de Baixa", "Dt. Emissão"]
         
         # Filtrar por Tipo de Baixa == 'B'
         antes = len(df_filtrado)
@@ -111,20 +116,24 @@ class AnaliseFinanceiraLoaderV2:
             logger.warning("[V2-REC] Nenhum registro com Tipo de Baixa = 'B'")
             return df_filtrado
         
-        # Converter Data de Baixa para datetime
+        # Converter datas para datetime
         df_filtrado["Data de Baixa"] = pd.to_datetime(
             df_filtrado["Data de Baixa"],
             errors='coerce'
         )
+        df_filtrado["Dt. Emissão"] = pd.to_datetime(
+            df_filtrado["Dt. Emissão"],
+            errors='coerce'
+        )
         
-        # Filtrar por mês e ano
+        # Filtrar por mês e ano usando Dt. Emissão (data de emissão do documento)
         antes = len(df_filtrado)
         mask = (
-            (df_filtrado["Data de Baixa"].dt.month == mes) &
-            (df_filtrado["Data de Baixa"].dt.year == ano)
+            (df_filtrado["Dt. Emissão"].dt.month == mes) &
+            (df_filtrado["Dt. Emissão"].dt.year == ano)
         )
         df_filtrado = df_filtrado[mask]
-        logger.info(f"[V2-REC] Após filtro mês={mes:02d}/ano={ano}: {antes} → {len(df_filtrado)}")
+        logger.info(f"[V2-REC] Após filtro Dt. Emissão mês={mes:02d}/ano={ano}: {antes} → {len(df_filtrado)}")
         
         # Normalizar Documento
         df_filtrado["Documento"] = (
@@ -154,6 +163,9 @@ class AnaliseFinanceiraLoaderV2:
         ]
         
         df_filtrado = df_filtrado.reset_index(drop=True)
+        
+        # Remover coluna auxiliar de filtro — downstream só usa Documento, Valor Líquido, Data de Baixa, Tipo de Baixa
+        df_filtrado = df_filtrado.drop(columns=["Dt. Emissão"], errors="ignore")
         
         logger.info(f"[V2-REC] Total final: {len(df_filtrado)} pagamentos para processar")
         

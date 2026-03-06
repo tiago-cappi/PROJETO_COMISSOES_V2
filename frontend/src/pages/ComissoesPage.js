@@ -5,10 +5,8 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/pt-br';
 import locale from 'antd/es/date-picker/locale/pt_BR';
 
-import TabelaComissoes from '../components/comissoes/TabelaComissoes';
-import DetalhesComissaoModal from '../components/comissoes/DetalhesComissaoModal';
-import { resultadosAPI, recebimentoAPI, historicoAPI } from '../services/api';
-import { groupFaturamentoByProcessoItemColaborador } from '../components/comissoes/faturamentoGrouping';
+import { ColaboradorCardList, ColaboradorDashboard } from '../components/colaborador-dashboard';
+import { comissoesAPI, resultadosAPI, recebimentoAPI, historicoAPI } from '../services/api';
 
 import TabelaSaldosNegativos from '../components/historico/TabelaSaldosNegativos';
 import DetalhesSaldoNegativoModal from '../components/historico/DetalhesSaldoNegativoModal';
@@ -19,14 +17,20 @@ const { TabPane } = Tabs;
 const { Title } = Typography;
 const { Option } = Select;
 
-const DEBUG = true;
-
 const ComissoesPage = () => {
   const [activeTab, setActiveTab] = useState('faturamento');
+
+  const handleTabChange = (key) => {
+    setActiveTab(key);
+    setSelectedColaborador(null);
+    setViewLevel('list');
+  };
   const [selectedDate, setSelectedDate] = useState(dayjs());
   const [loading, setLoading] = useState(false);
-  const [dataFaturamento, setDataFaturamento] = useState([]); // 1 linha por Processo
-  const [dataRecebimento, setDataRecebimento] = useState([]);
+  const [colaboradoresFat, setColaboradoresFat] = useState([]);
+  const [colaboradoresRec, setColaboradoresRec] = useState([]);
+  const [selectedColaborador, setSelectedColaborador] = useState(null);
+  const [viewLevel, setViewLevel] = useState('list'); // 'list' | 'dashboard'
 
   const [loadingHistorico, setLoadingHistorico] = useState(false);
   const [saldosNegativos, setSaldosNegativos] = useState({ resumo: [], itens: [] });
@@ -50,9 +54,6 @@ const ComissoesPage = () => {
   const [debugAuditLogText, setDebugAuditLogText] = useState('');
   const [debugDetalhesColaboradorText, setDebugDetalhesColaboradorText] = useState('');
   const [debugSaldosNegativosText, setDebugSaldosNegativosText] = useState('');
-  
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
 
   const mesAno = useMemo(() => {
     const mes = selectedDate.month() + 1;
@@ -85,51 +86,14 @@ const ComissoesPage = () => {
     setLoading(true);
     try {
       if (activeTab === 'faturamento') {
-        // Fetch Faturamento Data (Last Calculation)
-        const params = { page: 1, size: 1000 };
-        if (DEBUG) {
-          console.group('>>> DEBUG [ComissoesPage] Faturamento');
-          console.log('tab=', activeTab);
-          console.log('GET /resultado/aba/COMISSOES_CALCULADAS params=', params);
-        }
-
-        const response = await resultadosAPI.lerAba('COMISSOES_CALCULADAS', params);
-        const payload = response?.data || {};
-        const rows = payload.data || payload.items || [];
-
-        if (DEBUG) {
-          console.log('response.data keys=', Object.keys(payload));
-          console.log('rows.length=', Array.isArray(rows) ? rows.length : 'NOT_ARRAY');
-          console.log('sample[0]=', Array.isArray(rows) ? rows[0] : undefined);
-          console.groupEnd();
-        }
-
-        const raw = Array.isArray(rows) ? rows : [];
-        const processos = groupFaturamentoByProcessoItemColaborador(raw);
-        setDataFaturamento(processos);
-      } else {
-        // Fetch Recebimento Data (By Month/Year)
+        const resp = await comissoesAPI.getColaboradoresFaturamento();
+        const payload = resp?.data || {};
+        setColaboradoresFat(payload.colaboradores || []);
+      } else if (activeTab === 'recebimento') {
         const { mes, ano } = mesAno;
-
-        if (DEBUG) {
-          console.group('>>> DEBUG [ComissoesPage] Recebimento');
-          console.log('tab=', activeTab);
-          console.log('mes/ano=', { mes, ano });
-          console.log('GET /resultado/recebimento/pagamentos');
-        }
-
-        const response = await recebimentoAPI.getPagamentos(mes, ano);
-        const payload = response?.data || {};
-        const pagamentos = payload.pagamentos || payload.data || [];
-
-        if (DEBUG) {
-          console.log('response.data keys=', Object.keys(payload));
-          console.log('pagamentos.length=', Array.isArray(pagamentos) ? pagamentos.length : 'NOT_ARRAY');
-          console.log('sample[0]=', Array.isArray(pagamentos) ? pagamentos[0] : undefined);
-          console.groupEnd();
-        }
-
-        setDataRecebimento(Array.isArray(pagamentos) ? pagamentos : []);
+        const resp = await comissoesAPI.getColaboradoresRecebimento(mes, ano);
+        const payload = resp?.data || {};
+        setColaboradoresRec(payload.colaboradores || []);
       }
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
@@ -232,9 +196,14 @@ const ComissoesPage = () => {
     }
   }, [activeTab, fetchHistoricoViews, fetchHistoricoMaster]);
 
-  const handleViewDetails = (record) => {
-    setSelectedItem(record);
-    setModalVisible(true);
+  const handleSelectColaborador = (colab) => {
+    setSelectedColaborador(colab);
+    setViewLevel('dashboard');
+  };
+
+  const handleBackToList = () => {
+    setSelectedColaborador(null);
+    setViewLevel('list');
   };
 
   const handleClickSaldoNegativo = (record) => {
@@ -339,38 +308,42 @@ const ComissoesPage = () => {
 
         <Tabs 
           activeKey={activeTab} 
-          onChange={setActiveTab}
+          onChange={handleTabChange}
           type="card"
         >
           <TabPane tab="Por Faturamento" key="faturamento">
-            <Alert 
-              message="Resultados do Último Cálculo" 
-              description="Esta aba exibe os resultados da última execução do cálculo de comissões (Faturamento)." 
-              type="info" 
-              showIcon 
-              style={{ marginBottom: 16 }}
-            />
-            <TabelaComissoes 
-              data={dataFaturamento} 
-              type="faturamento" 
-              loading={loading} 
-              onViewDetails={handleViewDetails}
-            />
+            {viewLevel === 'list' ? (
+              <ColaboradorCardList
+                colaboradores={colaboradoresFat}
+                loading={loading}
+                onSelectColaborador={handleSelectColaborador}
+                tipo="faturamento"
+              />
+            ) : (
+              <ColaboradorDashboard
+                colaborador={selectedColaborador}
+                tipo="faturamento"
+                onBack={handleBackToList}
+                periodo={mesAno.label}
+              />
+            )}
           </TabPane>
           <TabPane tab="Por Recebimento" key="recebimento">
-             <Alert 
-              message="Pagamentos Realizados" 
-              description={`Esta aba exibe os pagamentos efetivados no mês selecionado (Recebimento). Mês atual: ${selectedDate.format('MM/YYYY')}.`} 
-              type="success" 
-              showIcon 
-              style={{ marginBottom: 16 }}
-            />
-            <TabelaComissoes 
-              data={dataRecebimento} 
-              type="recebimento" 
-              loading={loading} 
-              onViewDetails={handleViewDetails}
-            />
+            {viewLevel === 'list' ? (
+              <ColaboradorCardList
+                colaboradores={colaboradoresRec}
+                loading={loading}
+                onSelectColaborador={handleSelectColaborador}
+                tipo="recebimento"
+              />
+            ) : (
+              <ColaboradorDashboard
+                colaborador={selectedColaborador}
+                tipo="recebimento"
+                onBack={handleBackToList}
+                periodo={mesAno.label}
+              />
+            )}
           </TabPane>
 
           <TabPane tab="Saldos Negativos" key="saldos_negativos">
@@ -496,13 +469,6 @@ const ComissoesPage = () => {
           </TabPane>
         </Tabs>
       </Card>
-
-      <DetalhesComissaoModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        data={selectedItem}
-        type={activeTab}
-      />
 
       <DetalhesSaldoNegativoModal
         visible={saldoModalVisible}

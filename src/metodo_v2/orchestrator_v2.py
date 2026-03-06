@@ -380,6 +380,38 @@ class OrchestratorV2:
         else:
             logger.warning(f"Coluna '{col_dt_emissao}' não encontrada - não foi possível filtrar por data")
         
+        # Filtrar por Operação (mesmas operações válidas do modo padrão)
+        operacoes_validas = {
+            "FLOC", "IMO2", "OR19", "P205", "PSEM", "PSER", "SERV", "PVEN", "PVMA",
+        }
+        col_operacao = None
+        for c in self._df_comercial.columns:
+            normalized = c.strip().lower().replace("ã", "a").replace("ç", "c")
+            if normalized == "operacao":
+                col_operacao = c
+                break
+        if col_operacao is not None:
+            antes_op = len(self._df_comercial)
+            operacao_codigo = (
+                self._df_comercial[col_operacao]
+                .astype(str)
+                .str.strip()
+                .str.split(" - ", n=1)
+                .str[0]
+                .str.split()
+                .str[0]
+                .str.upper()
+            )
+            self._df_comercial = self._df_comercial[
+                operacao_codigo.isin(operacoes_validas)
+            ]
+            logger.info(
+                f"Após filtro Operação (válidas={sorted(operacoes_validas)}): "
+                f"{len(self._df_comercial)} registros (removidos {antes_op - len(self._df_comercial)})"
+            )
+        else:
+            logger.warning("Coluna 'Operação' não encontrada - não foi possível filtrar por operação")
+        
         # Verificar colunas necessárias
         required_cols = [
             COL_AC_LINHA, COL_AC_GRUPO, COL_AC_SUBGRUPO,

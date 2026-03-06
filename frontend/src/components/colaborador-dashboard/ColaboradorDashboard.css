@@ -1,0 +1,347 @@
+/* =====================================================
+   Colaborador Dashboard — Styles
+   Visualização "Colaborador-First" para comissões
+   ===================================================== */
+
+/* ---------- Card List (Nível 1 — Seletor) ---------- */
+
+.colab-card-list {
+  width: 100%;
+}
+
+.colab-card-list__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+
+.colab-card-list__search {
+  flex: 1 1 260px;
+  max-width: 400px;
+}
+
+.colab-card-list__filter-cargo {
+  flex: 0 0 220px;
+}
+
+.colab-card-list__sort {
+  flex: 0 0 200px;
+}
+
+.colab-card-list__count {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.colab-card-list__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+/* ---------- Colaborador Card ---------- */
+
+.colab-card {
+  cursor: pointer;
+  transition: all 0.25s ease;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+}
+
+.colab-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  border-color: #1890ff;
+}
+
+.colab-card__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.colab-card__avatar {
+  flex-shrink: 0;
+}
+
+.colab-card__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.colab-card__name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.colab-card__cargo {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin: 0;
+}
+
+.colab-card__comissao {
+  font-size: 24px;
+  font-weight: 700;
+  color: #52c41a;
+  margin: 8px 0 12px;
+  line-height: 1.2;
+}
+
+.colab-card__comissao--recebimento {
+  color: #1890ff;
+}
+
+.colab-card__stats {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.colab-card__stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: #595959;
+}
+
+.colab-card__stat-icon {
+  color: #bfbfbf;
+}
+
+/* ---------- Dashboard (Nível 2 — Detalhes) ---------- */
+
+.colab-dashboard {
+  width: 100%;
+}
+
+.colab-dashboard__back-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.colab-dashboard__header-card {
+  margin-bottom: 20px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #f0f0f0 100%);
+}
+
+.colab-dashboard__header-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.colab-dashboard__header-avatar {
+  flex-shrink: 0;
+}
+
+.colab-dashboard__header-info {
+  flex: 1;
+  min-width: 200px;
+}
+
+.colab-dashboard__header-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: #262626;
+  margin: 0 0 4px;
+}
+
+.colab-dashboard__header-cargo {
+  font-size: 14px;
+  color: #8c8c8c;
+  margin: 0;
+}
+
+.colab-dashboard__header-stats {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.colab-dashboard__header-stat {
+  text-align: center;
+}
+
+.colab-dashboard__header-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  display: block;
+}
+
+.colab-dashboard__header-stat-value--comissao {
+  color: #52c41a;
+  font-size: 26px;
+}
+
+.colab-dashboard__header-stat-label {
+  font-size: 12px;
+  color: #8c8c8c;
+  display: block;
+}
+
+.colab-dashboard__actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+/* ---------- Item Detail (inline expand) ---------- */
+
+.colab-item-detail {
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 4px;
+}
+
+.colab-item-detail__section {
+  margin-bottom: 16px;
+}
+
+.colab-item-detail__section:last-child {
+  margin-bottom: 0;
+}
+
+/* ---------- Comprovante (print styles) ---------- */
+
+.colab-comprovante {
+  padding: 24px;
+}
+
+.colab-comprovante__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 2px solid #262626;
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+}
+
+.colab-comprovante__title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.colab-comprovante__periodo {
+  font-size: 14px;
+  color: #595959;
+}
+
+.colab-comprovante__total {
+  text-align: right;
+}
+
+.colab-comprovante__total-label {
+  font-size: 12px;
+  color: #8c8c8c;
+  display: block;
+}
+
+.colab-comprovante__total-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #52c41a;
+}
+
+/* ---------- Empty State ---------- */
+
+.colab-empty {
+  text-align: center;
+  padding: 60px 24px;
+}
+
+.colab-empty__icon {
+  font-size: 48px;
+  color: #d9d9d9;
+  margin-bottom: 16px;
+}
+
+.colab-empty__text {
+  font-size: 16px;
+  color: #8c8c8c;
+}
+
+/* ---------- Expanded Row Highlight ---------- */
+
+.colab-row-expanded {
+  background: #e6f7ff !important;
+}
+
+.colab-row-expanded td {
+  background: #e6f7ff !important;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 768px) {
+  .colab-card-list__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .colab-card__comissao {
+    font-size: 20px;
+  }
+
+  .colab-dashboard__header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .colab-dashboard__header-stats {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* ---------- Print Styles ---------- */
+
+@media print {
+  /* Esconde elementos de navegação */
+  .colab-dashboard__back-row,
+  .colab-dashboard__actions,
+  .colab-card-list__toolbar,
+  .ant-layout-sider,
+  .ant-layout-header,
+  .ant-tabs-nav,
+  .ant-btn {
+    display: none !important;
+  }
+
+  /* Garante fundo branco */
+  .colab-dashboard,
+  .colab-dashboard__header-card {
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+
+  /* Tabela legível */
+  .ant-table {
+    font-size: 11px !important;
+  }
+
+  /* Comprovante toma a página toda */
+  .colab-comprovante {
+    padding: 0;
+  }
+
+  /* Força impressão sem crop */
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

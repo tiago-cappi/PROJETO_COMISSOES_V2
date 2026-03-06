@@ -36,6 +36,7 @@ import {
 import dayjs from 'dayjs';
 import { metodoV2API } from '../../services/api';
 import DetalhesColaboradorV2Modal from './DetalhesColaboradorV2Modal';
+import DetalhesRecebimentoV2Modal from './DetalhesRecebimentoV2Modal';
 
 const { Title, Text } = Typography;
 
@@ -67,10 +68,14 @@ const ResultadosV2Tab = () => {
   const [recebimentoResultados, setRecebimentoResultados] = useState(null);
   const [recebimentoErro, setRecebimentoErro] = useState(null);
   
-  // Estado do modal de detalhes
+  // Estado do modal de detalhes (faturamento)
   const [modalVisible, setModalVisible] = useState(false);
   const [colaboradorSelecionado, setColaboradorSelecionado] = useState(null);
   const [detalhesColaborador, setDetalhesColaborador] = useState([]);
+
+  // Estado do modal de detalhes (recebimento)
+  const [recebimentoModalVisible, setRecebimentoModalVisible] = useState(false);
+  const [recebimentoColabSelecionado, setRecebimentoColabSelecionado] = useState(null);
 
   // Estado do modal de períodos disponíveis
   const [periodoModalVisible, setPeriodoModalVisible] = useState(false);
@@ -266,6 +271,8 @@ const ResultadosV2Tab = () => {
     setModalVisible(false);
     setColaboradorSelecionado(null);
     setDetalhesColaborador([]);
+    setRecebimentoModalVisible(false);
+    setRecebimentoColabSelecionado(null);
   }, [modoCalculo]);
 
   useEffect(() => {
@@ -366,11 +373,23 @@ const ResultadosV2Tab = () => {
     setModalVisible(true);
   };
 
-  // Fechar modal
+  // Fechar modal faturamento
   const handleFecharModal = () => {
     setModalVisible(false);
     setColaboradorSelecionado(null);
     setDetalhesColaborador([]);
+  };
+
+  // Abrir modal de detalhes recebimento
+  const handleVerDetalhesRecebimento = (record) => {
+    setRecebimentoColabSelecionado(record);
+    setRecebimentoModalVisible(true);
+  };
+
+  // Fechar modal recebimento
+  const handleFecharRecebimentoModal = () => {
+    setRecebimentoModalVisible(false);
+    setRecebimentoColabSelecionado(null);
   };
 
   // Formatar moeda
@@ -518,15 +537,6 @@ const ResultadosV2Tab = () => {
     return baseColumns;
   }, [modoCalculo, baseColumns]);
 
-  const adiantamentosColumns = useMemo(() => ([
-    { title: 'Colaborador', dataIndex: 'Colaborador', key: 'colaborador', width: 200 },
-    { title: 'Documento', dataIndex: 'Documento', key: 'documento', width: 140 },
-    { title: 'Documento Normalizado', dataIndex: 'Documento Normalizado', key: 'doc_norm', width: 180 },
-    { title: 'Valor Base', dataIndex: 'Valor Base', key: 'valor_base', align: 'right', render: (v) => formatCurrency(v || 0) },
-    { title: 'Taxa (%)', dataIndex: 'Taxa (%)', key: 'taxa', align: 'right' },
-    { title: 'Comissão', dataIndex: 'Comissão', key: 'comissao', align: 'right', render: (v) => formatCurrency(v || 0) },
-  ]), []);
-
   const reconciliacoesColumns = useMemo(() => ([
     { title: 'Colaborador', dataIndex: 'Colaborador', key: 'colaborador', width: 200 },
     { title: 'Documento', dataIndex: 'Documento', key: 'documento', width: 140 },
@@ -631,6 +641,124 @@ const ResultadosV2Tab = () => {
       qtdPendentes: recebimentoListas.pendentes.length,
     };
   }, [recebimentoListas]);
+
+  // Agregar recebimento por colaborador
+  const resumoRecebimentoAgregado = useMemo(() => {
+    const docs = recebimentoListas.adiantamentos;
+    if (!docs || docs.length === 0) return [];
+
+    // Montar mapa de cargos a partir do faturamento
+    const cargoMap = {};
+    (resultados?.resumo || []).forEach((r) => {
+      if (r.colaborador && r.cargo) cargoMap[r.colaborador] = r.cargo;
+    });
+
+    const porColab = {};
+    docs.forEach((d) => {
+      const nome = d['Colaborador'] || d['Colaborador Nome'] || 'Desconhecido';
+      if (!porColab[nome]) {
+        porColab[nome] = {
+          colaborador: nome,
+          cargo: cargoMap[nome] || '-',
+          valor_base_total: 0,
+          comissao_total: 0,
+          soma_vb_taxa: 0,
+          qtd_docs: 0,
+          documentos: [],
+        };
+      }
+      const agg = porColab[nome];
+      const vb = Number(d['Valor Base'] || 0);
+      const comissao = Number(d['Comissão'] || d['Comissão Calculada'] || 0);
+      const taxa = Number(d['Taxa (%)'] || d['Percentual Aplicado'] || 0);
+
+      agg.valor_base_total += vb;
+      agg.comissao_total += comissao;
+      agg.soma_vb_taxa += vb * taxa;
+      agg.qtd_docs += 1;
+      agg.documentos.push(d);
+    });
+
+    return Object.values(porColab)
+      .map((agg) => ({
+        ...agg,
+        taxa_media_pct: agg.valor_base_total > 0 ? agg.soma_vb_taxa / agg.valor_base_total : 0,
+      }))
+      .sort((a, b) => b.comissao_total - a.comissao_total);
+  }, [recebimentoListas.adiantamentos, resultados?.resumo]);
+
+  // Colunas da tabela de recebimento por colaborador
+  const recebimentoColaboradorColumns = useMemo(() => [
+    {
+      title: 'Colaborador',
+      dataIndex: 'colaborador',
+      key: 'colaborador',
+      sorter: (a, b) => a.colaborador.localeCompare(b.colaborador),
+      render: (text) => <Text strong>{text}</Text>,
+    },
+    {
+      title: 'Cargo',
+      dataIndex: 'cargo',
+      key: 'cargo',
+      render: (cargo) => (
+        <Tag color={cargo?.includes('Gerente') ? 'blue' : 'green'}>
+          {cargo || '-'}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Valor Base Total',
+      dataIndex: 'valor_base_total',
+      key: 'valor_base_total',
+      align: 'right',
+      sorter: (a, b) => a.valor_base_total - b.valor_base_total,
+      render: (value) => formatCurrency(value),
+    },
+    {
+      title: 'Comissão Total',
+      dataIndex: 'comissao_total',
+      key: 'comissao_total',
+      align: 'right',
+      sorter: (a, b) => a.comissao_total - b.comissao_total,
+      defaultSortOrder: 'descend',
+      render: (value) => (
+        <Text strong style={{ color: '#52c41a' }}>
+          {formatCurrency(value)}
+        </Text>
+      ),
+    },
+    {
+      title: 'Taxa Média',
+      dataIndex: 'taxa_media_pct',
+      key: 'taxa_media_pct',
+      align: 'right',
+      render: (value) => `${(value || 0).toFixed(2)}%`,
+    },
+    {
+      title: 'Qtd. Docs',
+      dataIndex: 'qtd_docs',
+      key: 'qtd_docs',
+      align: 'center',
+      sorter: (a, b) => a.qtd_docs - b.qtd_docs,
+      render: (value) => <Tag color="blue">{value}</Tag>,
+    },
+    {
+      title: 'Ações',
+      key: 'acoes',
+      align: 'center',
+      render: (_, record) => (
+        <Tooltip title="Ver detalhes de recebimento">
+          <Button
+            type="link"
+            icon={<EyeOutlined />}
+            onClick={() => handleVerDetalhesRecebimento(record)}
+          >
+            Detalhes
+          </Button>
+        </Tooltip>
+      ),
+    },
+  ], []);
 
   // Renderizar cards de estatísticas
   const renderEstatisticas = () => {
@@ -837,19 +965,20 @@ const ResultadosV2Tab = () => {
                   <Col xs={24} sm={8}>
                     <Card>
                       <Statistic
-                        title="Adiantamentos"
-                        value={recebimentoTotais.qtdAdiantamentos}
-                        prefix={<DollarOutlined />}
+                        title="Colaboradores (Recebimento)"
+                        value={resumoRecebimentoAgregado.length}
+                        prefix={<TeamOutlined />}
                       />
                     </Card>
                   </Col>
                   <Col xs={24} sm={8}>
                     <Card>
                       <Statistic
-                        title="Total Adiantamentos"
+                        title="Total Comissões Recebimento"
                         value={recebimentoTotais.totalAdiantamentos}
                         precision={2}
                         prefix={<DollarOutlined />}
+                        valueStyle={{ color: '#3f8600' }}
                         formatter={(value) => formatCurrency(value)}
                       />
                     </Card>
@@ -867,13 +996,25 @@ const ResultadosV2Tab = () => {
                   </Col>
                 </Row>
 
-                <Card title="Adiantamentos" style={{ marginBottom: 16 }}>
+                <Card
+                  title={
+                    <Space>
+                      <TeamOutlined />
+                      <span>Comissões por Recebimento</span>
+                    </Space>
+                  }
+                  style={{ marginBottom: 16 }}
+                >
                   <Table
-                    dataSource={recebimentoListas.adiantamentos}
-                    columns={adiantamentosColumns}
-                    rowKey={(record, idx) => `adiant_${idx}`}
-                    pagination={{ pageSize: 8, showSizeChanger: true }}
-                    size="small"
+                    dataSource={resumoRecebimentoAgregado}
+                    columns={recebimentoColaboradorColumns}
+                    rowKey={(record) => `rec_${record.colaborador}`}
+                    pagination={{
+                      pageSize: 10,
+                      showSizeChanger: true,
+                      showTotal: (total) => `Total: ${total} colaboradores`,
+                    }}
+                    size="middle"
                   />
                 </Card>
 
@@ -912,13 +1053,20 @@ const ResultadosV2Tab = () => {
         )}
       </Spin>
 
-      {/* Modal de detalhes */}
+      {/* Modal de detalhes (faturamento) */}
       <DetalhesColaboradorV2Modal
         visible={modalVisible}
         onClose={handleFecharModal}
         colaborador={colaboradorSelecionado}
         detalhes={detalhesColaborador}
         modoCalculo={modoCalculo}
+      />
+
+      {/* Modal de detalhes (recebimento) */}
+      <DetalhesRecebimentoV2Modal
+        visible={recebimentoModalVisible}
+        onClose={handleFecharRecebimentoModal}
+        colaborador={recebimentoColabSelecionado}
       />
 
       {/* Modal de períodos disponíveis */}

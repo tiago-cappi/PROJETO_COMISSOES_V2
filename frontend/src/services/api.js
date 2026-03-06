@@ -254,6 +254,24 @@ export const resultadosAPI = {
   baixar: () => api.get('/baixar/resultado', { responseType: 'blob' }),
 };
 
+// ==================== COMISSÕES (Colaborador-First) ====================
+
+export const comissoesAPI = {
+  /**
+   * Obtém comissões por faturamento agrupadas por colaborador.
+   * Retorna lista de colaboradores com seus itens e totais.
+   */
+  getColaboradoresFaturamento: () =>
+    api.get('/resultado/comissoes/colaboradores/faturamento'),
+
+  /**
+   * Obtém comissões por recebimento agrupadas por colaborador.
+   * Retorna lista de colaboradores com seus pagamentos e totais.
+   */
+  getColaboradoresRecebimento: (mes, ano) =>
+    api.get(`/resultado/comissoes/colaboradores/recebimento?mes=${mes}&ano=${ano}`),
+};
+
 // ==================== HEALTH ====================
 
 export const healthAPI = {

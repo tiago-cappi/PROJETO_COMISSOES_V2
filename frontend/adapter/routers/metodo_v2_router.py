@@ -150,6 +150,9 @@ async def get_config() -> Dict[str, Any]:
         
         return {"colaboradores": result, "existe": True}
         
+    except ValueError as e:
+        logger.error(f"Erro de validação na configuração V2: {e}")
+        raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         logger.exception(f"Erro ao carregar config V2: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -324,6 +327,10 @@ async def executar_calculo(request: ExecutarV2Request) -> Dict[str, Any]:
         
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        # Erros de validação de configuração (ex: nomes duplicados em COLABORADORES_V2)
+        logger.error(f"Erro de validação na configuração V2: {e}")
+        raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         logger.exception(f"Erro ao executar cálculo V2: {e}")
         raise HTTPException(status_code=500, detail=str(e))

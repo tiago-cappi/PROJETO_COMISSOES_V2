@@ -119,8 +119,9 @@ class ProcessMapperV2:
             # Se não encontrar padrão, retornar original
             return doc_limpo
         
-        # Regular: documento já é a NF
-        return doc_limpo
+        # Regular: normalizar removendo zeros à esquerda para casar com AC NFs
+        doc_stripped = doc_limpo.lstrip('0') or '0'
+        return doc_stripped
     
     def mapear_pagamentos(self, df_pagamentos: pd.DataFrame) -> List[ProcessoMapeado]:
         """Mapeia todos os pagamentos de um DataFrame.

@@ -86,10 +86,12 @@ app = FastAPI(
 # ==================== ROUTERS ====================
 from routers import monitor_router, historico_router
 from routers.metodo_v2_router import router as metodo_v2_router
+from routers.comissoes_router import router as comissoes_router
 
 app.include_router(monitor_router)
 app.include_router(historico_router)
 app.include_router(metodo_v2_router)
+app.include_router(comissoes_router)
 
 # CORS
 app.add_middleware(
@@ -1537,6 +1539,70 @@ async def obter_logs(lines: int = Query(200, ge=1, le=5000)):
         return PlainTextResponse(tail)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao ler logs: {e}")
+
+
+@app.get("/debug/routes")
+async def debug_listar_rotas():
+    """Lista todas as rotas registradas no FastAPI para diagnóstico."""
+    rotas = []
+    for route in app.routes:
+        info = {"path": getattr(route, "path", str(route))}
+        if hasattr(route, "methods"):
+            info["methods"] = sorted(route.methods)
+        if hasattr(route, "name"):
+            info["name"] = route.name
+        rotas.append(info)
+    return {
+        "total_routes": len(rotas),
+        "routes": sorted(rotas, key=lambda r: r["path"]),
+    }
+
+
+@app.get("/debug/regras-config")
+async def debug_regras_config():
+    """Diagnóstico: verifica acesso ao arquivo REGRAS_COMISSOES.xlsx e suas abas."""
+    regras_path = get_regras_path()
+    result = {
+        "robo_root_path": ROBO_ROOT_PATH,
+        "regras_path": str(regras_path),
+        "regras_exists": regras_path.exists(),
+        "sheet_names": [],
+        "pesos_metas_ok": False,
+        "colaboradores_ok": False,
+        "cargos_ok": False,
+        "hierarquia_ok": False,
+        "errors": [],
+    }
+
+    if not regras_path.exists():
+        result["errors"].append(f"Arquivo não encontrado: {regras_path}")
+        return result
+
+    try:
+        wb = load_workbook(regras_path, read_only=True)
+        result["sheet_names"] = wb.sheetnames
+        wb.close()
+    except Exception as e:
+        result["errors"].append(f"Erro ao abrir workbook: {str(e)}")
+        return result
+
+    # Testar leitura de abas críticas
+    critical_sheets = {
+        "PESOS_METAS": "pesos_metas_ok",
+        "COLABORADORES": "colaboradores_ok",
+        "CARGOS": "cargos_ok",
+        "HIERARQUIA": "hierarquia_ok",
+    }
+    for sheet_name, key in critical_sheets.items():
+        try:
+            df = read_excel_sheet(regras_path, sheet_name)
+            result[key] = True
+            result[f"{key}_rows"] = len(df)
+            result[f"{key}_cols"] = list(df.columns)
+        except Exception as e:
+            result["errors"].append(f"Erro ao ler {sheet_name}: {str(e)}")
+
+    return result
 
 
 # ==================== ENDPOINTS - RESULTADOS ====================

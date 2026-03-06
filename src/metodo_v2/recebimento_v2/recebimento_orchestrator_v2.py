@@ -108,7 +108,8 @@ class RecebimentoOrchestratorV2:
             self.reconciliacao_calculator = ReconciliacaoCalculatorV2(
                 state_manager=self.state_manager,
                 comissao_calculator=self.comissao_calculator,
-                colaboradores=self.colaboradores
+                colaboradores=self.colaboradores,
+                modo_cc=self.modo_cc
             )
             
             # Estatísticas
@@ -299,8 +300,16 @@ class RecebimentoOrchestratorV2:
             logger.error(f"[V2-REC-ORCH] Coluna de valor não encontrada na AC. Colunas: {df_ac.columns.tolist()}")
             return []
         
-        # Normalizar coluna NF para string
-        df_ac[col_nf] = df_ac[col_nf].astype(str).str.strip().str.upper()
+        # Normalizar coluna NF para string (remover .0 de floats e liderar zeros)
+        df_ac[col_nf] = (
+            df_ac[col_nf]
+            .astype(str)
+            .str.strip()
+            .str.replace(r'\.0$', '', regex=True)
+            .str.lstrip('0')
+            .replace('', '0')
+            .str.upper()
+        )
         
         # Pré-calcular faturamento por CC (para determinar faixas)
         faturamento_por_cc = df_ac.groupby(col_cc)[col_valor].sum().to_dict()
@@ -385,16 +394,20 @@ class RecebimentoOrchestratorV2:
                 
                 resultados.append(resultado)
                 
-                # Registrar no estado
-                self.state_manager.registrar_adiantamento(
-                    documento_normalizado=doc_norm,
-                    valor_adiantado=processo.valor_liquido,
-                    comissao_adiantada=comissao,
-                    data_adiantamento=processo.data_baixa or pd.Timestamp.now(),
-                    colaborador_id=colab.nome,
-                    mes=mes,
-                    ano=ano
-                )
+                # Registrar no estado APENAS adiantamentos (COT).
+                # Pagamentos regulares (NF) já são definitivos e NÃO devem
+                # entrar no ciclo de reconciliação.
+                if is_adiantamento:
+                    self.state_manager.registrar_adiantamento(
+                        documento_normalizado=doc_norm,
+                        valor_adiantado=processo.valor_liquido,
+                        comissao_adiantada=comissao,
+                        data_adiantamento=processo.data_baixa or pd.Timestamp.now(),
+                        colaborador_id=colab.nome,
+                        mes=mes,
+                        ano=ano,
+                        centro_custo=cc_doc
+                    )
         
         logger.info(f"[V2-REC-ORCH] Total de comissões calculadas: {len(resultados)}")
         return resultados
@@ -402,8 +415,8 @@ class RecebimentoOrchestratorV2:
     def _obter_taxa_faixa(self, regra_cc, faturamento: float) -> float:
         """Obtém a taxa de comissão baseada no faturamento e nas faixas da regra CC.
         
-        Percorre as faixas da regra (ordenadas por limite_inferior) e retorna
-        a taxa da faixa mais alta que o faturamento atinge.
+        Percorre as faixas em ordem reversa (maior limite primeiro) e retorna
+        a taxa da primeira faixa cujas condições se aplicam ao faturamento.
         
         Args:
             regra_cc: RegraCentroCusto com lista de faixas.
@@ -416,26 +429,21 @@ class RecebimentoOrchestratorV2:
             logger.warning(f"[V2-REC-ORCH] Regra CC {regra_cc.centro_custo} sem faixas definidas")
             return 0.0
         
-        taxa_aplicavel = 0.0
-        faixa_encontrada = None
-        
-        # Faixas já estão ordenadas por limite_inferior (crescente)
-        for faixa in regra_cc.faixas:
+        # Iterar em ordem reversa (faixa mais alta primeiro) para retornar
+        # a faixa mais elevada que se aplique ao faturamento.
+        for faixa in reversed(regra_cc.faixas):
             if faixa.aplica_ao_faturamento(faturamento):
-                taxa_aplicavel = faixa.taxa_comissao_pct
-                faixa_encontrada = faixa
-            elif faturamento >= faixa.limite_inferior:
-                # Faturamento >= limite, usar esta taxa
-                taxa_aplicavel = faixa.taxa_comissao_pct
-                faixa_encontrada = faixa
+                logger.debug(
+                    f"[V2-REC-ORCH] Faixa encontrada: limite={faixa.limite_inferior}, "
+                    f"taxa={faixa.taxa_comissao_pct}% para faturamento={faturamento}"
+                )
+                return faixa.taxa_comissao_pct
         
-        if faixa_encontrada:
-            logger.debug(
-                f"[V2-REC-ORCH] Faixa encontrada: limite={faixa_encontrada.limite_inferior}, "
-                f"taxa={taxa_aplicavel}% para faturamento={faturamento}"
-            )
-        
-        return taxa_aplicavel
+        logger.warning(
+            f"[V2-REC-ORCH] Nenhuma faixa aplicável para CC={regra_cc.centro_custo}, "
+            f"faturamento={faturamento}. Retornando 0%."
+        )
+        return 0.0
     
     def _processar_adiantamentos(
         self,

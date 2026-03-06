@@ -1,8 +1,8 @@
 # 📚 DOCUMENTAÇÃO COMPLETA DO SISTEMA DE COMISSÕES
 
-> **Versão:** 1.0  
-> **Data:** Dezembro/2024  
-> **Status:** Documento Mestre - Fonte Única de Verdade
+> **Versão:** 1.1  
+> **Data:** Março/2026  
+> **Status:** Documento Mestre auditado contra o fluxo principal atual do projeto
 
 ---
 
@@ -48,7 +48,9 @@ O sistema processa dois fluxos distintos de comissionamento:
 | **Por Faturamento** | Na emissão da Nota Fiscal | Comissão paga quando o processo é faturado |
 | **Por Recebimento** | Quando o cliente paga | Comissão paga proporcionalmente aos pagamentos recebidos |
 
-Ambos os fluxos aplicam **Fatores de Correção (FC)** baseados no desempenho do colaborador em relação às metas estabelecidas.
+No fluxo por faturamento, o sistema calcula um **FC em rampa** por item e, quando houver configuração por cargo, converte esse resultado em um **multiplicador final de escada**.
+
+No fluxo por recebimento, o sistema calcula **TCMP** e **FCMP** por processo e por colaborador, reaproveitando a lógica do faturamento para os itens do processo quando ele já está faturado.
 
 ---
 
@@ -100,11 +102,14 @@ Ambos os fluxos aplicam **Fatores de Correção (FC)** baseados no desempenho do
 
 ### 2.2 Etapas do Processamento
 
-1. **Preparação:** Validação e limpeza dos dados de entrada
-2. **Mapeamento:** Vinculação de pagamentos aos processos comerciais
-3. **Cálculo:** Aplicação das regras de negócio para determinar comissões
-4. **Reconciliação:** Ajuste de adiantamentos quando processos são faturados
-5. **Consolidação:** Geração de relatórios e painéis
+1. **Carga e validação:** Leitura do `REGRAS_COMISSOES.xlsx`, arquivos auxiliares e dados operacionais.
+2. **Pré-processamento mensal:** Geração e normalização de bases como faturados, conversões e YTD.
+3. **Cálculo de realizados:** Consolidação dos realizados de faturamento, conversão, rentabilidade e fornecedores.
+4. **Detecção de cross-selling:** Identificação antecipada de processos que dependem de decisão do usuário.
+5. **Cálculo por faturamento:** Comissão item a item com taxa, fatia, split e FC aplicado.
+6. **Cálculo por recebimento:** Processamento de adiantamentos e pagamentos regulares com estado persistente por processo.
+7. **Reconciliação:** Ajuste de adiantamentos após o faturamento do processo.
+8. **Pós-processamento:** Persistência no banco histórico, devoluções e geração de saídas.
 
 ---
 
@@ -119,16 +124,17 @@ Planilha contendo todos os processos de venda do período.
 |-------|-----------|
 | Número do Processo | Identificador único da venda |
 | Cliente | Nome/razão social do comprador |
-| Data de Emissão | Data de emissão da Nota Fiscal |
+| Dt Emissão / Data de Emissão | Data de emissão da Nota Fiscal |
 | Status Processo | Estado atual (Em Andamento, Pendente, FATURADO) |
 | Numero NF | Número da Nota Fiscal |
-| Linha de Negócio | Categoria principal do produto |
+| Negócio / Linha de Negócio | Categoria principal do produto |
 | Grupo | Subcategoria do produto |
 | Subgrupo | Divisão mais específica |
 | Tipo de Mercadoria | Classificação final do item |
-| Valor do Item | Valor monetário do item vendido |
-| Gerente Comercial-Pedido | Campo que indica cross-selling quando preenchido |
-| Colaboradores | Nomes dos responsáveis pela venda |
+| Valor Realizado | Valor efetivamente faturado do item |
+| Valor Orçado | Valor usado como referência para processos ainda não faturados no fluxo de recebimento |
+| Código Produto / Descrição Produto | Identificação do item faturado |
+| Gerente Comercial-Pedido | Campo usado pelo motor de cross-selling para detectar participação externa |
 
 ### 3.2 Análise Financeira
 
@@ -139,12 +145,17 @@ Planilha contendo todos os pagamentos recebidos no período.
 |-------|-----------|
 | Documento | Código do documento de pagamento |
 | Valor Líquido | Valor efetivamente recebido |
-| Data de Pagamento | Data do recebimento |
-| Processo Relacionado | Vínculo com o processo comercial |
+| Data de Baixa | Data considerada para a apuração do recebimento |
+| Tipo de Baixa | Indicador usado para filtrar apenas baixas válidas |
 
 **Identificação de Adiantamentos:**
 - Documentos que começam com **"COT"** são adiantamentos (pagamentos antes do faturamento)
-- Demais documentos são pagamentos regulares
+- Demais documentos são tratados como pagamentos regulares e são vinculados à venda via número da NF
+
+**Filtros aplicados no fluxo atual:**
+- Apenas registros com **`Tipo de Baixa = B`** entram no cálculo
+- A data usada para filtro mensal é **`Data de Baixa`**
+- O vínculo documento → processo não vem pronto na planilha; ele é reconstruído pelo motor de recebimento
 
 ### 3.3 Arquivo de Regras de Negócio (REGRAS_COMISSOES.xlsx)
 
@@ -154,17 +165,19 @@ Arquivo mestre contendo todas as configurações do sistema. Detalhado na seçã
 
 Arquivos mensais localizados na pasta `dados_entrada/rentabilidades/`.
 
-**Formato do Nome:** `rentabilidade_MM_AAAA_agrupada`
+**Formato esperado no fluxo principal:** `*MM*AAAA*agrupada*.xlsx`
 
-**Conteúdo:** Rentabilidade realizada (margem de lucro) de cada categoria de produto que foi faturada naquele mês.
+**Conteúdo:** Rentabilidade realizada agregada por hierarquia de produto (`Negócio`, `Grupo`, `Subgrupo`, `Tipo de Mercadoria`).
 
-**Propósito:** Comparar meta de rentabilidade versus realizado para cálculo do FC.
+**Propósito:** Alimentar diretamente o componente de rentabilidade do FC. O cálculo principal **não** consolida CSV bruto em tempo de execução; ele espera um arquivo mensal já agregado.
 
 ### 3.5 Taxas de Câmbio
 
-Arquivo contendo taxas médias mensais para conversão de moedas estrangeiras.
+O projeto mantém taxas médias mensais em `data/currency_rates/monthly_avg_rates.json`.
 
-**Uso:** Converter metas de fornecedores em moedas estrangeiras (USD, EUR) para Reais.
+**Uso:** Converter metas de fornecedores em moedas estrangeiras (USD, EUR) para Reais no cálculo do componente de fornecedores do FC.
+
+**Observação operacional:** antes do cálculo, o fluxo principal pode identificar moedas faltantes a partir de `config/METAS_FORNECEDORES.csv` e completar o JSON via integração com serviço de câmbio.
 
 ---
 
@@ -172,7 +185,15 @@ Arquivo contendo taxas médias mensais para conversão de moedas estrangeiras.
 
 ### 4.1 Estrutura do Arquivo REGRAS_COMISSOES.xlsx
 
-O arquivo de regras contém múltiplas abas, cada uma definindo um aspecto do sistema:
+O arquivo de regras contém múltiplas abas. No fluxo principal auditado, as mais relevantes são:
+
+- **ATRIBUICOES:** definição de responsáveis por hierarquia de produto
+- **PESOS_METAS:** pesos do FC por cargo
+- **COLABORADORES / CARGOS:** identificação de cargos e elegibilidade por recebimento
+- **METAS_FORNECEDORES:** metas anuais por linha, fornecedor e moeda
+- **PARAMS:** parâmetros operacionais como caps do FC
+- **FC_ESCADA_CARGOS:** regra opcional de escada/rampa por cargo
+- **CROSS_SELLING:** elegibilidade e taxa do consultor externo
 
 ### 4.2 Taxas de Rateio (Taxa de Comissão)
 
@@ -210,6 +231,8 @@ Linha de Negócio
 ```
 Comissão do Colaborador = Valor Item × Taxa de Rateio × Fatia do Cargo × FC
 ```
+
+**Observação importante do estado atual:** além da fatia do cargo, o fluxo principal também pode aplicar **`fator_split`** quando a atribuição do cargo é compartilhada entre duas pessoas (por exemplo, gerente/coordenador 1 e 2).
 
 ### 4.4 Metas de Faturamento
 
@@ -250,9 +273,9 @@ Comissão do Colaborador = Valor Item × Taxa de Rateio × Fatia do Cargo × FC
 
 **Unidade de Medida:** Percentual (%)
 
-**Características Especiais:**
-- **NÃO possui piso** (limite mínimo)
-- **NÃO possui teto** (limite máximo)
+**Características no fluxo atual:**
+- O atingimento bruto pode ficar acima de 100%
+- A contribuição final desse componente para o FC segue o mesmo cap configurado em `PARAMS` para os demais componentes
 
 **Exemplo:**
 | Linha | Grupo | Meta Rentabilidade |
@@ -266,7 +289,9 @@ Comissão do Colaborador = Valor Item × Taxa de Rateio × Fatia do Cargo × FC
 
 **Moeda:** Pode ser em moeda estrangeira (USD, EUR, etc.)
 
-**Conversão:** Sistema usa taxas de câmbio mensais para comparar realizado com meta.
+**Conversão:** O sistema converte o realizado YTD por fornecedor usando a taxa média mensal armazenada no JSON de câmbio.
+
+**Regra operacional atual:** a meta anual é convertida em **meta YTD proporcional ao mês de apuração** antes da comparação com o realizado.
 
 **Exemplo:**
 | Fornecedor | Meta Anual | Moeda |
@@ -277,6 +302,17 @@ Comissão do Colaborador = Valor Item × Taxa de Rateio × Fatia do Cargo × FC
 ### 4.8 Pesos das Metas
 
 **Definição:** Importância relativa de cada componente no cálculo do Fator de Correção.
+
+Os pesos são lidos **por cargo**. O fluxo principal atualmente suporta os seguintes componentes, conforme disponibilidade de peso e dados:
+
+- Faturamento da Linha
+- Faturamento Individual
+- Conversão da Linha
+- Conversão Individual
+- Rentabilidade
+- Retenção de Clientes (aplicada na prática a `Gerente Linha`)
+- Meta Fornecedor 1
+- Meta Fornecedor 2
 
 **Exemplo de Distribuição:**
 | Componente | Peso |
@@ -296,15 +332,15 @@ Comissão do Colaborador = Valor Item × Taxa de Rateio × Fatia do Cargo × FC
 
 **Aba:** `ATRIBUICOES` no arquivo de regras
 
-**Estrutura:**
-| Colaborador | Linha | Grupo | Subgrupo | Tipo Mercadoria |
-|-------------|-------|-------|----------|-----------------|
-| João Silva | Ambiental | Equipamentos | Bombas | * |
-| Maria Santos | Analítica | Instrumentos | * | * |
+**Estrutura lógica observada no projeto:**
+- Hierarquia por linha, grupo, subgrupo e tipo de mercadoria
+- Possibilidade de formato “wide”, com múltiplos ocupantes por cargo
+- Suporte a `fator_split` para divisão de comissão em cargos compartilhados
 
 **Uso Principal:**
 - Determinar quem recebe comissão por cada item
 - Identificar itens de cross-selling
+- Identificar divisões internas do mesmo cargo
 
 ---
 
@@ -326,13 +362,16 @@ Para **cada item** vendido dentro de um processo:
    └── Buscar no arquivo de regras a taxa aplicável à categoria
 
 3. IDENTIFICAR COLABORADORES
-   └── Verificar na aba ATRIBUICOES quem é responsável
+   └── Verificar na aba ATRIBUICOES quem é responsável, incluindo splits de cargo quando aplicável
 
 4. CALCULAR FATOR DE CORREÇÃO (FC)
-   └── Para cada colaborador, baseado no atingimento de metas
+   └── Para cada colaborador, calcular o FC em rampa pelos componentes habilitados
 
-5. APLICAR FÓRMULA
-   └── Comissão = Valor Item × Taxa Rateio × Fatia Cargo × FC
+5. APLICAR REGRA FINAL POR CARGO
+   └── Se houver configuração em FC_ESCADA_CARGOS, transformar o FC em rampa no multiplicador final
+
+6. APLICAR FÓRMULA
+   └── Comissão = Valor Realizado × Taxa Rateio Ajustada × Fatia Cargo × Fator Split × FC Aplicado
 ```
 
 ### 5.3 Cálculo do Fator de Correção (FC)
@@ -348,8 +387,14 @@ Atingimento = Valor Realizado / Valor da Meta
 #### 5.3.2 Fórmula do FC (Média Ponderada)
 
 ```
-FC = Σ (Atingimento de cada Meta × Peso da Meta)
+FC_rampa = Σ ( min(Atingimento de cada Meta, Cap do Componente) × Peso da Meta )
 ```
+
+Depois disso, o sistema calcula o **multiplicador final aplicado na comissão**:
+
+- Se o cargo estiver sem configuração específica, o multiplicador final é o próprio `FC_rampa`
+- Se o cargo estiver em modo `RAMPA` na aba `FC_ESCADA_CARGOS`, o multiplicador final continua sendo o `FC_rampa`
+- Se o cargo estiver em modo `ESCADA`, o sistema converte o `FC_rampa` para um degrau discreto conforme piso e número de degraus configurados
 
 **Exemplo de Cálculo:**
 
@@ -361,47 +406,60 @@ FC = Σ (Atingimento de cada Meta × Peso da Meta)
 | Rentabilidade | 20% | 28% | 25% | 112% → **100%** | 20% |
 | ... | ... | ... | ... | ... | ... |
 
-**FC Calculado:** Soma das contribuições = 22,5% + 15% + 14,25% + 20% + ... = **97%**
+**FC em rampa calculado:** Soma das contribuições = 22,5% + 15% + 14,25% + 20% + ... = **97%**
+
+**Componentes hoje suportados no fluxo principal:**
+- Faturamento da linha
+- Faturamento individual
+- Conversão da linha
+- Conversão individual
+- Rentabilidade
+- Retenção de clientes
+- Meta fornecedor 1
+- Meta fornecedor 2
 
 ### 5.4 Regras Críticas do Fator de Correção
 
-#### 5.4.1 TETO MÁXIMO: FC = 1.0 (100%)
+#### 5.4.1 TETO MÁXIMO CONFIGURÁVEL DO FC EM RAMPA
 
-- **Regra:** O FC **nunca** pode ultrapassar 1.0
-- **Implicação:** Mesmo que o colaborador supere 100% de todas as metas, o FC máximo será 1.0
-- **Motivo:** Não há bônus por superação; comissão máxima é a integral (100%)
+- **Regra atual:** O FC em rampa é limitado pelo parâmetro `cap_fc_max`
+- **Padrão observado no projeto:** `cap_fc_max = 1.0`
+- **Implicação:** Com a configuração padrão, não há bônus por superação no fluxo principal
 
 #### 5.4.2 SEM PISO MÍNIMO
 
-- **Regra:** O FC **não possui** limite inferior
-- **Implicação:** Se metas forem severamente não atingidas, FC pode tender a zero
+- **Regra de negócio:** O desempenho ruim reduz o multiplicador final
+- **Observação técnica:** no modo `ESCADA`, a regra respeita o piso configurado para o cargo; no modo `RAMPA`, o valor segue diretamente a performance calculada
 
-#### 5.4.3 REGRA DE TOLERÂNCIA: 95% = 100%
+#### 5.4.3 REGRA DE ESCADA POR CARGO
 
-- **Regra:** Se o FC calculado for **≥ 95%**, considera-se **100%**
-- **Implicação:** Colaboradores que atingem pelo menos 95% das metas recebem comissão integral
-- **Penalização:** Só ocorre quando FC < 95%
+- **Regra atual do código:** a aba `FC_ESCADA_CARGOS` pode definir, por cargo:
+   - `modo = RAMPA` ou `ESCADA`
+   - `num_degraus`
+   - `piso_pct`
+- **Sem tolerância:** no modo `ESCADA`, o avanço de degrau usa corte exato; não existe regra operacional de `95% = 100%` no fluxo principal auditado
+- **Topo da escada:** o multiplicador máximo (`1.0`) só ocorre quando a performance em rampa atinge pelo menos `1.0`
 
-**Exemplo da Regra de Tolerância:**
-| FC Calculado | FC Aplicado | Resultado |
-|--------------|-------------|-----------|
-| 98% | 100% | Comissão integral |
-| 96% | 100% | Comissão integral |
-| 95% | 100% | Comissão integral |
-| 94% | 94% | Penalização de 6% |
-| 80% | 80% | Penalização de 20% |
+**Exemplo conceitual de escada:**
+| FC em Rampa | Configuração do Cargo | Multiplicador Aplicado |
+|-------------|-----------------------|------------------------|
+| 0,82 | RAMPA | 0,82 |
+| 0,82 | ESCADA com 4 degraus | Depende do degrau atingido |
+| 1,00 | ESCADA | 1,00 |
 
 ### 5.5 Fórmula Final da Comissão por Faturamento
 
 ```
-Comissão do Item = Valor do Item × Taxa de Rateio × Fatia do Cargo × FC
+Comissão Potencial = Valor Realizado do Item × Taxa de Rateio Ajustada × Fatia do Cargo × Fator Split
+Comissão Final = Comissão Potencial × FC Aplicado
 ```
 
 **Onde:**
-- **Valor do Item:** Valor monetário do item vendido
-- **Taxa de Rateio:** Percentual máximo de comissão da categoria
+- **Valor Realizado do Item:** Valor monetário efetivamente faturado
+- **Taxa de Rateio Ajustada:** Percentual máximo da categoria, eventualmente reduzido por cross-selling na opção A
 - **Fatia do Cargo:** Percentual que o cargo do colaborador recebe
-- **FC:** Fator de Correção (máximo 1.0, mínimo sem limite)
+- **Fator Split:** Fração aplicada quando o mesmo cargo é compartilhado
+- **FC Aplicado:** Multiplicador final após rampa e eventual escada por cargo
 
 **Exemplo Numérico:**
 
@@ -410,8 +468,9 @@ Comissão do Item = Valor do Item × Taxa de Rateio × Fatia do Cargo × FC
 | Valor do Item | R$ 10.000 |
 | Taxa de Rateio | 5% |
 | Fatia (Gerente) | 40% |
-| FC | 97% → 100% (tolerância) |
-| **Comissão** | R$ 10.000 × 5% × 40% × 100% = **R$ 200,00** |
+| Fator Split | 100% |
+| FC Aplicado | 97% |
+| **Comissão** | R$ 10.000 × 5% × 40% × 100% × 97% = **R$ 194,00** |
 
 ---
 
@@ -421,6 +480,13 @@ Comissão do Item = Valor do Item × Taxa de Rateio × Fatia do Cargo × FC
 
 Colaboradores que recebem por recebimento têm suas comissões calculadas quando o cliente efetua o pagamento, não no momento do faturamento.
 
+O fluxo atual é orquestrado por um módulo dedicado de recebimento, com:
+
+- carga filtrada da Análise Financeira
+- mapeamento documento → processo
+- estado persistente em `Estado_Processos_Recebimento.xlsx`
+- cálculo separado para adiantamentos, pagamentos regulares e reconciliações
+
 ### 6.2 Desafio: Múltiplos Itens com Taxas Diferentes
 
 Um único processo pode conter vários itens, cada um com:
@@ -428,6 +494,8 @@ Um único processo pode conter vários itens, cada um com:
 - FC diferente (colaboradores diferentes)
 
 **Solução:** Usar médias ponderadas pelo valor de cada item.
+
+Além disso, o cálculo é feito **por colaborador elegível para recebimento**, não apenas por processo agregado.
 
 ### 6.3 TCMP - Taxa de Comissão Média Ponderada
 
@@ -471,23 +539,27 @@ FCMP = Σ (FC do Item × Valor do Item) / Σ (Valor Total dos Itens)
 | **Total** | **R$ 15.000** | - |
 
 ```
-FCMP = (100% × 10.000 + 85% × 5.000) / 15.000
-FCMP = (10.000 + 4.250) / 15.000
-FCMP = 14.250 / 15.000
-FCMP = 95% → 100% (aplica regra de tolerância)
+FCMP_rampa = (100% × 10.000 + 85% × 5.000) / 15.000
+FCMP_rampa = (10.000 + 4.250) / 15.000
+FCMP_rampa = 14.250 / 15.000
+FCMP_rampa = 95%
 ```
+
+Se o cargo do colaborador tiver configuração de escada, o sistema também calcula um **FCMP aplicado** a partir do `FCMP_rampa`.
 
 ### 6.5 Regras do FCMP
 
-- **Teto Máximo:** FCMP = 1.0 (mesma regra do FC)
-- **Sem Piso:** Pode tender a zero
-- **Tolerância:** Se FCMP ≥ 95%, considera-se 100%
+- **Processo não faturado:** FCMP é forçado para `1.0`
+- **Processo faturado:** FCMP é recalculado item a item usando a mesma lógica de FC do faturamento
+- **Escada por cargo:** o recebimento pode usar `FCMP_APLICADO` quando houver configuração de `FC_ESCADA_CARGOS`
+- **Teto operacional padrão:** com `cap_fc_max = 1.0`, o `FCMP_rampa` tende a ficar no máximo em `1.0`
 
 ### 6.6 Cálculo por Pagamento
 
 **Fórmula:**
 ```
-Comissão do Pagamento = Valor Recebido × TCMP × FCMP
+Adiantamento = Valor Recebido × TCMP × 1,0
+Pagamento Regular = Valor Recebido × TCMP × FCMP aplicado
 ```
 
 **Exemplo:**
@@ -496,15 +568,25 @@ Comissão do Pagamento = Valor Recebido × TCMP × FCMP
 |------------|-------|
 | Pagamento Recebido | R$ 8.000 |
 | TCMP do Processo | 4,33% |
-| FCMP do Processo | 100% |
-| **Comissão** | R$ 8.000 × 4,33% × 100% = **R$ 346,40** |
+| FCMP Aplicado do Processo | 95% |
+| **Comissão** | R$ 8.000 × 4,33% × 95% = **R$ 329,08** |
 
 ### 6.7 Condições para Cálculo do FCMP
 
 | Status do Processo | FCMP Utilizado | Motivo |
 |-------------------|----------------|--------|
-| Em Andamento / Pendente | 1.0 (provisório) | Metas ainda não realizadas |
-| FATURADO | FCMP real calculado | Metas já conhecidas |
+| Em Andamento / Pendente / Orçamento | 1.0 (provisório) | O processo ainda não consolidou o FC real |
+| FATURADO | FCMP real calculado | Os itens já podem reaproveitar a lógica de FC do faturamento |
+
+### 6.8 Regras Operacionais Importantes do Fluxo de Recebimento
+
+1. **Filtro financeiro:** somente registros com `Tipo de Baixa = B` e `Data de Baixa` no mês/ano de apuração entram no cálculo.
+2. **Mapeamento de adiantamento:** documentos `COT...` são tratados como adiantamento; o sufixo numérico identifica o processo.
+3. **Mapeamento de pagamento regular:** para documentos não `COT`, o sistema extrai os 5/6 primeiros dígitos numéricos e compara com `Numero NF` da Análise Comercial, com normalização de zeros à esquerda.
+4. **Base de valor do processo no estado:**
+   - se o processo ainda não está faturado, usa-se a soma do **Valor Orçado**
+   - se o processo está faturado, usa-se a soma do **Valor Realizado**
+5. **Persistência de estado:** o sistema mantém totais pagos, comissão acumulada, saldo a receber e métricas por processo em arquivo próprio de estado.
 
 ---
 
@@ -518,9 +600,14 @@ Cross-selling ocorre quando um único processo de venda envolve produtos de **m�
 
 **Regra de Identificação:**
 
-Se a coluna `Gerente Comercial-Pedido` estiver **preenchida** no processo, então **obrigatoriamente** houve cross-selling.
+No fluxo atual, um caso de cross-selling só é aberto quando **todas** as condições abaixo são verdadeiras:
 
-**Motivo:** Esta coluna só é preenchida quando um colaborador participa da venda de itens fora de sua atribuição normal.
+1. A coluna `Gerente Comercial-Pedido` está preenchida em algum item do processo
+2. O nome informado corresponde a um colaborador do tipo **Consultor Externo**
+3. Esse consultor **não possui atribuição** para a linha do item
+4. O consultor está cadastrado na aba/configuração de **CROSS_SELLING**
+
+Ou seja: o preenchimento da coluna, sozinho, **não basta** para gerar caso elegível no motor.
 
 ### 7.3 Identificação dos Itens de Cross-Selling
 
@@ -528,7 +615,7 @@ Se a coluna `Gerente Comercial-Pedido` estiver **preenchida** no processo, entã
 1. Verificar o nome na coluna `Gerente Comercial-Pedido`
 2. Para cada item do processo, consultar a aba `ATRIBUICOES`
 3. Identificar quais itens **NÃO** estão atribuídos a esse colaborador
-4. Esses itens são os **itens de cross-selling**
+4. Se não possuir atribuição para a linha do item, o processo é tratado como caso elegível de cross-selling
 
 **Exemplo:**
 
@@ -567,8 +654,10 @@ A comissão do consultor externo é **adicional** - todos os colaboradores receb
 
 ### 7.5 Aplicação das Opções
 
-- A escolha é feita **por item** ou em **lote** para todos os itens de cross-selling do processo
-- A decisão é registrada e aplicada no cálculo final
+- No fluxo principal auditado, a decisão é tratada **por processo** quando o caso é detectado
+- A decisão é registrada e reaplicada na execução final do cálculo
+- Na **Opção A**, a taxa de cross-selling é abatida da taxa base dos demais participantes
+- Na **Opção B**, a taxa base dos demais participantes é mantida e a comissão do consultor externo é adicional
 
 ---
 
@@ -620,16 +709,17 @@ Valor da Reconciliação = Total de Comissão Adiantada × (FCMP Real - 1)
 
 **Onde:**
 - **Total de Comissão Adiantada:** Soma de todas as comissões pagas via COT
-- **FCMP Real:** Fator de Correção Médio Ponderado calculado após faturamento
+- **FCMP Real:** Fator de Correção Médio Ponderado calculado após faturamento, priorizando o multiplicador efetivamente aplicado ao colaborador
 
 #### 8.4.3 Resultados Possíveis da Reconciliação
 
 | Cenário | FCMP Real | Resultado | Significado |
 |---------|-----------|-----------|-------------|
-| Meta atingida 100%+ | FCMP = 1.0 | Reconciliação = **R$ 0** | Sem ajuste |
-| Meta abaixo de 100% | FCMP < 1.0 | Reconciliação = **Negativo** | Colaborador deve devolver |
+| FCMP = 1.0 | Sem diferença | Reconciliação = **R$ 0** | Sem ajuste |
+| FCMP < 1.0 | Performance abaixo do adiantado | Reconciliação = **Negativo** | Colaborador deve devolver |
+| FCMP > 1.0 | Só ocorre se parâmetros/métricas permitirem > 1.0 | Reconciliação = **Positivo** | Colaborador recebe complemento |
 
-**IMPORTANTE:** A reconciliação **NUNCA** gera crédito adicional, pois o FCMP máximo é 1.0.
+**IMPORTANTE:** No fluxo principal com configuração padrão (`cap_fc_max = 1.0`), a reconciliação tende a ser **zero ou negativa**. Porém, a fórmula do módulo de reconciliação aceita tecnicamente ajuste positivo caso o FCMP salvo ultrapasse `1.0`.
 
 #### 8.4.4 Exemplo de Reconciliação
 
@@ -651,6 +741,22 @@ Reconciliação = -R$ 75
 
 **Resultado:** O colaborador tem um **débito de R$ 75** a ser descontado de outras comissões.
 
+### 8.5 Estado Persistente dos Processos
+
+O recebimento mantém um arquivo de estado com informações por processo, incluindo:
+
+- valor total do processo
+- total de adiantamentos
+- total de pagamentos regulares
+- comissão acumulada
+- saldo a receber
+- status de pagamento
+- status de reconciliação
+- mês/ano de faturamento
+- métricas `TCMP`, `FCMP` e `FCMP_APLICADO`
+
+Esse estado é parte central da lógica de recebimento e reconciliação no projeto atual.
+
 ---
 
 ## 9. DEVOLUÇÕES E SALDOS NEGATIVOS
@@ -662,7 +768,7 @@ O sistema gera saldos negativos de **duas fontes**:
 | Fonte | Aplica-se a | Quando Ocorre |
 |-------|-------------|---------------|
 | **Reconciliação** | Colaboradores que recebem por recebimento | Quando processo é faturado e FCMP < 1.0 |
-| **Devoluções** | TODOS os colaboradores do item devolvido | Quando cliente devolve um item |
+| **Devoluções** | Colaboradores com comissão histórica registrada no processo | Quando cliente devolve valor vinculado à NF original |
 
 ### 9.2 Devoluções de Itens (✅ Implementado)
 
@@ -723,7 +829,7 @@ O sistema gera saldos negativos de **duas fontes**:
 3. CONSULTA BANCO HISTÓRICO (HISTORICO_COMISSOES_MASTER.xlsx)
    │
    ├── Busca comissões pagas do Processo
-   ├── Filtra por Tipo_Comissao = "FATURAMENTO" ou "RECEBIMENTO"
+   ├── Filtra por Tipo_Comissao = "FATURAMENTO", "REGULAR" e "ADIANTAMENTO"
    └── Recupera todos os colaboradores que receberam comissão
    │
    ▼
@@ -775,7 +881,8 @@ Estorno = Comissão_Histórica_Paga × Fator_Devolução × (-1)
 **Justificativa:**
 - O arquivo de devoluções contém apenas o valor total devolvido por NF
 - Não há granularidade de item (SKU) disponível na fonte de dados
-- A proporcionalidade garante equidade: se 25% do valor foi devolvido, 25% da comissão é estornada
+- O cálculo usa o **valor realizado total do processo**, não apenas o item devolvido isoladamente
+- A proporcionalidade garante equidade: se 25% do valor do processo foi devolvido, 25% da comissão histórica elegível é estornada
 
 #### 9.2.6 Características do Estorno
 
@@ -832,18 +939,17 @@ O módulo gera logs detalhados durante o processamento:
 
 #### 9.3.1 Aplicação
 
-Os saldos negativos são **descontados** das demais comissões que o colaborador recebe no **mesmo mês de apuração**.
+Os saldos negativos são registrados no banco histórico no **mês da apuração da devolução ou reconciliação** e passam a compor a visão consolidada do período.
 
 #### 9.3.2 Página de Saldos Negativos (Frontend)
 
-O sistema exibirá uma página dedicada mostrando:
-- Lista de todos os saldos negativos do mês
-- Para cada saldo:
-  - Origem (Reconciliação ou Devolução)
-  - Processo/Item envolvido
-  - Colaborador afetado
-  - Cálculo detalhado justificando o valor
-- Total consolidado por colaborador
+O backend já gera os lançamentos necessários para uma visão consolidada de saldos negativos, separando ao menos:
+
+- origem da correção
+- processo de referência
+- colaborador afetado
+- fator de devolução, quando aplicável
+- valor negativo calculado
 
 ---
 
@@ -853,22 +959,22 @@ O sistema exibirá uma página dedicada mostrando:
 
 Calcular o componente de rentabilidade do Fator de Correção, comparando margens de lucro esperadas versus realizadas.
 
-### 10.2 Fluxo de Processamento (Implementação Futura)
+### 10.2 Fluxo de Processamento no Estado Atual
 
 ```
-1. UPLOAD
-   └── Usuário carrega CSV bruto com rentabilidade por item vendido
+1. PREPARAÇÃO EXTERNA / MENSAL
+   └── O arquivo de rentabilidade é consolidado fora do cálculo principal
 
-2. PROCESSAMENTO
-   ├── Vincular cada item ao seu Processo
-   ├── Agrupar itens por categoria (Linha + Grupo + Subgrupo + Tipo)
-   └── Calcular média ponderada de rentabilidade por categoria
+2. CARGA NO CÁLCULO PRINCIPAL
+   ├── O motor procura arquivo agrupado em `dados_entrada/rentabilidades/`
+   ├── Prioriza arquivo `.xlsx` com mês/ano da apuração
+   └── Se não encontrar, segue com DataFrame vazio
 
-3. ARMAZENAMENTO
-   └── Salvar arquivo: rentabilidade_MM_AAAA_agrupada
+3. USO NO FC
+   └── A rentabilidade realizada da hierarquia do item é comparada à meta configurada
 
-4. USO
-   └── Alimentar cálculo do FC com componente de rentabilidade
+4. IMPACTO
+   └── O componente entra na soma do `FC_rampa` conforme peso do cargo
 ```
 
 ### 10.3 Fórmula da Rentabilidade Média por Categoria
@@ -885,6 +991,8 @@ Atingimento Rentabilidade = Rentabilidade Realizada / Meta de Rentabilidade
 
 **Nota:** Metas de rentabilidade não possuem piso nem teto, então o atingimento pode ser qualquer valor.
 
+**Observação do código atual:** embora o atingimento bruto possa ultrapassar 100%, a contribuição final para o FC segue o mesmo cap configurado para os componentes do FC.
+
 ---
 
 ## 11. TAXAS DE CÂMBIO
@@ -895,9 +1003,11 @@ Converter metas de fornecedores definidas em moedas estrangeiras para Reais, per
 
 ### 11.2 Funcionamento
 
-1. **Metas Definidas:** Em moeda original (USD, EUR, etc.)
-2. **Taxas Armazenadas:** Média mensal de câmbio por moeda
-3. **Conversão:** No momento do cálculo, converte meta para R$ usando taxa do mês
+1. **Metas de fornecedores:** Definidas com moeda original e meta anual
+2. **Taxas armazenadas:** Mantidas em JSON com média mensal por moeda
+3. **Verificação prévia:** Antes do cálculo, o sistema identifica meses faltantes e tenta buscar as taxas necessárias
+4. **Conversão do realizado:** O faturamento YTD por fornecedor é convertido mês a mês
+5. **Comparação:** O realizado convertido é comparado com a meta YTD proporcional do fornecedor
 
 ### 11.3 Exemplo
 
@@ -928,9 +1038,10 @@ Converter metas de fornecedores definidas em moedas estrangeiras para Reais, per
 ```
 1. Carregar planilha Comercial
 2. Carregar planilha Financeira
-3. Carregar arquivo de Rentabilidade
+3. Garantir que o arquivo mensal de Rentabilidade agrupada esteja disponível
 4. Revisar dados carregados
-5. Executar cálculo
+5. Resolver casos pendentes de cross-selling, se existirem
+6. Executar cálculo
 6. Revisar resultados
 7. Exportar relatórios
 ```
@@ -952,19 +1063,21 @@ Converter metas de fornecedores definidas em moedas estrangeiras para Reais, per
 
 ### 13.2 Regra de Tolerância de 95%
 
-**Descrição:** Já documentada na seção 5.4.3.
+**Descrição:** Regra histórica de negócio segundo a qual `FC ≥ 95%` seria arredondado para `100%`.
 
-**Status:** A ser implementada no motor de cálculo.
+**Status no código atual:** **não está ativa no fluxo principal auditado**. Hoje o comportamento vigente é cap do FC e, opcionalmente, aplicação de escada por cargo sem tolerância.
 
 ### 13.3 Processamento Automático de Rentabilidade
 
-**Descrição:** Já documentada na seção 10.2.
+**Descrição:** Transformar a preparação da rentabilidade em etapa integrada do sistema, eliminando a necessidade de entregar previamente um arquivo agrupado pronto.
 
-**Fluxo:** Upload CSV → Processamento → Arquivo padronizado → Uso no cálculo.
+**Fluxo desejado:** Upload/entrada bruta → agregação automática → arquivo padronizado → uso no cálculo.
 
 ### 13.4 Banco de Dados Histórico de Comissões
 
-**Descrição:** Arquivo Excel acumulativo (cresce a cada mês) armazenando todas as comissões pagas.
+**Status atual:** **já implementado** no projeto.
+
+**Descrição:** Arquivo Excel acumulativo (cresce a cada mês) armazenando comissões de faturamento, adiantamentos, pagamentos regulares, reconciliações e devoluções.
 
 **Estrutura:**
 | Nível | Informações |
@@ -1021,7 +1134,7 @@ Converter metas de fornecedores definidas em moedas estrangeiras para Reais, per
 
 ### 13.8 Dashboard de Saldos Negativos
 
-**Descrição:** Já documentado na seção 9.3.2.
+**Descrição:** Evoluir a visualização operacional dos saldos negativos a partir dos registros já gravados no banco histórico.
 
 **Consolidação:** Reconciliações + Devoluções em uma única visão.
 
@@ -1039,17 +1152,19 @@ Converter metas de fornecedores definidas em moedas estrangeiras para Reais, per
 | **Tipo de Mercadoria** | Classificação final do item |
 | **Taxa de Rateio** | Comissão máxima para uma categoria, a ser dividida entre colaboradores |
 | **Fatia do Cargo (PE)** | Percentual da Taxa de Rateio que cada cargo recebe |
-| **FC** | Fator de Correção - multiplicador baseado em metas (teto = 1.0, sem piso) |
+| **Fator Split** | Fração da comissão usada quando o mesmo cargo é dividido entre dois colaboradores |
+| **FC** | Resultado do cálculo de performance por metas; no projeto atual existe `FC_rampa` e, opcionalmente, um multiplicador final por escada |
 | **TCMP** | Taxa de Comissão Média Ponderada de um processo |
-| **FCMP** | Fator de Correção Médio Ponderado de um processo (teto = 1.0, sem piso) |
+| **FCMP** | Fator de Correção Médio Ponderado de um processo |
+| **FCMP Aplicado** | Multiplicador final do recebimento após eventual regra de escada por cargo |
 | **Adiantamento (COT)** | Pagamento recebido antes do faturamento |
-| **Reconciliação** | Ajuste quando processo é faturado e FCMP real < 1.0 |
+| **Reconciliação** | Ajuste do que foi pago em adiantamento contra o FCMP real do processo após faturamento |
 | **Cross-Selling** | Venda envolvendo múltiplas linhas de negócio |
 | **Metas de Faturamento** | Valor em R$ de processos com NF emitida no mês |
 | **Metas de Conversão** | Valor em R$ de processos convertidos em venda no mês |
 | **Metas de Rentabilidade** | Margem de lucro % esperada por categoria |
-| **Tolerância (95%)** | Regra que considera FC ≥ 95% como 100% |
 | **Status FATURADO** | Indica que processo teve NF emitida e permite cálculo real do FC |
+| **Estado de Recebimento** | Arquivo persistente que acompanha totais pagos, métricas e status por processo |
 
 ---
 
@@ -1059,7 +1174,8 @@ Converter metas de fornecedores definidas em moedas estrangeiras para Reais, per
 
 **Comissão por Faturamento:**
 ```
-Comissão = Valor Item × Taxa Rateio × Fatia Cargo × FC
+Comissão Potencial = Valor Realizado × Taxa Rateio Ajustada × Fatia Cargo × Fator Split
+Comissão Final = Comissão Potencial × FC Aplicado
 ```
 
 **TCMP:**
@@ -1069,12 +1185,13 @@ TCMP = Σ(Taxa × Valor) / Σ(Valor Total)
 
 **FCMP:**
 ```
-FCMP = Σ(FC × Valor) / Σ(Valor Total)
+FCMP_rampa = Σ(FC do item × Valor) / Σ(Valor Total)
 ```
 
 **Comissão por Recebimento:**
 ```
-Comissão = Valor Pagamento × TCMP × FCMP
+Adiantamento = Valor Pagamento × TCMP × 1,0
+Pagamento Regular = Valor Pagamento × TCMP × FCMP aplicado
 ```
 
 **Reconciliação:**
@@ -1084,16 +1201,16 @@ Ajuste = Comissão Adiantada × (FCMP Real - 1)
 
 ### B. Regras de Negócio Resumidas
 
-1. **FC Máximo:** Sempre 1.0 (nunca gera bônus)
-2. **FC Mínimo:** Não existe (pode tender a zero)
-3. **Tolerância:** FC ≥ 95% → considera 100%
-4. **Reconciliação:** Só quando Status = FATURADO e houve COT
-5. **Reconciliação nunca gera crédito:** Resultado é 0 ou negativo
-6. **Devoluções:** Apenas o item devolvido é estornado
-7. **Cross-Selling:** Detectado por coluna `Gerente Comercial-Pedido` preenchida
+1. **FC por faturamento:** é calculado em rampa por item e pode ser convertido em escada por cargo
+2. **Cap do FC:** o teto operacional vem de `cap_fc_max`, hoje normalmente configurado em `1.0`
+3. **Recebimento não faturado:** usa `FCMP = 1.0` provisório
+4. **Reconciliação:** só ocorre para processo com adiantamento já faturado no mês correto e ainda não reconciliado
+5. **Reconciliação:** no padrão atual tende a ser zero ou negativa, mas a fórmula suporta positivo se o FCMP salvo exceder `1.0`
+6. **Devoluções:** o estorno é proporcional ao valor devolvido sobre o valor realizado total do processo
+7. **Cross-Selling:** depende de consultor externo elegível, sem atribuição para a linha e cadastrado em CROSS_SELLING
 
 ---
 
 > **Documento mantido por:** Equipe de Desenvolvimento  
-> **Última atualização:** Dezembro/2024  
+> **Última atualização:** Março/2026  
 > **Próxima revisão:** Conforme implementações futuras

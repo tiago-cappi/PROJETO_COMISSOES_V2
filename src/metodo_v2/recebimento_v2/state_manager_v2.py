@@ -57,6 +57,7 @@ class RegistroEstado:
     comissao_adiantada: float = 0.0
     data_adiantamento: Optional[pd.Timestamp] = None
     colaborador_id: str = ""
+    centro_custo: str = ""  # CC do documento (para reconciliação em modo CC)
     data_faturamento: Optional[pd.Timestamp] = None
     valor_faturado: float = 0.0
     comissao_real: float = 0.0
@@ -74,6 +75,7 @@ class RegistroEstado:
             "Comissão Adiantada": self.comissao_adiantada,
             "Data Adiantamento": self.data_adiantamento,
             "Colaborador ID": self.colaborador_id,
+            "Centro Custo": self.centro_custo,
             "Data Faturamento": self.data_faturamento,
             "Valor Faturado": self.valor_faturado,
             "Comissão Real": self.comissao_real,
@@ -108,6 +110,7 @@ class RegistroEstado:
             comissao_adiantada=float(data.get("Comissão Adiantada", 0) or 0),
             data_adiantamento=parse_data(data.get("Data Adiantamento")),
             colaborador_id=str(data.get("Colaborador ID", "")),
+            centro_custo=str(data.get("Centro Custo", "")),
             data_faturamento=parse_data(data.get("Data Faturamento")),
             valor_faturado=float(data.get("Valor Faturado", 0) or 0),
             comissao_real=float(data.get("Comissão Real", 0) or 0),
@@ -216,7 +219,8 @@ class StateManagerV2:
         data_adiantamento: pd.Timestamp,
         colaborador_id: str,
         mes: int,
-        ano: int
+        ano: int,
+        centro_custo: str = ""
     ) -> RegistroEstado:
         """Registra um novo adiantamento.
         
@@ -228,6 +232,7 @@ class StateManagerV2:
             colaborador_id: ID do colaborador.
             mes: Mês de apuração.
             ano: Ano de apuração.
+            centro_custo: Centro de custo do documento (para reconciliação CC).
             
         Returns:
             RegistroEstado criado/atualizado.
@@ -241,6 +246,7 @@ class StateManagerV2:
             comissao_adiantada=comissao_adiantada,
             data_adiantamento=data_adiantamento,
             colaborador_id=colaborador_id,
+            centro_custo=centro_custo,
             mes_apuracao=mes,
             ano_apuracao=ano
         )

@@ -30,11 +30,11 @@ class MetricasCalculator:
         """
         self.calc_comissao = calculo_comissao_instance
         
-        # Inicializar identificador de colaboradores
+        # Inicializar identificador de colaboradores (usa REGRAS_ATRIBUICAO preprocessado)
         self.identificador = IdentificadorColaboradores(
             df_analise_comercial=calculo_comissao_instance.data.get("ANALISE_COMERCIAL_COMPLETA", pd.DataFrame()),
             colaboradores_df=calculo_comissao_instance.data.get("COLABORADORES", pd.DataFrame()),
-            atribuicoes_df=calculo_comissao_instance.data.get("ATRIBUICOES", pd.DataFrame()),
+            df_regras_atribuicao=getattr(calculo_comissao_instance, "df_regras_atribuicao", pd.DataFrame()),
             recebe_por_recebimento_ids=calculo_comissao_instance.recebe_por_recebimento
         )
 
@@ -182,7 +182,9 @@ class MetricasCalculator:
                         grupo=str(item.get("Grupo", "")).strip(),
                         subgrupo=str(item.get("Subgrupo", "")).strip(),
                         tipo_mercadoria=str(item.get("Tipo de Mercadoria", "")).strip(),
-                        cargo=cargo
+                        cargo=cargo,
+                        fabricante=str(item.get("Fabricante", "")).strip(),
+                        aplicacao=str(item.get("Aplicação Mat./Serv.", "")).strip(),
                     )
                     
                     print(f"[RECEBIMENTO] [MÉTRICAS] [TAXA] Regra obtida: {regra}")

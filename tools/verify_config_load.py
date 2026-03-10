@@ -16,7 +16,7 @@ def test_config_loading():
         print("Successfully loaded configuration!")
         print(f"Keys found: {list(data.keys())}")
         
-        required_keys = ["PARAMS", "CONFIG_COMISSAO", "COLABORADORES", "ALIASES"]
+        required_keys = ["PARAMS", "REGRAS_ATRIBUICAO", "COLABORADORES", "ALIASES"]
         missing = [k for k in required_keys if k not in data]
         
         if missing:

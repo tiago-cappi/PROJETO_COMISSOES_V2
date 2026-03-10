@@ -1,0 +1,13 @@
+linha,grupo,subgrupo,tipo_mercadoria,fabricante,aplicacao,colaborador,cargo,taxa_rateio_maximo_pct,fatia_cargo_pct,fator_split
+INDUSTRIAL,EQUIPAMENTOS,BOMBAS,CENTRIFUGAS,KSB,SANEAMENTO,João Silva,Gerente Linha,5.0,100,
+INDUSTRIAL,EQUIPAMENTOS,BOMBAS,CENTRIFUGAS,KSB,SANEAMENTO,Maria Souza,Coordenador,3.0,100,
+INDUSTRIAL,EQUIPAMENTOS,BOMBAS,,,,João Silva,Gerente Linha,4.0,100,
+INDUSTRIAL,EQUIPAMENTOS,BOMBAS,,,,Pedro Lima,Gerente Linha,4.0,100,
+INDUSTRIAL,,,,,,Ana Costa,Gerente Linha,3.0,100,0.7
+INDUSTRIAL,,,,,,Lucia Reis,Gerente Linha,3.0,100,0.3
+,,,,,,Roberto Neto,Diretor,2.0,100,
+AMBIENTAL,TRATAMENTO,ETE,ESTACOES,OPERSAN,,Felipe Gomes,Gerente Linha,5.0,100,
+INDUSTRIAL,,,,,,,Consultor Interno,2.5,50,
+,,,,,,,Consultor Interno,2.0,50,
+AMBIENTAL,TRATAMENTO,,,,,Bruno Matos,Coordenador,3.0,100,
+INDUSTRIAL,EQUIPAMENTOS,VALVULAS,,,,João Silva,Gerente Linha,4.5,100,

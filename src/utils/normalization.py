@@ -3,6 +3,8 @@ Módulo de normalização de dados.
 Contém funções para normalização de texto e cálculos de atingimento de metas.
 """
 
+import math
+
 import pandas as pd
 import unicodedata
 
@@ -37,41 +39,93 @@ def normalize_text(s):
 
 def calcular_atingimento(realizado, meta):
     """
-    Calcula o atingimento de uma meta com tratamento correto para meta zero.
-    
-    A lógica é:
-    - Se meta == 0 e realizado > 0: retorna 1.0 (superou a meta)
-    - Se meta == 0 e realizado == 0: retorna 0.0
-    - Se meta > 0: retorna realizado / meta
-    
-    Args:
-        realizado: Valor realizado (pode ser None, NaN ou número)
-        meta: Valor da meta (pode ser None, NaN ou número)
-    
-    Returns:
-        Float representando o atingimento (0.0 a infinito, teoricamente).
-        Retorna 0.0 em caso de erro.
-    
-    Exemplos:
-        >>> calcular_atingimento(100, 50)
-        2.0
-        >>> calcular_atingimento(0, 0)
-        0.0
-        >>> calcular_atingimento(10, 0)
-        1.0
-        >>> calcular_atingimento(None, 100)
-        0.0
-    """
-    try:
-        realizado = float(realizado) if realizado is not None else 0.0
-        meta = float(meta) if meta is not None else 0.0
+    Calcula o atingimento de uma meta com validação estrita de entradas.
 
-        if meta == 0:
-            # Meta zero: se realizou algo, atingiu 100%; se não, 0%
-            return 1.0 if realizado > 0 else 0.0
-        else:
-            # Meta positiva: calcula proporção normal
-            return realizado / meta
-    except Exception:
-        return 0.0
+    Comportamento fail-fast: entradas inválidas levantam ValueError imediatamente,
+    abortando o cálculo de comissões. Strings numéricas (ex: "90000") são aceitas.
+
+    Regras de validação:
+    - realizado deve ser > 0 (zero é inválido — ausência de faturamento real)
+    - realizado não pode ser negativo
+    - meta pode ser zero, mas não pode ser negativa
+    - Entradas não-numéricas (exceto strings numéricas) levantam ValueError
+    - Se meta == 0 e realizado > 0: retorna 1.0 (meta atingida por definição)
+    - Se meta > 0: retorna realizado / meta
+
+    Args:
+        realizado: Valor realizado. Aceita int, float ou string numérica. Deve ser > 0.
+        meta: Valor da meta. Aceita int, float ou string numérica. Deve ser >= 0.
+
+    Returns:
+        Float representando o atingimento proporcional (ex: 0.9, 1.2, 1.0).
+
+    Raises:
+        ValueError: Se realizado ou meta forem inválidos (não numéricos, realizado <= 0,
+                    meta negativa). O erro inclui descrição do problema para diagnóstico.
+
+    Exemplos:
+        >>> calcular_atingimento(90000, 100000)
+        0.9
+        >>> calcular_atingimento(50000, 0)
+        1.0
+        >>> calcular_atingimento("90000", "100000")
+        0.9
+        >>> calcular_atingimento(0, 100000)
+        ValueError: Valor 'realizado' não pode ser zero...
+    """
+    # --- Conversão e validação de 'realizado' ---
+    try:
+        realizado = float(realizado)
+    except (TypeError, ValueError):
+        raise ValueError(
+            f"Valor inválido para 'realizado': {realizado!r}. "
+            f"Deve ser um número ou string numérica. Cálculo de comissões abortado."
+        )
+
+    if math.isnan(realizado):
+        raise ValueError(
+            f"Valor inválido para 'realizado': NaN não é um valor numérico aceito. "
+            f"Cálculo de comissões abortado."
+        )
+
+    if realizado == 0:
+        raise ValueError(
+            f"Valor 'realizado' não pode ser zero. "
+            f"Um realizado igual a zero indica ausência de faturamento válido. "
+            f"Cálculo de comissões abortado."
+        )
+
+    if realizado < 0:
+        raise ValueError(
+            f"Valor 'realizado' não pode ser negativo: {realizado}. "
+            f"Cálculo de comissões abortado."
+        )
+
+    # --- Conversão e validação de 'meta' ---
+    try:
+        meta = float(meta)
+    except (TypeError, ValueError):
+        raise ValueError(
+            f"Valor inválido para 'meta': {meta!r}. "
+            f"Deve ser um número ou string numérica. Cálculo de comissões abortado."
+        )
+
+    if math.isnan(meta):
+        raise ValueError(
+            f"Valor inválido para 'meta': NaN não é um valor numérico aceito. "
+            f"Cálculo de comissões abortado."
+        )
+
+    if meta < 0:
+        raise ValueError(
+            f"Valor 'meta' não pode ser negativo: {meta}. "
+            f"Cálculo de comissões abortado."
+        )
+
+    # --- Cálculo do atingimento ---
+    if meta == 0:
+        # Meta zero com realizado positivo = meta atingida por definição
+        return 1.0
+
+    return realizado / meta
 

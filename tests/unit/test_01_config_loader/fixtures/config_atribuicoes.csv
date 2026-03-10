@@ -1,0 +1,2 @@
+linha,grupo,subgrupo,tipo_mercadoria,Gerente Linha 1,Gerente Linha 2,Coordenador 1,Coordenador 2,Diretor,Gerente Geral,fator_split_gerente,fator_split_coordenador
+Linha A,Grupo A,Subgrupo A,Tipo A,Gerente A,,Coordenador A,,Diretor A,Gerente Geral A,0.5,0.5
